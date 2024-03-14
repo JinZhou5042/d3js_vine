@@ -1,0 +1,235 @@
+/* styles.css */
+
+/* text */
+.text-div {
+    width: 75vw;
+    padding: 20px; /* 内边距20像素 */
+    border: 1px solid #cccccc; /* 边框 */
+    margin-top: 20px; /* 上边距 */
+    font-size: 20px; /* 字体大小 */
+    color: #333333; /* 字体颜色 */
+    text-align: left; /* 文本居中显示 */
+}
+
+/* Bar Charts */
+.itemContainer {
+    width: 75vw;
+    height: calc(80vw * 0.6);
+    overflow: auto;
+    border: 1px solid grey;
+}
+
+.histogram {
+    width: 100%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+#barchart {
+    width: 95%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+svg * {
+    user-select: text;
+    pointer-events: auto;
+}
+
+.tooltip {
+    position: absolute;
+    visibility: hidden;
+    padding: 8px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+}
+
+
+/* Violin Plots */
+
+#violinContainer {
+    display: flex;
+    overflow: hidden;
+    justify-content: space-between;
+    align-items: stretch; /* 确保子元素填满容器的整个高度 */
+    flex-wrap: nowrap;
+    width: 75vw;
+    height: calc(80vw * 0.4);
+    overflow: hidden;
+    border: 1px solid grey;
+}
+
+#violinLeftContainer {
+    display: flex;
+    flex-grow: 0;
+    flex-shrink: 0; /* 防止容器在空间不足时缩小 */
+    flex-basis: 50%;
+    height: 100%; /* 子容器填满父容器的高度 */
+    position: relative; /* 允许子元素相对于此定位 */
+    max-height: 100%;
+}
+
+#violinRightContainer {
+    display: flex;
+    flex-grow: 0;
+    flex-shrink: 0; /* 防止容器在空间不足时缩小 */
+    flex-basis: 50%;
+    height: 100%; /* 子容器填满父容器的高度 */
+    position: relative; /* 允许子元素相对于此定位 */
+    max-height: 100%;
+}
+
+
+#violinLeftSummaryContainer {
+    position: absolute; /* 使用绝对定位 */
+    top: 10%; /* 从父容器顶部向下偏移10% */
+    left: 0; /* 从父容器左侧开始 */
+    right: 0; /* 延伸到父容器的右侧 */
+    bottom: 0; /* 延伸到父容器的底部 */
+    display: flex;
+    overflow-x: hidden; /* 关闭x方向上的滚动条 */
+    overflow-y: hidden; /* 关闭y方向上的滚动条 */
+    align-items: center;
+}
+
+
+#violinLeftSummaryContainer img {
+    max-width: 100%;
+    height: auto;
+}
+
+#violinRightButton {
+    position: absolute; /* 相对于父容器定位 */
+    top: 0; /* 从父容器顶部开始 */
+    height: 10%; /* 占据父容器高度的10% */
+    left: 0; /* 从父容器左侧开始 */
+    right: 0; /* 伸展至父容器右侧，确保横向占满 */
+    display: flex;
+    overflow-x: auto; /* 允许在X轴方向滚动 */
+    white-space: nowrap; /* 防止元素换行，确保横向排列 */
+    gap: 5px; /* 按钮之间的间隔 */
+    padding: 0px 10px; /* 顺序是：上 右 下 左 */
+    -ms-overflow-style: none; /* IE和Edge的滚动条隐藏 */
+    scrollbar-width: thin; /* Firefox的滚动条样式调整 */
+    scrollbar-color: #888 #f0f0f0; /* Firefox的滚动条颜色调整 */
+}
+
+#violinRightDetailsByWorkerContainer {
+    position: absolute; /* 使用绝对定位 */
+    top: 10%; /* 从父容器顶部向下偏移20% */
+    left: 0; /* 从父容器左侧开始 */
+    right: 0; /* 延伸到父容器的右侧 */
+    bottom: 0; /* 延伸到父容器的底部 */
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden; /* 隐藏Y轴滚动条 */
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+
+.workerViolin {
+    display: inline-block;
+    max-width: 100%;
+    height: auto;
+}
+
+#buttons {
+    display: flex;
+    overflow-x: auto; /* 允许在X轴方向滚动 */
+    white-space: nowrap; /* 防止元素换行，确保横向排列 */
+    gap: 5px; /* 按钮之间的间隔 */
+    padding: 0px 10px 0px 10px; /* 顺序是：上 右 下 左 */
+    -ms-overflow-style: none; /* IE和Edge的滚动条隐藏 */
+    scrollbar-width: thin; /* Firefox的滚动条样式调整 */
+    scrollbar-color: #888 #f0f0f0; /* Firefox的滚动条颜色调整 */
+}
+
+#buttons::-webkit-scrollbar {
+    height: 2px; /* 调整滚动条高度 */
+}
+
+#buttons::-webkit-scrollbar-track {
+    background: #f0f0f0; /* 滚动条轨道颜色 */
+}
+
+#buttons::-webkit-scrollbar-thumb {
+    background: #888; /* 滚动条颜色 */
+    border-radius: 4px; /* 滚动条圆角 */
+}
+
+#buttons::-webkit-scrollbar-thumb:hover {
+    background: #555; /* 滚动条hover时的颜色 */
+}
+
+.workerCheckbox + label {
+    display: inline-flex; /* 使用inline-flex代替inline-block以提供更灵活的布局选项 */
+    align-items: center; /* 垂直居中复选框和标签 */
+    margin-right: 10px; /* 在复选框和标签之间添加间隔 */
+    white-space: nowrap; /* 防止标签内文本换行 */
+}
+
+
+
+
+
+
+/* 容器样式 */
+.container {
+    display: flex;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    width: 10%;
+    background-color: #f0f0f0;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li a {
+    display: block;
+    padding: 10px;
+    text-decoration: none;
+    color: black;
+}
+
+.sidebar ul li a:hover {
+    background-color: #ddd;
+}
+
+/* 内容区域样式 */
+.content {
+    width: 80%;
+    padding: 10px;
+}
+
+.item {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+@keyframes text-highlight-animation {
+    from {
+        background-color: grey;
+    }
+    to {
+        background-color: transparent;
+    }
+}
+
+.text-highlight {
+    animation: text-highlight-animation 2s forwards;
+}

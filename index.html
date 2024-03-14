@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d3.js vine</title>
+    <!-- 引入 d3.js 库 -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <ul>
+                <!-- 更新侧边栏链接文本 -->
+                <li><a href="#DescriptionTitle">Description</a></li>
+                <li><a href="#histogramTitle">DescriptionTitle</a></li>
+                <li><a href="#barchartTitle">Bar Chart</a></li>
+                <li><a href="#violinTitle">Violin Plot</a></li>
+            </ul>
+        </div>
+        <div class="content">
+            <!-- 为每个内容部分添加一级标题 -->
+            <h1 id="DescriptionTitle"><span>Application Description</span></h1>
+            <div class="text-div">
+                number of tasks: 
+            </div>
+            <h1 id="histogramTitle"><span>Task Completion Histogram</span></h1>
+            <div id="histogramContainer" class="itemContainer">
+                <div id="histogramTooltip" class="tooltip"></div>
+                <div id="avgDurationTooltip" class="tooltip"></div>
+                <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
+                    <!-- histogram goes here -->
+                </svg>
+            </div>
+            <h1 id="barchartTitle"><span>Bar Chart</span></h1>
+            <div id="barchartContainer" class="itemContainer">
+                <div id="barTooltip" class="tooltip"></div>
+                <svg id="barchart" xmlns="http://www.w3.org/2000/svg">
+                    <!-- bar chart goes here -->
+                </svg>
+            </div>
+            <h1 id="violinTitle"><span>Violin Plot</span></h1>
+            <div id="violinContainer">
+                <div id="violinLeftContainer">
+                    <div id="violinLeftSummaryContainer">
+                        <!-- violin plot goes here -->
+                        <img src="Input/all_workers_summary_violin.svg" alt="All Workers Summary">
+                    </div>
+                </div>
+                <div id="violinRightContainer">
+                    <div id="violinRightButton"></div>
+                    <div id="violinRightDetailsByWorkerContainer">
+                        <!-- workers violin plots go here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
