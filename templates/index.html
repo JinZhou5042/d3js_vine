@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d3.js vine</title>
+    <!-- import d3.js -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- import css and js files -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
+
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <ul>
+                <!-- 更新侧边栏链接文本 -->
+                <li><a href="#descriptionTitle">Description</a></li>
+                <li><a href="#histogramTitle">DescriptionTitle</a></li>
+                <li><a href="#workerConfigsTitle">Worker Configurations</a></li>
+                <li><a href="#barchartTitle">Bar Chart</a></li>
+                <li><a href="#violinTitle">Violin Plot</a></li>
+                <li><a href="#vinGraphsTitle">Vine Graphs</a></li>
+            </ul>
+        </div>
+        <div class="content">
+            <div id="selectorContainer">
+                <select id="logSelector">
+                    {% for folder in log_folders %}
+                        <option value="{{ folder }}">{{ folder }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- 为每个内容部分添加一级标题 -->
+            <h1 id="descriptionTitle"><span>Application Description</span></h1>
+            <div id="description" class="text-div">
+                <!--Application description goes here</p-->
+            </div>
+            <h1 id="histogramTitle"><span>Task Completion Histogram</span></h1>
+            <div id="histogramContainer" class="itemContainer">
+                <div id="histogramTooltip" class="tooltip"></div>
+                <div id="avgDurationTooltip" class="tooltip" ></div>
+                <!-- 在HTML中添加下拉选择框 -->
+                <select id="histogramSelector">
+                    <option value="mode0">default</option>
+                    <option value="mode1">sort by average execution time</option>
+                    <option value="mode2">sory by tasks completion</option>
+                </select>
+  
+                <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
+                    <!-- histogram goes here -->
+                </svg>
+            </div>
+            <h1 id="workerConfigsTitle"><span>Worker Configurations</span></h1>
+            <div id="workerConfigsContainer">
+                <!-- worker configurations csv table go here -->
+            </div>
+            <h1 id="barchartTitle"><span>Bar Chart</span></h1>
+            <div id="barchartContainer" class="itemContainer">
+                <div id="barTooltip" class="tooltip"></div>
+                <svg id="barchart" xmlns="http://www.w3.org/2000/svg">
+                    <!-- bar chart goes here -->
+                </svg>
+            </div>
+            <h1 id="violinTitle"><span>Violin Plot</span></h1>
+            <div id="violinContainer">
+                <div id="violinLeftContainer">
+                    <div id="violinLeftSummaryContainer">
+                        <!-- violin plot goes here -->
+                        <img id="allWorkersSummaryViolinImg" alt="All Workers Summary"></img>
+                    </div>
+                </div>
+                <div id="violinRightContainer">
+                    <div id="violinRightButton"></div>
+                    <div id="violinRightDetailsByWorkerContainer">
+                        <!-- workers violin plots go here -->
+                    </div>
+                </div>
+            </div>
+            <h1 id="vinGraphsTitle"><span>Vine Graphs</span></h1>
+            <div id="vineGraphsContainer">
+                <!--  -->
+                <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
+                <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
+                <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>
+                <div class="vineGraphContainer"><img id="performanceTasksAccumImg" alt="Tasks Accumulate"></div>
+                <div class="vineGraphContainer"><img id="performanceWorkersAccumImg" alt="Workers Accumulate"></div>
+                <div class="vineGraphContainer"><img id="performanceTasksCapacitiesImg" alt="Tasks Capabilities"></div>
+                <div class="vineGraphContainer"><img id="performanceTimeManagerImg" alt="Time Manager"></div>
+                <div class="vineGraphContainer"><img id="performanceTimeWorkersImg" alt="Time Workers"></div>
+                <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
+                <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

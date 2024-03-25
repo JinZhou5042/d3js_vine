@@ -3,27 +3,67 @@
 /* text */
 .text-div {
     width: 75vw;
-    padding: 20px; /* 内边距20像素 */
+    padding: 10px; /* 内边距20像素 */
     border: 1px solid #cccccc; /* 边框 */
     margin-top: 20px; /* 上边距 */
-    font-size: 20px; /* 字体大小 */
+    font-size: 16px; /* 字体大小 */
     color: #333333; /* 字体颜色 */
     text-align: left; /* 文本居中显示 */
+}
+
+/* Histogram */
+.histogram {
+    width: 950%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+/* worker configs table */
+#workerConfigsContainer {
+    width: 75vw;
+    height: calc(80vw * 0.6);
+    overflow: scroll;
+    border: 1px solid grey;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background-color: #cacccf;
+    position: sticky;
+    top: 0; /* 使表头固定在容器顶部 */
+    z-index: 3; /* 确保表头覆盖在滚动内容上 */
+    border-bottom: 2px solid #000; /* 加粗的表头底部边框 */
+}
+th, td {
+    border: 1px solid black;
+    padding: 4px;
+    text-align: left;
+}
+
+/* 固定第一列的样式 */
+th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 5; /* 确保第一列在垂直滚动时不会被其他列覆盖，但低于表头的z-index */
+    background-color: #cacccf; /* 为了可视化效果，可能需要设置背景色 */
+}
+td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 4; /* 确保第一列在垂直滚动时不会被其他列覆盖 */
+    background-color: #cacccf; /* 为了可视化效果，可能需要设置背景色 */
 }
 
 /* Bar Charts */
 .itemContainer {
     width: 75vw;
     height: calc(80vw * 0.6);
-    overflow: auto;
     border: 1px solid grey;
-}
-
-.histogram {
-    width: 100%;
-    height: 100%;
-    display: block;
-    margin: 0 auto;
+    overflow: auto;
 }
 
 #barchart {
@@ -186,11 +226,16 @@ svg * {
     display: flex;
 }
 
-/* 侧边栏样式 */
 .sidebar {
     width: 10%;
     background-color: #f0f0f0;
+    overflow: hidden;
+    position: fixed;  /* 添加这行使 .sidebar 固定位置 */
+    top: 0;           /* 从页面顶部开始固定 */
+    left: 0;          /* 从页面左侧开始固定 */
+    height: 100%;     /* 让侧边栏高度充满整个视口高度 */
 }
+
 
 .sidebar ul {
     list-style-type: none;
@@ -209,9 +254,16 @@ svg * {
 }
 
 /* 内容区域样式 */
+.selectorContainer {
+    width: 80%;
+    padding: 10px;
+    margin-left: 10%;
+}
+
 .content {
     width: 80%;
     padding: 10px;
+    margin-left: 10%;
 }
 
 .item {
@@ -233,3 +285,29 @@ svg * {
 .text-highlight {
     animation: text-highlight-animation 2s forwards;
 }
+
+
+
+/* Vine Graphs */
+#vineGraphsContainer {
+    width: 75vw;
+    height: auto;
+    border: 1px solid grey;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* 元素之间的间隙 */
+}
+
+.vineGraphContainer {
+    width: calc(50% - 10px); /* 减去gap一半的宽度 */
+    box-sizing: border-box;
+    padding: 10px; /* 元素的内边距 */
+}
+
+.vineGraphContainer img {
+    max-width: 100%; /* 限制图片最大宽度不超过容器宽度 */
+    height: auto; /* 高度自动调整以保持图片的原始比例 */
+    display: block; /* 防止图片底部出现额外空间 */
+}
+
+

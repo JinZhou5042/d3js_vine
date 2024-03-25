@@ -8,10 +8,10 @@ export function setupZoomAndScroll(svgSelector, containerSelector) {
     let initialHeight = svgElement.getBoundingClientRect().height;
 
     // Define the maximum and minimum zoom scales.
-    const maxWidth = initialWidth * 20; // Max width is 20 times the initial width.
-    const maxHeight = initialHeight * 20; // Max height is 20 times the initial height.
-    const minWidth = initialWidth * 1; // Min width is 80% of the initial width.
-    const minHeight = initialHeight * 1; // Min height is 80% of the initial height.
+    const maxWidth = initialWidth * 30; // Max width is 20 times the initial width.
+    const maxHeight = initialHeight * 30; // Max height is 20 times the initial height.
+    const minWidth = initialWidth * 0.8; // Min width is 80% of the initial width.
+    const minHeight = initialHeight * 0.8; // Min height is 80% of the initial height.
 
     container.addEventListener('wheel', function(event) {
         if (event.ctrlKey) { // Check if the Ctrl key is pressed during scroll.
@@ -58,4 +58,10 @@ export function setupZoomAndScroll(svgSelector, containerSelector) {
             initialHeight = newHeight;
         }
     });
+}
+
+export function pathJoin(parts, sep) {
+    var separator = sep || '/';
+    var replace = new RegExp(separator + '{1,}', 'g');
+    return parts.join(separator).replace(replace, separator);
 }

@@ -1,5 +1,6 @@
 export function drawBarChart(workerInfo) {
     // prepare data
+    d3.select('#barchart').selectAll('*').remove();
     let allSlots = [];
     let workerIndex = 1;
     let workerIDs = Object.keys(workerInfo).filter(key => key.startsWith('worker'));
@@ -17,14 +18,14 @@ export function drawBarChart(workerInfo) {
 
     // create scales and draw slots
     const container = document.getElementById('barchartContainer');
-    // const svgWidth = 1200, svgHeight = 800;
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    // 假设SVG宽度为视窗宽度的80%，高度为视窗高度的60%
-    const svgWidth = viewportWidth;
-    const svgHeight = viewportWidth * 0.6;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    // suppose the width of the container is the width of the SVG
+    const svgWidth = containerWidth;
+    const svgHeight = containerHeight;
     
-    const padding = { top: 10, right: 10, bottom: 30, left: 100 };
+    const padding = { top: 10, right: 10, bottom: 30, left: 50 };
 
     const svg = d3.select('#barchart')
         .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
@@ -45,7 +46,9 @@ export function drawBarChart(workerInfo) {
             });
         }
     });
-    let timeExtent = [0, (last_task_end - first_task_dispatch)];
+
+    const xStartTime = first_task_start;
+    let timeExtent = [0, (last_task_end - xStartTime)];
     
     // create scales
     const xScale = d3.scaleLinear()
@@ -84,17 +87,17 @@ export function drawBarChart(workerInfo) {
                     `worker${slots.workerIndex}(library)` : 
                     `worker${slots.workerIndex}(slot${slots.slot})`;
                 svg.append("rect")
-                   .attr("x", xScale(task[1] - first_task_dispatch)) // task[1]是开始时间
+                   .attr("x", xScale(task[1] - xStartTime)) // task[1] represents the start time
                    .attr("y", task[3].includes("library") ? 
                         yScale(`worker${slots.workerIndex}_library`) : 
                         yScale(`worker${slots.workerIndex}_slot${slots.slot}`))
-                   .attr("width", xScale(task[2]) - xScale(task[1])) // task[2]是结束时间
+                   .attr("width", xScale(task[2]) - xScale(task[1])) // task[2] represents the end time
                    .attr("height", yScale.bandwidth())
                    .attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue")
                    .on("mouseover", function(event, d) {
-                        d3.select(this).attr("fill", "orange"); // 高亮当前条形
+                        d3.select(this).attr("fill", "orange"); // highlight the bar
                         const durationInSeconds = ((task[2] - task[1])).toFixed(4);
-                        // 显示tooltip
+                        // show tooltip
                         d3.select("#barTooltip")
                             .style("visibility", "visible")
                             .style("left", (event.pageX + 10) + "px")
@@ -102,35 +105,35 @@ export function drawBarChart(workerInfo) {
                             .html(`${(durationInSeconds)}s  ${yLabel}`);
                     })
                     .on("mouseout", function() {
-                        d3.select(this).attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue"); // 恢复原始颜色
-                        // 隐藏tooltip
+                        d3.select(this).attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue"); // restore the color
+                        // hide tooltip
                         d3.select("#barTooltip").style("visibility", "hidden");
                     });
             });
         }
     });
-    // 根据y轴的刻度数量调整字体大小
+    // adjust font size and stroke width based on the number of ticks
     const numberOfTicks = allSlots.length;
     let fontSize;
 
-    // 假设一个基础字体大小和一个刻度数阈值来调整字体大小
-    const baseFontSize = 13; // 基础字体大小
-    const tickThreshold = 50; // 刻度数阈值
+    // set the base font size and the threshold for the number of ticks
+    const baseFontSize = 10; // base font size
+    const tickThreshold = 50; // threshold for the number of ticks
 
     if (numberOfTicks > tickThreshold) {
-        // 如果刻度数量大于阈值，减小字体大小
+        // if the number of ticks exceeds the threshold, adjust the font size
         fontSize = baseFontSize * (tickThreshold / numberOfTicks);
     } else {
-        // 如果刻度数量小于或等于阈值，使用基础字体大小
+        // if the number of ticks does not exceed the threshold, use the base font size
         fontSize = baseFontSize;
     }
 
-    // 确保字体大小不会太小，设置一个最小字体大小
-    fontSize = Math.max(fontSize, 1);
+    // make sure the font size is at least 0.5 times the base font size
+    fontSize = Math.max(fontSize, 0.5);
 
-    // 根据字体大小设置刻度线的粗细
-    let strokeWidth = fontSize / 20; // 假设基础线宽为1px时的字体大小为12px
-    strokeWidth = `${Math.max(strokeWidth, 0.2)}px`; // 确保线宽至少为0.5px
+    // set the stroke width based on the font size
+    let strokeWidth = fontSize / 20; // suppose the stroke width is 1/20 of the font size
+    strokeWidth = `${Math.max(strokeWidth, 0.2)}px`; // ensure the stroke width is at least 0.2 pixels
 
     // add axis
     svg.append("g")
@@ -141,10 +144,10 @@ export function drawBarChart(workerInfo) {
        .attr("transform", `translate(${padding.left},0)`)
        .call(d3.axisLeft(yScale).tickFormat(id => id))
        .selectAll(".tick text")
-       .style("font-size", `${fontSize}px`); // 设置字体大小
+       .style("font-size", `${fontSize}px`); 
 
-    // 同时，设置刻度线的粗细
-    svg.selectAll(".tick line") // 选择所有的刻度线
+    // set the font size and stroke width for the axis labels
+    svg.selectAll(".tick line") // select all the tick lines
         .style("stroke-width", strokeWidth);
 }
 

@@ -5,7 +5,78 @@ import json
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import shutil
+from datetime import datetime
+import re
 import numpy as np
+
+
+
+def get_runtime(txn):
+    """
+    Processes a log file, extracting and organizing task, worker, and library information. 
+    Tracks the time the first task was ran, and associates tasks and libraries with workers.
+    """
+    log_lines = open(txn, 'r').read().splitlines()
+    
+    task_info = {}
+    worker_info = {}
+    library_info = {}
+
+    for line in log_lines:
+        if line.startswith("#"):
+            continue
+        
+        timestamp, _, category, obj_id, status, info = line.split(maxsplit=5)
+        try:
+            timestamp = float(timestamp) / 1000000
+        except ValueError:
+            continue
+
+        if category == 'TASK':
+            if obj_id not in task_info:
+                task_info[obj_id] = {}
+            if status == 'READY':
+                function = info.split()[0]
+                task_info[obj_id]['dispatch_time'] = timestamp
+                task_info[obj_id]['function'] = function
+            if status == 'RUNNING':
+                task_info[obj_id]['start_time'] = timestamp
+                task_info[obj_id]['worker'] = info.split()[0]
+            if status == 'WAITING_RETRIEVAL':
+                task_info[obj_id]['stop_time'] = timestamp
+        if category == 'WORKER':
+            if obj_id not in worker_info:
+                worker_info[obj_id] = {'tasks': [], 'libraries': []}
+            if status == 'CONNECTION':
+                worker_info[obj_id]['start_time'] = timestamp
+            if status == 'DISCONNECTION':
+                worker_info[obj_id]['stop_time'] = timestamp
+        if category == 'LIBRARY':
+            if obj_id not in library_info:
+                library_info[obj_id] = {}
+            if status == 'STARTED':
+                library_info[obj_id]['start_time'] = timestamp
+                library_info[obj_id]['worker'] = info
+
+    for task in task_info:
+        worker_id = task_info[task].get('worker')
+        if worker_id in worker_info and 'stop_time' in task_info[task]:
+            worker_info[worker_id]['tasks'].append(task_info[task])
+    for library in library_info:
+        worker_id = library_info[library].get('worker')
+        if worker_id in worker_info:
+            worker_info[worker_id]['libraries'].append(library_info[library])
+    first_task_start = float('inf')
+    first_task_dispatch = float('inf')
+    last_task_finish = float(0)
+    for worker in worker_info:
+        for task in worker_info[worker]['tasks']:
+            first_task_dispatch = min(task['dispatch_time'], first_task_dispatch)
+            first_task_start = min(task['start_time'], first_task_start)
+            last_task_finish = max(last_task_finish, task['stop_time'])
+
+    return last_task_finish - first_task_start
 
 
 def parse_txn_log(txn):
@@ -167,6 +238,7 @@ def transform_data(df):
     return df
 
 def draw_violin_plot(data, x, y, title, filename, mode='svg'):
+
     plt.figure(figsize=(12, 8))
     sns.violinplot(x=x, y=y, data=data, inner='point')
     plt.title(title)
@@ -190,7 +262,7 @@ def draw_violin_plot(data, x, y, title, filename, mode='svg'):
         plt.savefig(filename)
     plt.close()
 
-def gen_violins(mode='svg'):
+def gen_violins(data_dir, mode='svg'):
     df = load_and_preprocess_data("data.json")
     df = transform_data(df)
     df['Worker'] = df['Worker'].str.extract('(\d+)').astype(int)
@@ -200,27 +272,247 @@ def gen_violins(mode='svg'):
     # 绘制每个worker的slot小提琴图
     for worker in unique_workers:
         worker_data = df[df['Worker'] == worker]
-        filename = os.path.join('Input', f'worker{worker}_violin.{mode}')
+        filename = os.path.join(data_dir, f'worker{worker}_violin.{mode}')
         draw_violin_plot(worker_data, 'Slot', 'Log Run Time', f'workek{worker} violin plot', filename, mode=mode)
 
-    filename = os.path.join('Input', f'all_workers_summary_violin.{mode}')
+    filename = os.path.join(data_dir, f'all_workers_summary_violin.{mode}')
     draw_violin_plot(df, 'Worker', 'Log Run Time', 'All Workers Summary violin plot', filename, mode=mode)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="This script is used to plot a figure for a transaction log")
-    parser.add_argument('--txn-path', type=str, default='most-recent/vine-logs/transactions')
-    parser.add_argument('--print', action='store_true')
-    args = parser.parse_args()
+def init_data_dir(data_dir):
+    if os.path.exists(data_dir) and os.path.isdir(data_dir):
+        shutil.rmtree(data_dir)
+        os.makedirs(data_dir)
+    else:
+        os.makedirs(data_dir)
 
+
+def generate_description(log_dir, worker_info):
+    data_dir = os.path.join(log_dir, 'vine-logs')
+    txn = os.path.join(log_dir, 'vine-logs', 'transactions')
+    app_info = {
+        "log_dir": log_dir.split('/')[-1],
+        "total_tasks": 0,
+        "total_workers": len(worker_info),
+        "average_execution_time": 0,
+    }
+    total_tasks = 0
+    total_workers = len(worker_info)
+    total_execution_time = 0
+    first_task_start = float('inf')
+    first_task_dispatch = float('inf')
+    last_task_finish = float(0)
+    for worker_id, worker_data in worker_info.items():
+        for slot_id, tasks in worker_data["slots"].items():
+            for task in tasks:
+                # 解析任务数据
+                dispatch_time, start_time, end_time, task_type = task
+                if task_type.startswith('library'):
+                    continue
+                # 更新首个任务开始时间
+                first_task_dispatch = min(dispatch_time, first_task_dispatch)
+                first_task_start = min(start_time, first_task_start)
+                last_task_finish = max(last_task_finish, end_time)
+                # 累计任务数量
+                total_tasks += 1
+                # 累计执行时间
+                total_execution_time += (end_time - start_time)
+
+    # 计算平均执行时间
+    average_execution_time = total_execution_time / total_tasks if total_tasks else 0
+
+
+    app_runtime = last_task_finish - first_task_start
+
+    app_info["total_tasks"] = total_tasks
+    app_info["average_execution_time"] = str(round(average_execution_time, 4)) + "s"
+    app_info["total_execution_time"] = str(round(total_execution_time, 4)) + "s"
+    app_info["app_runtime"] = str(round(app_runtime, 4)) + "s"
+
+    with open(os.path.join(data_dir, 'app_info.json'), 'w') as f:
+        json.dump(app_info, f, indent=4)
+
+
+def parse_debug(data_dir):
+    debug = os.path.join(data_dir, 'debug')
+    
+    worker_configs = {}
+    collecting_resources_for_worker = None
+    with open(debug, 'r') as file:
+        for line in file:
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] tcp: accepted connection from 10.32.79.53 port 53616
+            accepted_conn_match = re.search(r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{2}) vine_manager\[\d+\] tcp: accepted connection from (\d+\.\d+\.\d+\.\d+) port (\d+)', line)
+            if accepted_conn_match:
+                connected_time_str = accepted_conn_match.group(1)
+                ip = accepted_conn_match.group(2)
+                port = accepted_conn_match.group(3)
+                connected_time = datetime.strptime(connected_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                key = f"{ip}:{port}"
+                if key not in worker_configs:
+                    worker_configs[key] = {'id': None, 'ip': ip, 'port': port, 'hostname': None, 'worker_hash': None, 'function_slots': None,
+                                           'cores': None, 'memory': None, 'disk': None, 'gpus': None, 'tag': None, 
+                                           'CCTools_Version': None, 'architecture': None, 'provides_library': [], 
+                                           'connected_time': connected_time, 'end_time': None, 'lifetime': None,
+                                           'tasks_done': None, 'avg_task_runtime': None, 'max_task_runtime': None, 'min_task_runtime': None,}
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: rx from unknown (10.32.79.53:53616): taskvine 8 d8civy095.crc.nd.edu Linux x86_64 8.0.0
+            hostname_match = re.search(r'rx from unknown \((\d+\.\d+\.\d+\.\d+):(\d+)\): .+ (\S+\.nd\.edu)', line)
+            if hostname_match:
+                ip = hostname_match.group(1)
+                port = hostname_match.group(2)
+                hostname = hostname_match.group(3)
+                key = f"{ip}:{port}"
+                if key in worker_configs:
+                    worker_configs[key]['hostname'] = hostname
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: rx from d8civy026.crc.nd.edu (10.32.78.171:55042): info worker-id worker-ff9c317971b9f77f81dba73e8f929cd1
+            worker_hash_match = re.search(r'info worker-id (\S+)', line)
+            if worker_hash_match:
+                worker_hash = worker_hash_match.group(1)
+                ip_port_match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', line)
+                if ip_port_match:
+                    ip = ip_port_match.group(1)
+                    port = ip_port_match.group(2)
+                    key = f"{ip}:{port}"
+                    if key in worker_configs:
+                        worker_configs[key]['worker_hash'] = worker_hash
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: rx from d8civy095.crc.nd.edu (10.32.79.53:53616): resources
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: cores 4
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: memory 8192
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: disk 4644
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: gpus 0
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: workers 1
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: tag 0
+            # 2024/03/12 20:37:39.26 vine_manager[2054845] vine: end
+            if 'resources' in line:
+                ip_port_match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', line)
+                if ip_port_match:
+                    ip = ip_port_match.group(1)
+                    port = ip_port_match.group(2)
+                    collecting_resources_for_worker = f"{ip}:{port}"
+                continue
+            if collecting_resources_for_worker:
+                match = re.search(r'.*?vine: ([a-zA-Z]+) (\d+)', line)
+                if match:
+                    resource_type, value = match.groups()
+                    if resource_type in worker_configs[key]:
+                        worker_configs[collecting_resources_for_worker][resource_type] = value
+                if 'end' in line:
+                    collecting_resources_for_worker = None
+            # 2024/03/12 20:37:39.59 vine_manager[2054845] vine: d8civy121.crc.nd.edu (10.32.79.105:48904) running CCTools version 8.0.0 on Linux (operating system) with architecture x86_64 is ready
+            cctools_arch_match = re.search(r'running CCTools version (\S+) on .+ with architecture (\S+)', line)
+            if cctools_arch_match:
+                cctools_version, architecture = cctools_arch_match.groups()
+                ip_port_match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', line)
+                if ip_port_match:
+                    ip = ip_port_match.group(1)
+                    port = ip_port_match.group(2)
+                    key = f"{ip}:{port}"
+                    if key in worker_configs:
+                        worker_configs[key]['CCTools_Version'] = cctools_version
+                        worker_configs[key]['architecture'] = architecture
+            # 2024/03/12 20:37:39.70 vine_manager[2054845] vine: tx to d12chas323.crc.nd.edu (10.32.84.153:53836): provides_library test-library
+            provides_library_match = re.search(r'provides_library (\S+)', line)
+            if provides_library_match:
+                library = provides_library_match.group(1)
+                ip_port_match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', line)
+                if ip_port_match:
+                    ip = ip_port_match.group(1)
+                    port = ip_port_match.group(2)
+                    key = f"{ip}:{port}"
+                    if key in worker_configs and library not in worker_configs[key]['provides_library']:
+                        worker_configs[key]['provides_library'].append(library)
+            # 2024/03/12 20:37:39.70 vine_manager[2054845] vine: tx to d12chas323.crc.nd.edu (10.32.84.153:53836): function_slots 4
+            function_slots_match = re.search(r'function_slots (\d+)', line)
+            if function_slots_match:
+                function_slots = function_slots_match.group(1)
+                ip_port_match = re.search(r'(\d+\.\d+\.\d+\.\d+):(\d+)', line)
+                if ip_port_match:
+                    ip = ip_port_match.group(1)
+                    port = ip_port_match.group(2)
+                    key = f"{ip}:{port}"
+                    if key in worker_configs:
+                        worker_configs[key]['function_slots'] = function_slots
+            # 2024/03/18 10:00:00.63 vine_manager[1541931] vine: worker d32cepyc045.crc.nd.edu (10.32.89.209:44926) removed
+            match = re.search(r'(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}\.\d{2}) .*? vine: worker .+? \((\d+\.\d+\.\d+\.\d+):(\d+)\) removed', line)
+            if match:
+                end_time_str = match.group(1)
+                end_time = datetime.strptime(end_time_str, '%Y/%m/%d %H:%M:%S.%f')
+                ip, port = match.group(2), match.group(3)
+                key = f"{ip}:{port}"
+                if key in worker_configs:
+                    worker_configs[key]['end_time'] = end_time
+                    worker_configs[key]['lifetime'] = (worker_configs[key]['end_time'] - worker_configs[key]['connected_time']).total_seconds()
+                else:
+                    print("Key not found in worker configs.")
+            # 2024/03/12 19:36:02.59 vine_manager[1960177] vine: d12chas328.crc.nd.edu (10.32.84.163:49710) done in 6.86s total tasks 2 average 4.90s
+            match = re.search(r'(\d+\.\d+\.\d+\.\d+:\d+).+done in (\S+)s total tasks (\d+) average (\S+)s', line)
+            if match:
+                ip_port = match.group(1)  # IP和端口
+                task_runtime = float(match.group(2))
+                total_tasks_done = int(match.group(3))
+                avg_task_runtime = float(match.group(4))
+                key = ip_port
+                if key in worker_configs:
+                    worker_configs[key]['tasks_done'] = total_tasks_done
+                    worker_configs[key]['avg_task_runtime'] = avg_task_runtime
+                    if not worker_configs[key]['max_task_runtime']:
+                        worker_configs[key]['max_task_runtime'] = task_runtime
+                    else:
+                        worker_configs[key]['max_task_runtime'] = max(worker_configs[key]['max_task_runtime'], task_runtime)
+                    if not worker_configs[key]['min_task_runtime']:
+                        worker_configs[key]['min_task_runtime'] = task_runtime
+                    else:
+                        worker_configs[key]['min_task_runtime'] = min(worker_configs[key]['min_task_runtime'], task_runtime)
+
+    worker_list = [value for key, value in worker_configs.items()]
+    sorted_worker_list = sorted(worker_list, key=lambda x: (x['worker_hash'] is None, x['worker_hash']))
+    for i, worker in enumerate(sorted_worker_list, start=1):
+        worker['id'] = i
+    sorted_worker_configs = {f"{worker['ip']}:{worker['port']}": worker for worker in sorted_worker_list}
+
+    worker_configs_df = pd.DataFrame.from_dict(sorted_worker_configs, orient='index')
+    all_workers_configs = pd.read_csv('all_worker_configs.csv')
+    worker_configs_df = pd.merge(worker_configs_df, all_workers_configs, on='hostname', how='left')
+
+    worker_configs_df.to_csv(os.path.join(data_dir, 'workerConfigs.csv'), index=False)
+
+
+def generate_log_data(log_dir, data_dir):
+    # init_data_dir(data_dir)
     # ger information of different catagories from transactions log
-    task_info, worker_info, library_info, manager_info = parse_txn_log(args.txn_path)
+    txn = os.path.join(log_dir, 'vine-logs', 'transactions')
+
+    task_info, worker_info, library_info, manager_info = parse_txn_log(txn)
+    # copy_svg(txn)
     # specify the task and library running on a each worker
     match_tasks_to_workers(task_info, worker_info)
     match_libraries_to_workers(library_info, worker_info)
     # plot the running status on workers
     map_tasks_to_slots(worker_info)
-    # save the worker information to a json file
-    with open("data.json", 'w') as f:
-        json.dump(worker_info, f, indent=4)
-    gen_violins(mode='svg')
+    # process logs
+    parse_debug(data_dir)
+    # generate description of the running status
+    generate_description(log_dir, worker_info)
+
+    # sort the worker_info by worker_hash and save it to a json file
+    workers_list = list(worker_info.items())
+    sorted_workers_list = sorted(workers_list, key=lambda x: x[0])
+    for i, (worker_hash, worker_info) in enumerate(sorted_workers_list, start=1):
+        sorted_workers_list[i-1] = (worker_hash, worker_info)
+    sorted_workers_dict = {worker_hash: worker_info for worker_hash, worker_info in sorted_workers_list}
+
+    worker_info_filename = os.path.join(data_dir, 'worker_tasks.json')
+    with open(worker_info_filename, 'w') as f:
+        json.dump(sorted_workers_dict, f, indent=4)
+    gen_violins(data_dir, mode='svg')
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description="This script is used to plot a figure for a transaction log")
+    parser.add_argument('--log-dir', type=str, default='most-recent')
+    parser.add_argument('--print', action='store_true')
+    args = parser.parse_args()
+
+    log_dir = args.log_dir
+    data_dir = os.path.join(log_dir, 'vine-logs')
+
+    generate_log_data(log_dir, data_dir)

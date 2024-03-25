@@ -1,4 +1,6 @@
-export function initializeWorkerCheckboxes(workerInfo) {
+import { pathJoin } from "./tools.js";  
+
+export function initializeWorkerCheckboxes(dataDir, workerInfo) {
     const workerCount = Object.keys(workerInfo).filter(key => key.startsWith('worker')).length;
     const checkboxesContainer = document.getElementById('violinRightButton');
     checkboxesContainer.innerHTML = '';
@@ -11,7 +13,7 @@ export function initializeWorkerCheckboxes(workerInfo) {
     selectAllCheckbox.addEventListener('change', (event) => {
         document.querySelectorAll('.workerCheckbox').forEach(checkbox => {
             checkbox.checked = event.target.checked;
-            loadWorkerCharts(checkbox.value, checkbox.checked);
+            loadWorkerCharts(dataDir, checkbox.value, checkbox.checked);
         });
     });
 
@@ -29,7 +31,7 @@ export function initializeWorkerCheckboxes(workerInfo) {
         checkbox.id = workerID;
         checkbox.value = workerID;
         checkbox.classList.add('workerCheckbox');
-        checkbox.addEventListener('change', () => loadWorkerCharts(workerID, checkbox.checked));
+        checkbox.addEventListener('change', () => loadWorkerCharts(dataDir, workerID, checkbox.checked));
 
         const label = document.createElement('label');
         label.htmlFor = workerID;
@@ -39,11 +41,11 @@ export function initializeWorkerCheckboxes(workerInfo) {
         checkboxesContainer.appendChild(label);
     }
     selectAllCheckbox.checked = true;
-    onToggleSelectAll();
+    onToggleSelectAll(dataDir);
 }
 
 
-function loadWorkerCharts(workerID, isChecked) {
+function loadWorkerCharts(dataDir, workerID, isChecked) {
     const violinChartContainer = document.getElementById('violinRightDetailsByWorkerContainer');
     // 确保能够正确引用到 violinContainer
     const violinContainer = document.getElementById('violinContainer'); // 确保这是正确的ID
@@ -51,7 +53,7 @@ function loadWorkerCharts(workerID, isChecked) {
     if (isChecked) {
         // 创建图像元素
         const img = document.createElement('img');
-        img.src = `Input/${workerID}_violin.svg`;
+        img.src = pathJoin([dataDir, `${workerID}_violin.svg`]);
         img.alt = `Violin plot for ${workerID}`;
         img.classList.add('workerViolin', workerID); // 同时添加 'workerViolin' 和 workerID 作为类
         
@@ -86,7 +88,7 @@ function loadWorkerCharts(workerID, isChecked) {
 }
 
 
-function onToggleSelectAll() {
+function onToggleSelectAll(dataDir) {
     const isChecked = document.getElementById('selectAll').checked; // 获取全选复选框的选中状态
     const workerCheckboxes = document.querySelectorAll('.workerCheckbox'); // 获取所有worker复选框
 
@@ -94,7 +96,7 @@ function onToggleSelectAll() {
         checkbox.checked = isChecked; // 设置每个worker复选框的状态与全选复选框相同
         
         if (checkbox.id !== 'selectAll') {
-            loadWorkerCharts(checkbox.value, isChecked); // 加载或移除对应的violin plots
+            loadWorkerCharts(dataDir, checkbox.value, isChecked); // 加载或移除对应的violin plots
         }
     });
 }
