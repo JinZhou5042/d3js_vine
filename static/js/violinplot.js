@@ -1,29 +1,30 @@
 import { pathJoin } from "./tools.js";  
 
-export function initializeWorkerCheckboxes(dataDir, workerInfo) {
+export function drawViolins(dataDir, workerInfo) {
+    // clear the existing images
+    const container = document.getElementById('violinRightContainer');
+    const images = container.querySelectorAll('img');
+    images.forEach(img => {
+        container.removeChild(img);
+    });
+
+
     const workerCount = Object.keys(workerInfo).filter(key => key.startsWith('worker')).length;
+
     const checkboxesContainer = document.getElementById('violinRightButton');
     checkboxesContainer.innerHTML = '';
 
-    // 全选/全不选复选框
-    const selectAllCheckbox = document.createElement('input');
-    selectAllCheckbox.type = 'checkbox';
-    selectAllCheckbox.id = 'selectAll';
-    selectAllCheckbox.classList.add('workerCheckbox'); // 使用驼峰命名
-    selectAllCheckbox.addEventListener('change', (event) => {
-        document.querySelectorAll('.workerCheckbox').forEach(checkbox => {
-            checkbox.checked = event.target.checked;
-            loadWorkerCharts(dataDir, checkbox.value, checkbox.checked);
-        });
-    });
+    // initialize the selectAll button
+    let selectAllCheckbox = initializeSetAllButon(checkboxesContainer, dataDir);
+    
+    // initialize the worker checkboxes
+    initializeWorkerCheckboxes(checkboxesContainer, workerCount, dataDir);
 
-    const selectAllLabel = document.createElement('label');
-    selectAllLabel.htmlFor = 'selectAll';
-    selectAllLabel.textContent = 'select all';
-    checkboxesContainer.appendChild(selectAllCheckbox);
-    checkboxesContainer.appendChild(selectAllLabel);
+    // flip the selectAll button to checked
+    flipUpSelectAll(selectAllCheckbox, dataDir);
+}
 
-    // 生成并初始化worker复选框
+function initializeWorkerCheckboxes(checkboxesContainer, workerCount, dataDir) {
     for (let i = 1; i <= workerCount; i++) {
         const workerID = `worker${i}`;
         const checkbox = document.createElement('input');
@@ -40,30 +41,49 @@ export function initializeWorkerCheckboxes(dataDir, workerInfo) {
         checkboxesContainer.appendChild(checkbox);
         checkboxesContainer.appendChild(label);
     }
-    selectAllCheckbox.checked = true;
-    onToggleSelectAll(dataDir);
 }
 
+function initializeSetAllButon(checkboxesContainer, dataDir) {
+    // generate and initialize selectAll checkbox
+    const selectAllCheckbox = document.createElement('input');
+    selectAllCheckbox.type = 'checkbox';
+    selectAllCheckbox.id = 'selectAll';
+    selectAllCheckbox.classList.add('workerCheckbox');
+    selectAllCheckbox.addEventListener('change', (event) => {
+        document.querySelectorAll('.workerCheckbox').forEach(checkbox => {
+            checkbox.checked = event.target.checked;
+            loadWorkerCharts(dataDir, checkbox.value, checkbox.checked);
+        });
+    });
+    checkboxesContainer.appendChild(selectAllCheckbox);
+    // set up the label
+    const selectAllLabel = document.createElement('label');
+    selectAllLabel.htmlFor = 'selectAll';
+    selectAllLabel.textContent = 'select all';
+    checkboxesContainer.appendChild(selectAllLabel);
+
+    return selectAllCheckbox;
+}
 
 function loadWorkerCharts(dataDir, workerID, isChecked) {
+    // get the upper container and 
     const violinChartContainer = document.getElementById('violinRightDetailsByWorkerContainer');
-    // 确保能够正确引用到 violinContainer
-    const violinContainer = document.getElementById('violinContainer'); // 确保这是正确的ID
+    const violinContainer = document.getElementById('violinContainer'); 
 
     if (isChecked) {
-        // 创建图像元素
+        // create an image element for the violin plot
         const img = document.createElement('img');
         img.src = pathJoin([dataDir, `${workerID}_violin.svg`]);
         img.alt = `Violin plot for ${workerID}`;
-        img.classList.add('workerViolin', workerID); // 同时添加 'workerViolin' 和 workerID 作为类
+        img.classList.add('workerViolin', workerID); // each image has a class of workerID
         
         if (violinContainer) {
-            // 基于 violinContainer 的高度设置图片高度为该容器高度的80%
-            const containerHeight = violinContainer.clientHeight; // 获取 violinContainer 的当前高度
-            img.style.height = `${containerHeight * 1}px`; // 设置图片高度为容器高度的80%
+            // set the height of the image to 80% of the container height
+            const containerHeight = violinContainer.clientHeight;
+            img.style.height = `${containerHeight * 1}px`; 
         }
         
-        // 找到正确的插入位置
+        // find the correct position to insert the image
         const existingImgs = Array.from(violinChartContainer.querySelectorAll('.workerViolin'));
         const workerNumbers = existingImgs.map(img => parseInt(img.classList[1].replace('worker', ''), 10));
         const currentWorkerNumber = parseInt(workerID.replace('worker', ''), 10);
@@ -82,21 +102,22 @@ function loadWorkerCharts(dataDir, workerID, isChecked) {
             violinChartContainer.appendChild(img);
         }
     } else {
-        // 移除对应的图像
+        // remove all images with the workerID class
         document.querySelectorAll(`.${workerID}`).forEach(img => img.remove());
     }
 }
 
-
-function onToggleSelectAll(dataDir) {
-    const isChecked = document.getElementById('selectAll').checked; // 获取全选复选框的选中状态
-    const workerCheckboxes = document.querySelectorAll('.workerCheckbox'); // 获取所有worker复选框
+function flipUpSelectAll(selectAllCheckbox, dataDir) {
+    selectAllCheckbox.checked = true;
+    // get the status of the selectAll checkbox
+    const isChecked = document.getElementById('selectAll').checked;
+    // get all worker checkboxes
+    const workerCheckboxes = document.querySelectorAll('.workerCheckbox');
 
     workerCheckboxes.forEach(checkbox => {
-        checkbox.checked = isChecked; // 设置每个worker复选框的状态与全选复选框相同
-        
+        checkbox.checked = isChecked;
         if (checkbox.id !== 'selectAll') {
-            loadWorkerCharts(dataDir, checkbox.value, isChecked); // 加载或移除对应的violin plots
+            loadWorkerCharts(dataDir, checkbox.value, isChecked);
         }
     });
 }

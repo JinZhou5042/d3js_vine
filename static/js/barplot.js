@@ -95,7 +95,9 @@ export function drawBarChart(workerInfo) {
                    .attr("height", yScale.bandwidth())
                    .attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue")
                    .on("mouseover", function(event, d) {
-                        d3.select(this).attr("fill", "orange"); // highlight the bar
+                        // highlight the bar
+                        d3.select(this)
+                            .attr("fill", "orange");
                         const durationInSeconds = ((task[2] - task[1])).toFixed(4);
                         // show tooltip
                         d3.select("#barTooltip")
@@ -105,7 +107,8 @@ export function drawBarChart(workerInfo) {
                             .html(`${(durationInSeconds)}s  ${yLabel}`);
                     })
                     .on("mouseout", function() {
-                        d3.select(this).attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue"); // restore the color
+                        // restore the color
+                        d3.select(this).attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue");
                         // hide tooltip
                         d3.select("#barTooltip").style("visibility", "hidden");
                     });

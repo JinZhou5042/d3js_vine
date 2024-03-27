@@ -63,8 +63,6 @@ def parse_txn_log(txn):
         if 'stop_time' not in library_info[library]:
             library_info[library]['stop_time'] = manager_info['end_time']
 
-    
-
     return task_info, worker_info, library_info, manager_info
 
 

@@ -11,7 +11,6 @@ import re
 import numpy as np
 
 
-
 def get_runtime(txn):
     """
     Processes a log file, extracting and organizing task, worker, and library information. 
@@ -204,7 +203,7 @@ def map_tasks_to_slots(worker_info):
         del worker_info[worker]["libraries"]
 
 def load_and_preprocess_data(filepath):
-    # 加载数据
+    # load worker info from json file
     with open(filepath, 'r') as f:
         worker_info = json.load(f)
 
@@ -231,13 +230,13 @@ def load_and_preprocess_data(filepath):
     return pd.DataFrame(task_data)
 
 def transform_data(df):
-    # 对运行时间进行对数变换
+    # calculate the log of run time
     df['Log Run Time'] = np.log1p(df['Run Time'])
-    # 合并worker和slot信息为一个新列，用于绘图
+    # combine worker and slot to form a unique identifier
     df['Worker-Slot'] = df['Worker'] + '-' + df['Slot']
     return df
 
-def draw_violin_plot(data, x, y, title, filename, mode='svg'):
+def draw_violin_plot(data, x, y, title, filename, mode='svg', display=False):
 
     plt.figure(figsize=(12, 8))
     sns.violinplot(x=x, y=y, data=data, inner='point')
@@ -245,38 +244,44 @@ def draw_violin_plot(data, x, y, title, filename, mode='svg'):
     plt.xlabel(x)
     plt.ylabel('Run Time (s)')
 
-    # 对y轴刻度进行自定义处理，这里假设y轴是对数变换后的数据
+    # set yticks to be the original run time values
     yticks = plt.gca().get_yticks()
     yticklabels = [f"{np.expm1(val):.2f}" for val in yticks]
     plt.gca().set_yticks(yticks)
     plt.gca().set_yticklabels(yticklabels)
     
     ax = plt.gca()
-    if x == 'Worker' and len(data[x].unique()) > 32:
-        ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=32))  # 当Worker的唯一值多于32时，限制最大刻度数量
+    if len(data[x].unique()) > 16:
+        ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=16))
     
     plt.tight_layout()
     if mode == 'svg':
         plt.savefig(filename, format=mode)
     else:
         plt.savefig(filename)
+
+    if display:
+        plt.show()
     plt.close()
 
-def gen_violins(data_dir, mode='svg'):
-    df = load_and_preprocess_data("data.json")
+
+def gen_violins(data_dir, mode='svg', display=False):
+    df = load_and_preprocess_data(os.path.join(data_dir, 'worker_tasks.json'))
     df = transform_data(df)
     df['Worker'] = df['Worker'].str.extract('(\d+)').astype(int)
+    df['Slot'] = df['Slot'].str.extract('(\d+)').astype(int)
 
     unique_workers = df['Worker'].unique()
 
-    # 绘制每个worker的slot小提琴图
+    # draw the violin plot for each worker
     for worker in unique_workers:
         worker_data = df[df['Worker'] == worker]
         filename = os.path.join(data_dir, f'worker{worker}_violin.{mode}')
-        draw_violin_plot(worker_data, 'Slot', 'Log Run Time', f'workek{worker} violin plot', filename, mode=mode)
+        draw_violin_plot(worker_data, 'Slot', 'Log Run Time', f'workek{worker} violin plot', filename, mode=mode, display=False)
 
+    # draw the violin plot for all workers
     filename = os.path.join(data_dir, f'all_workers_summary_violin.{mode}')
-    draw_violin_plot(df, 'Worker', 'Log Run Time', 'All Workers Summary violin plot', filename, mode=mode)
+    draw_violin_plot(df, 'Worker', 'Log Run Time', 'All Workers Summary violin plot', filename, mode=mode, display=display)
 
 
 def init_data_dir(data_dir):
@@ -320,8 +325,6 @@ def generate_description(log_dir, worker_info):
 
     # 计算平均执行时间
     average_execution_time = total_execution_time / total_tasks if total_tasks else 0
-
-
     app_runtime = last_task_finish - first_task_start
 
     app_info["total_tasks"] = total_tasks
@@ -482,7 +485,7 @@ def generate_log_data(log_dir, data_dir):
     txn = os.path.join(log_dir, 'vine-logs', 'transactions')
 
     task_info, worker_info, library_info, manager_info = parse_txn_log(txn)
-    # copy_svg(txn)
+
     # specify the task and library running on a each worker
     match_tasks_to_workers(task_info, worker_info)
     match_libraries_to_workers(library_info, worker_info)
@@ -503,7 +506,10 @@ def generate_log_data(log_dir, data_dir):
     worker_info_filename = os.path.join(data_dir, 'worker_tasks.json')
     with open(worker_info_filename, 'w') as f:
         json.dump(sorted_workers_dict, f, indent=4)
+
+    # generate violin plots based on the generated worker_tasks.json
     gen_violins(data_dir, mode='svg')
+
 
 if __name__ == '__main__':
 

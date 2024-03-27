@@ -1,4 +1,5 @@
 export function displayCSV(csvFilePath, containerSelector) {
+    d3.select(containerSelector).selectAll('*').remove();
     d3.csv(csvFilePath).then(function(data) {
         var container = d3.select(containerSelector);
         var table = container.append("table");

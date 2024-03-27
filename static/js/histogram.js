@@ -1,5 +1,5 @@
 export function drawWorkerTaskHistogram(workerInfo) {
-    // 计算每个worker的task数量
+    // calculate the number of tasks and average duration for each worker
     let workerTaskData = [];
     let workerIndex = 1;
     let workerIDs = Object.keys(workerInfo).filter(key => key.startsWith('worker'));
@@ -9,12 +9,19 @@ export function drawWorkerTaskHistogram(workerInfo) {
         let totalDuration = 0;
         for (let slotId in tasks) {
             count += tasks[slotId].length;
-            tasks[slotId].forEach(task => totalDuration += task[2] - task[1]);
+            for (let task in tasks[slotId]) {
+                // exclude library tasks
+                if (tasks[slotId][task][3].includes("library")) {
+                    count--;
+                    continue;
+                }
+                totalDuration += tasks[slotId][task][2] - tasks[slotId][task][1];
+            }
         }
         let avgDuration = count > 0 ? totalDuration / count : 0;
-        // 使用序号作为x轴的标签
+        // use workerIndex as workerId
         workerTaskData.push({ workerId: workerIndex.toString(), count, avgDuration });
-        workerIndex++; // 更新序号
+        workerIndex++;
     });
 
     let totalTasks = d3.sum(workerTaskData, d => d.count);
@@ -68,13 +75,13 @@ function drawComponents(workerTaskData) {
     const width = svgWidth - padding.left - padding.right;
     const height = svgHeight - padding.top - padding.bottom;
 
-    // 绘制X轴
+    // draw X axis
     let xScale = drawX(svg, workerTaskData, width, height, padding);
-    // 绘制Y轴
+    // draw Y axis
     let {yScale, yScaleRight} = drawY(svg, workerTaskData, width, height, padding);
-    // 绘制直方图
+    // draw histogram
     drawHistogram(svg, workerTaskData, xScale, yScale, height);
-    // 绘制平均执行时间
+    // draw average duration points
     drawAvgDuration(svg, width, workerTaskData, xScale, yScaleRight);
 }
 
@@ -90,7 +97,7 @@ function drawX(svg, workerTaskData, width, height, padding) {
     const xScale = d3.scaleBand()
         .range([0, width])
         .padding(0.3)
-        .domain(workerTaskData.map(d => d.workerId)); // 使用序号作为domain
+        .domain(workerTaskData.map(d => d.workerId));  // use workerId as x axis domain
 
     const xAxis = d3.axisBottom(xScale);
     svg.append("g")
@@ -98,7 +105,7 @@ function drawX(svg, workerTaskData, width, height, padding) {
         .call(xAxis)
         .attr("transform", `translate(0,${height})`);
 
-    // 应用计算出的字体大小到x轴刻度
+    // apply font size to x axis
     svg.selectAll(".x-axis text")
         .style("font-size", `${fontX}px`);
 
@@ -107,7 +114,7 @@ function drawX(svg, workerTaskData, width, height, padding) {
         .attr("transform",
               "translate(" + (width / 2) + " ," + 
                              (height + padding.bottom / 1.2) + ")")
-        .style("text-anchor", "middle") // 根据标签的具体位置，可能需要调整对齐方式
+        .style("text-anchor", "middle")
         .style("font-size", xLabelFontSize + "px")
         .text("Worker");
 
@@ -164,7 +171,7 @@ function drawY(svg, workerTaskData, width, height, padding) {
 }
 
 function drawHistogram(svg, workerTaskData, xScale, yScale, height) {
-    // 绘制直方图柱状图
+    // this is the color of the bars
     let barColor = "rgba(140, 34, 32, 0.7)";
 
     svg.selectAll(".bar")
@@ -176,8 +183,8 @@ function drawHistogram(svg, workerTaskData, xScale, yScale, height) {
         .attr("height", d => height - yScale(d.count))
         .attr("fill", barColor)
         .on("mouseover", function(event, d) {
-            d3.select(event.currentTarget) // 正确选择当前元素
-                .attr("fill", "orange"); // 将当前元素的填充色改为 orange
+            d3.select(event.currentTarget) // choose the current element
+                .attr("fill", "orange");   // set the color to orange
             d3.select("#histogramTooltip")
                 .style("visibility", "visible")
                 .html(`Tasks: ${d.count} (${d.percentage.toFixed(2)}%)<br>Worker: ${d.workerId}`);
@@ -188,7 +195,7 @@ function drawHistogram(svg, workerTaskData, xScale, yScale, height) {
                 .style("top", (event.pageY - 10) + "px");
         })
         .on("mouseout", function(event) {
-            d3.select(event.currentTarget) // 使用 event.currentTarget 选择当前元素
+            d3.select(event.currentTarget) // select the current element by using the event
                 .attr("fill", barColor)
             d3.select("#histogramTooltip")
                 .style("visibility", "hidden");
@@ -197,11 +204,11 @@ function drawHistogram(svg, workerTaskData, xScale, yScale, height) {
 
 function drawAvgDuration(svg, width, workerTaskData, xScale, yScaleRight) {
     let pointColor = "rgba(168, 9, 7, 1)";
-    // 定义提示框的选择器，便于使用
+    // create a tooltip
     const tooltip = d3.select("#avgDurationTooltip");
 
     const xTicks = workerTaskData.length;            // number of workers
-    const widthPerTick = width / xTicks;         // width per tick
+    const widthPerTick = width / xTicks;             // width per tick
     const fontX = widthPerTick / 1.4;
     const container = document.getElementById('histogramContainer');
     const pointRadius = Math.min(fontX * 0.6, container.clientWidth / 60);
@@ -215,37 +222,37 @@ function drawAvgDuration(svg, width, workerTaskData, xScale, yScaleRight) {
         .attr("r", pointRadius)
         .attr("fill", pointColor)
         .on("mouseover", function(event, d) {
-            // 高亮点
+            // highlight the point
             d3.select(event.currentTarget)
-                .attr("r", pointRadius * 2) // 例如，通过增加半径大小来高亮
-                .attr("fill", "orange"); // 或改变颜色
+                .attr("r", pointRadius * 2) // change the radius
+                .attr("fill", "orange");    // change the color
             
-            // 显示提示框并设置内容为百分比数值
+            // show tooltip
             tooltip.style("visibility", "visible")
-                .html(`Avg Execution Time: ${d.avgDuration.toFixed(2)}s<br>Worker: ${d.workerId}`) // 保留两位小数
+                .html(`Avg Execution Time: ${d.avgDuration.toFixed(2)}s<br>Worker: ${d.workerId}`)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY + 10) + "px");
         })
         .on("mouseout", function(event, d) {
-            // 恢复点的原始样式
+            // recover the point
             d3.select(event.currentTarget)
-                .attr("r", pointRadius) // 恢复原始半径大小
-                .attr("fill", pointColor); // 恢复原始填充颜色
+                .attr("r", pointRadius)     // recover the radius
+                .attr("fill", pointColor);  // recover the color
             
-            // 隐藏提示框
+            // hide the tooltip
             tooltip.style("visibility", "hidden");
         });
     
-    // 生成连接点的线
+    // generate a line 
     const lineGenerator = d3.line()
-        .x(d => xScale(d.workerId) + xScale.bandwidth() / 2) // 使用同样的计算方式来确定x坐标
-        .y(d => yScaleRight(d.avgDuration)); // 使用百分比来确定y坐标
+        .x(d => xScale(d.workerId) + xScale.bandwidth() / 2) // determine x coordinate
+        .y(d => yScaleRight(d.avgDuration)); // determine y coordinate
 
-    // 绘制连接所有点的线
+    // draw the line
     svg.append("path")
-        .datum(workerTaskData) // 这里使用datum而不是data，因为我们要绘制的是一条连接所有点的线
+        .datum(workerTaskData)
         .attr("fill", "none")
         .attr("stroke", pointColor)
         .attr("stroke-width", 2)
-        .attr("d", lineGenerator); // 使用lineGenerator来生成"d"属性的值
+        .attr("d", lineGenerator);
 }
