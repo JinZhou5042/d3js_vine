@@ -2,7 +2,7 @@
 import { drawWorkerTaskHistogram } from './histogram.js';
 import { drawBarChart } from './barplot.js';
 import { setupZoomAndScroll, pathJoin } from './tools.js';
-import { initializeWorkerCheckboxes } from './violinplot.js';
+import { drawViolins } from './violinplot.js';
 import { displayCSV } from './displayCSV.js';
 
 
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             drawBarChart(workerInfo);
             setupZoomAndScroll('#barchart', '#barchartContainer');
             // draw violin plot
-            initializeWorkerCheckboxes(dataDir, workerInfo);
+            drawViolins(dataDir, workerInfo);
         } catch (error) {
             console.error('Error fetching data directory:', error);
         }
@@ -95,6 +95,7 @@ document.getElementById('logSelector').addEventListener('change', function() {
         .then(data => {
             if (data.inputPath) {
                 // update image sources
+                console.log(data.inputPath);
                 document.getElementById('allWorkersSummaryViolinImg').src = `${data.inputPath}/all_workers_summary_violin.svg`;
                 document.getElementById('performanceTransferImg').src = `${data.inputPath}/performance.transfer.svg`;
                 document.getElementById('performanceTaskImg').src = `${data.inputPath}/performance.tasks.svg`;
