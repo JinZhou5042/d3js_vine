@@ -1,0 +1,42 @@
+.sidebar {
+    width: 200px;
+    padding: 40px 5px;
+    background-color: #f0f0f0;
+    border-right: 1px solid #ccc;
+    position: fixed;
+    top: 102px;
+    bottom: 0;
+    overflow-y: auto;
+}
+
+.sidebar a {
+    display: block; /* Make the links fill the li */
+    padding: 10px; /* Padding for clickable area */
+    text-decoration: none; /* No underline */
+    color: #333; /* Dark gray text color */
+    font-size: 16px; /* Font size */
+    border-bottom: 1px solid #ccc; /* Bottom border for each item */
+    font-size: 14px;
+    color: #7c8ea2;
+}
+
+.sidebar a:hover {
+    background-color: #ddd;
+}
+
+.sidebar h1 {
+    font-size: 2px; /* Smaller font size for heading */
+    color: #000; /* Black color for heading */
+    padding-bottom: 10px; /* Spacing below the heading */
+    border-bottom: 2px solid #ccc; /* Heading underline */
+    margin-bottom: 20px; /* Space below the heading */
+}
+
+/* hide if the width < 600px */
+/* 
+@media (max-width: 600px) {
+    .sidebar {
+        display: none;
+    }
+}
+*/
