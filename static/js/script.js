@@ -1,9 +1,8 @@
 
-import { drawWorkerTaskHistogram } from './histogram.js';
-import { drawBarChart } from './barplot.js';
+import { plotExecutionSummary } from './execution_summary.js';
+import { plotExecutionDetails } from './execution_details.js';
 import { setupZoomAndScroll, pathJoin } from './tools.js';
 import { drawViolins } from './violinplot.js';
-import { displayCSV } from './displayCSV.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
 
@@ -22,14 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // load worker task data
             let workerInfo = await d3.json(pathJoin([dataDir, 'worker_tasks.json']));
             // draw histogram
-            drawWorkerTaskHistogram(workerInfo);
+            plotExecutionSummary(workerInfo);
             setupZoomAndScroll('#histogram', '#histogramContainer');
-            // load worker configs
-            let workerConfigs = pathJoin([dataDir, 'workerConfigs.csv']);
-            displayCSV(workerConfigs, '#workerConfigsContainer');
-            // load performance data
-            drawBarChart(workerInfo);
-            setupZoomAndScroll('#barchart', '#barchartContainer');
+            // function execution details
+            plotExecutionDetails(workerInfo);
+            setupZoomAndScroll('#execution-details', '#execution-details-container');
             // draw violin plot
             drawViolins(dataDir, workerInfo);
             // draw core load plot
@@ -49,31 +45,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
-document.querySelectorAll('.sidebar a').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault(); // 阻止默认的锚点跳转行为
-
-        const targetId = this.getAttribute('href').substring(1); // 获取锚点目标id
-        const targetElement = document.getElementById(targetId);
-        if (targetElement) {
-            // 滚动到指定元素位置
-            window.scrollTo({
-                top: targetElement.offsetTop,
-                behavior: 'smooth'
-            });
-            // 如果目标元素内有h1内的span，则为其添加高亮类以触发动画
-            const span = targetElement.querySelector('h1 > span');
-            if (span) {
-                // 先移除类以确保动画可以再次触发
-                span.classList.remove('text-highlight');
-                // 触发重排让浏览器认为是一个新的动画
-                void span.offsetWidth;
-                // 重新添加类来触发动画
-                span.classList.add('text-highlight');
-            }
-        }
-    });
-});
 
 async function loadLogDescription(dataPath) {
     try {

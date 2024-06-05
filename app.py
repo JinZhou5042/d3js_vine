@@ -21,6 +21,10 @@ def input_path(log_folder):
         return jsonify({'inputPath': input_folder_path})
     return jsonify({'error': 'Input folder not found'}), 404
 
+@app.route('/data/<path:filename>')
+def serve_data(filename):
+    return send_from_directory('data', filename)
+
 @app.route('/logs/<path:filename>')
 def custom_static(filename):
     return send_from_directory('logs', filename)

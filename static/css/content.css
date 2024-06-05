@@ -1,12 +1,11 @@
-.content {
-    margin-left: 210px;           /* make sure to not overlap with the sidebar */
-    padding: 90px 20px 20px 20px; /* display below the header */
-    width: calc(100% - 200px);
-    box-sizing: border-box;
-    position: relative;
-    overflow-x: hidden;
-}
-
-#log-selector-div {
-    margin-top: 20px;
+#content {
+    margin-top: 140px;          
+    margin-left: 260px;         
+    padding: 10px 20px 0px 20px;
+    width: calc(100% - 280px);  
+    box-sizing: border-box;     
+    position: fixed;            
+    overflow-x: hidden;         
+    height: calc(100% - 140px);
+    transition: margin-top 0.5s ease;
 }

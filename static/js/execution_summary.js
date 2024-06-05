@@ -1,4 +1,4 @@
-export function drawWorkerTaskHistogram(workerInfo) {
+export function plotExecutionSummary(workerInfo) {
     // calculate the number of tasks and average duration for each worker
     let workerTaskData = [];
     let workerIndex = 1;

@@ -1,41 +1,109 @@
-.header {
+#header {
     background-color: #f7f7f7;
-    padding: 10px 20px;
-    border-bottom: 2px solid #ccc;
-    box-shadow: 0 4px 4px rgba(0,0,0,0.1);
     position: fixed;
+    height: 140px;
+    min-width: 300px; 
     width: 100%;
+    min-width: 900px;
     top: 0;
     left: 0;
     z-index: 1000;
     text-align: center;
-}
-
-.header-top {
+    overflow: visible;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
+    border-bottom: 1px solid #555; 
+    transition: top 0.5s;
 }
 
-.header-logo {
+#header-left {
+    width: 300px;
+    min-width: 300px;
+    margin-right: 5%;
+}
+
+#header-description {
+    min-width: 800px;
+    overflow: auto;
+}
+
+#header-description table {
+    border: none;
+    box-shadow: none; 
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+}
+#header-description th,
+#header-description td {
+    font-weight: normal;                        /* no bold */
+    /*border: none;                               no border */
+    border: none;
+    background-color: transparent !important;   /* no background color */
+    box-shadow: none !important;                /* no shadow */
+    padding: 4px;
+    text-align: left;
+}
+#header-description th:nth-child(odd),  /* 第1、3、5列 */
+#header-description td:nth-child(odd) {
+    width: 15%;
+}
+#header-description th:nth-child(even), /* 第2、4、6列 */
+#header-description td:nth-child(even) {
+    width: 15%;
+}
+
+
+#header-logo {
     height: 50px;
     margin-right: 10px;
 }
 
-.header-bottom {
-    text-align: center;
-}
-
-.header h1 {
+#header h1 {
     margin: 3px;
     font-size: 24px;
     color: #333;
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.header p {
+#header p {
     margin: 10px 0 0;
     color: #666;
     font-size: 14px;
+}
+
+#header-button-wrapper {
+    width: 40px;
+    height: 10px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    border-radius: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f7f7f7;
+    border-top: none;
+    border-right: 1px solid #555;
+    border-bottom: 1px solid #555;
+    border-left: 1px solid #555;
+}
+
+#header-button {
+    width: 35px;
+    height: 10px;
+    background-color: #ddd;
+    cursor: pointer;
+    border: none;
+    clip-path: polygon(25% 60%, 50% 20%, 75% 60%);
+    transition: clip-path 0.5s;
+}
+
+/* hide if the width < 900px */
+@media (max-width: 900px) {
+    #header-left {
+        display: none;
+    }
 }

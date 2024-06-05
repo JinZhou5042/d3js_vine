@@ -6,126 +6,196 @@
     <title>d3.js vine</title>
     <!-- import d3.js -->
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- parse csv files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/worker_info.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_summary.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_details.css') }}">
     <!-- import js files-->>
+    <script src="{{ url_for('static', filename='js/adjust_header.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/set_titles.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/worker_info.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/display_current_time.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/execution_summary.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/execution_details.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
 </head>
 <body>
-    <div class="header">
-        <div class="header-top">
-            <img src="../static/imgs/taskvine_icon.svg" alt="Logo" class="header-logo">
-            <h1>TaskVine Report</h1>
+    <div id="header">
+        <div id="header-left">
+            <div id="header-top">
+                <img src="../static/imgs/taskvine_icon.svg" alt="Logo" id="header-logo">
+                <h1>TaskVine Report</h1>
+            </div>
+            <div id="header-bottom">
+                <p>Report generated on <span id="current-time"></span></p>
+            </div>
         </div>
-        <div class="header-bottom">
-            <p>A task scheduler for building large scale data intensive dynamic workflows</p>
-            <p>Report generated on <span id="current-time"></span></p>
+        <div id="header-description">
+            <table>
+                <tr>
+                    <th>task count</th>
+                    <td>3000</td> 
+                    <th>worker count</th>
+                    <td>1</td>
+                    <th>per-worker cores</th>
+                    <td>4</td>
+                </tr>
+                <tr>
+                    <th>start time</th>
+                    <td>xxx</td>
+                    <th>end time</th>
+                    <td>xxx</td>
+                    <th>total time</th>
+                    <td>xxx</td>
+                </tr>
+                <tr>
+                    <th>lowest runtime</th>
+                    <td>1</td>
+                    <th>average runtime</th>
+                    <td>1</td>
+                    <th>longest runtime</th>
+                    <td>1</td>
+                </tr>
+            </table>
         </div>
-    </div>
-
-    <div class="container">
-        <div class="sidebar">
-            <a href="#workflow-description-title" id="workflow-description-link"></a>
-            <a href="#task-execution-summary-title" id="task-execution-summary-link"></a>
-            <a href="#worker-configurations-title" id="worker-configurations-link"></a>
-            <a href="#worker-slot-function-execution-title" id="worker-slot-function-execution-link"></a>
-            <a href="#average-cpu-usage-per-task-title" id="average-cpu-usage-per-task-link"></a>
-            <a href="#task-execution-time-distribution-title" id="task-execution-time-distribution-link"></a>
-            <a href="#vine-graphs-title" id="vine-graphs-link"></a>
-        </div>
-
-        <div class="content">
-            <div id="log-selector-div">
-                <select id="log-selector">
-                    {% for folder in log_folders %}
-                        <option value="{{ folder }}">{{ folder }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <!-- 为每个内容部分添加一级标题 -->
-            <h1 id="workflow-description-title"></h1>
-            <div id="description" class="text-div">
-                <!--Application description goes here</p-->
-            </div>
-            <h1 id="task-execution-summary-title"></h1>
-            <div id="histogramContainer" class="itemContainer">
-                <div id="histogramTooltip" class="tooltip"></div>
-                <div id="avgDurationTooltip" class="tooltip" ></div>
-                <!-- 在HTML中添加下拉选择框 -->
-                <select id="histogramSelector">
-                    <option value="mode0">default</option>
-                    <option value="mode1">sort by average execution time</option>
-                    <option value="mode2">sory by tasks completion</option>
-                </select>
-                <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
-                    <!-- histogram goes here -->
-                </svg>
-            </div>
-            <h1 id="worker-configurations-title"></h1>
-            <div id="workerConfigsContainer">
-                <!-- worker configurations csv table go here -->
-            </div>
-            <h1 id="worker-slot-function-execution-title"></h1>
-            <div id="barchartContainer" class="itemContainer">
-                <div id="barTooltip" class="tooltip"></div>
-                <svg id="barchart" xmlns="http://www.w3.org/2000/svg">
-                    <!-- bar chart goes here -->
-                </svg>
-            </div>
-            
-            <h1 id="average-cpu-usage-per-task-title"></h1>
-            <div id="avgCoreLoadContainer" class="violinCoreContainer">
-                <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
-                    <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
-                        <!-- avg core load plot goes here -->
-                        <img id="overallAvgCoreLoadImg"  alt="Average Core Load"></img>
-                    </div>
-                </div>
-                <div id="avgCoreLoadRightContainer" class="violinCoreRightContainer">
-                    <div id="avgCoreLoadRightButton" class="violinCoreRightButton"></div>
-                    <div id="avgCoreLoadRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
-                        <!-- avg core loads by worker go here -->
-                    </div>
-                </div>
-            </div>
-
-            <h1 id="task-execution-time-distribution-title"></h1>
-            <div id="violinContainer" class="violinCoreContainer">
-                <div id="violinLeftContainer" class="violinCoreLeftContainer">
-                    <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
-                        <!-- violin plot goes here -->
-                        <img id="allWorkersSummaryViolinImg"  alt="All Workers Summary"></img>
-                    </div>
-                </div>
-                <div id="violinRightContainer" class="violinCoreRightContainer">
-                    <div id="violinRightButton" class="violinCoreRightButton"></div>
-                    <div id="violinRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
-                        <!-- workers violin plots go here -->
-                    </div>
-                </div>
-            </div>
-
-            <h1 id="vine-graphs-title"></h1>
-            <div id="vineGraphsContainer">
-                <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
-                <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
-                <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>
-                <div class="vineGraphContainer"><img id="performanceTasksAccumImg" alt="Tasks Accumulate"></div>
-                <div class="vineGraphContainer"><img id="performanceWorkersAccumImg" alt="Workers Accumulate"></div>
-                <div class="vineGraphContainer"><img id="performanceTasksCapacitiesImg" alt="Tasks Capabilities"></div>
-                <div class="vineGraphContainer"><img id="performanceTimeManagerImg" alt="Time Manager"></div>
-                <div class="vineGraphContainer"><img id="performanceTimeWorkersImg" alt="Time Workers"></div>
-                <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
-                <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
-            </div>
-            
+        <div id="header-button-wrapper">
+            <button id="header-button"></button>
         </div>
     </div>
+
+ 
+    <div id="sidebar">
+        <div id="log-selector-div">
+            <select id="log-selector">
+                {% for folder in log_folders %}
+                    <option value="{{ folder }}">{{ folder }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="sidebar-logo">
+            <img src="../static/imgs/taskvine_icon.svg" alt="Logo" id="header-logo">
+            <div>
+                <p id="taskvine-text">TaskVine</p>
+                <p id="taskvine-version">V8.0.0</p>
+            </div>
+        </div>
+        <a href="#task-execution-summary-title" id="task-execution-summary-link"></a>
+        <a href="#worker-info-title" id="worker-info-link"></a>
+        <a href="#worker-slot-function-execution-title" id="worker-slot-function-execution-link"></a>
+        <a href="#average-cpu-usage-per-task-title" id="average-cpu-usage-per-task-link"></a>
+        <a href="#task-execution-time-distribution-title" id="task-execution-time-distribution-link"></a>
+        <a href="#vine-graphs-title" id="vine-graphs-link"></a>
+    </div>
+
+
+    <div id="content">
+        
+        <h1 id="worker-info-title"></h1>
+        
+        <div class="worker-info-table-container">
+            <table id="worker-info-table">
+                <tr>
+                    <th>Worker ID</th>
+                    <th>Cores</th>
+                    <th>Memory</th>
+                    <th>Disk</th>
+                    <th>GPUs</th>
+                    <th>Connected Time</th>
+                    <th>Disconnected Time</th>
+                    <th>Lifetime</th>
+                    <th>Task Count</th>
+                    <th>Library Installed</th>
+                    <th>Library Count</th>
+                    <th>Min Runtime</th>
+                    <th>Max Runtime</th>
+                    <th>Avg Runtime</th>
+                    <th>IP Address</th>
+                    <th>Port</th>
+                    <th>Hash Name</th>
+                </tr>
+            </table>
+            <div id="worker-info-scrollbar-container">
+                <div id="worker-info-virtual-scrollbar"></div>
+            </div>
+        </div>
+        
+
+        <h1 id="worker-slot-function-execution-title"></h1>
+        <div id="execution-details-container" class="item-container">
+            <div id="barTooltip" class="tooltip"></div>
+            <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
+                <!-- bar chart goes here -->
+            </svg>
+        </div>
+
+        <h1 id="task-execution-summary-title"></h1>
+        <div id="histogramContainer" class="item-container">
+            <div id="histogramTooltip" class="tooltip"></div>
+            <div id="avgDurationTooltip" class="tooltip" ></div>
+            <!-- 在HTML中添加下拉选择框 -->
+            <select id="histogramSelector">
+                <option value="mode0">default</option>
+                <option value="mode1">sort by average execution time</option>
+                <option value="mode2">sory by tasks completion</option>
+            </select>
+            <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
+                <!-- histogram goes here -->
+            </svg>
+        </div>
+        
+        <h1 id="average-cpu-usage-per-task-title"></h1>
+        <div id="avgCoreLoadContainer" class="violinCoreContainer">
+            <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
+                <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                    <!-- avg core load plot goes here -->
+                    <img id="overallAvgCoreLoadImg"  alt="Average Core Load"></img>
+                </div>
+            </div>
+            <div id="avgCoreLoadRightContainer" class="violinCoreRightContainer">
+                <div id="avgCoreLoadRightButton" class="violinCoreRightButton"></div>
+                <div id="avgCoreLoadRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+                    <!-- avg core loads by worker go here -->
+                </div>
+            </div>
+        </div>
+
+        <h1 id="task-execution-time-distribution-title"></h1>
+        <div id="violinContainer" class="violinCoreContainer">
+            <div id="violinLeftContainer" class="violinCoreLeftContainer">
+                <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                    <!-- violin plot goes here -->
+                    <img id="allWorkersSummaryViolinImg"  alt="All Workers Summary"></img>
+                </div>
+            </div>
+            <div id="violinRightContainer" class="violinCoreRightContainer">
+                <div id="violinRightButton" class="violinCoreRightButton"></div>
+                <div id="violinRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+                    <!-- workers violin plots go here -->
+                </div>
+            </div>
+        </div>
+
+        <h1 id="vine-graphs-title"></h1>
+        <div id="vineGraphsContainer">
+            <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
+            <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
+            <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>
+            <div class="vineGraphContainer"><img id="performanceTasksAccumImg" alt="Tasks Accumulate"></div>
+            <div class="vineGraphContainer"><img id="performanceWorkersAccumImg" alt="Workers Accumulate"></div>
+            <div class="vineGraphContainer"><img id="performanceTasksCapacitiesImg" alt="Tasks Capabilities"></div>
+            <div class="vineGraphContainer"><img id="performanceTimeManagerImg" alt="Time Manager"></div>
+            <div class="vineGraphContainer"><img id="performanceTimeWorkersImg" alt="Time Workers"></div>
+            <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
+            <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
+        </div>
+        
+    </div>
+
 </body>
 </html>

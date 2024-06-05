@@ -1,6 +1,6 @@
-export function drawBarChart(workerInfo) {
+export function plotExecutionDetails(workerInfo) {
     // prepare data
-    d3.select('#barchart').selectAll('*').remove();
+    d3.select('#execution-details').selectAll('*').remove();
     let allSlots = [];
     let workerIndex = 1;
     let workerIDs = Object.keys(workerInfo).filter(key => key.startsWith('worker'));
@@ -8,16 +8,14 @@ export function drawBarChart(workerInfo) {
     workerIDs.forEach(workerID => {
         Object.keys(workerInfo[workerID].slots).forEach(slotID => {
             let slotTasks = workerInfo[workerID].slots[slotID];
-            if (slotTasks[0][3].includes("library"))
-                allSlots.push({ workerIndex: workerIndex, worker: workerID, slot: slotID, type: "library" });
-            else
+            if (!slotTasks[0][3].includes("library"))
                 allSlots.push({ workerIndex: workerIndex, worker: workerID, slot: slotID, type: "default" });
         });
         workerIndex += 1;
     });
 
     // create scales and draw slots
-    const container = document.getElementById('barchartContainer');
+    const container = document.getElementById('execution-details-container');
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
 
@@ -25,9 +23,9 @@ export function drawBarChart(workerInfo) {
     const svgWidth = containerWidth;
     const svgHeight = containerHeight;
     
-    const padding = { top: 10, right: 10, bottom: 30, left: 50 };
+    const padding = { top: 20, right: 20, bottom: 20, left: 90 };
 
-    const svg = d3.select('#barchart')
+    const svg = d3.select('#execution-details')
         .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet');
 
@@ -56,44 +54,22 @@ export function drawBarChart(workerInfo) {
                      .range([padding.left, svgWidth - padding.right]);
 
     const yScale = d3.scaleBand()
-                     .domain(allSlots.map(d => {
-                        if (d.type === "library")
-                            return `worker${d.workerIndex}_library`;
-                        else
-                            return `worker${d.workerIndex}_slot${d.slot}`;
-                    }))
-                    .range([svgHeight - padding.bottom, padding.top])
-                    .padding(0.1);
-    
-    /*
-    allSlots = [
-        0: { slot: "1", worker: "worker-41aaf3xxx", workerIndex: 1, type: "default"},
-        1: { slot: "2", worker: "worker-41aaf3xxx", workerIndex: 1, type: "default"},
-        2: { slot: "3", worker: "worker-41aaf3xxx", workerIndex: 1, type: "default"},
-        3: { slot: "4", worker: "worker-41aaf3xxx", workerIndex: 1, type: "default"},
-        4: { slot: "5", worker: "worker-41aaf3xxx", workerIndex: 1, type: "library"},     // library slot
+                     .domain(allSlots.map(d => `worker${d.workerIndex}_slot${d.slot}`))
+                     .range([svgHeight - padding.bottom, padding.top])
+                     .padding(0.1);
 
-        5: { slot: "1", worker: "worker-7e5f4b5fbf3490d761992e7ebb404a56", workerIndex: 2},
-        ......
-    ]
-    */
     // draw slots
     allSlots.forEach(slots => {
         const workerData = workerInfo[slots.worker];
         if(workerData && workerData.slots && workerData.slots[slots.slot]) {
             const slotTasks = workerData.slots[slots.slot];
             slotTasks.forEach(task => {
-                const yLabel = task[3].includes("library") ? 
-                    `worker${slots.workerIndex}(library)` : 
-                    `worker${slots.workerIndex}(slot${slots.slot})`;
                 svg.append("rect")
                    .attr("x", xScale(task[1] - xStartTime)) // task[1] represents the start time
-                   .attr("y", task[3].includes("library") ? 
-                        yScale(`worker${slots.workerIndex}_library`) : 
-                        yScale(`worker${slots.workerIndex}_slot${slots.slot}`))
+                   .attr("y", yScale(`worker${slots.workerIndex}_slot${slots.slot}`))
                    .attr("width", xScale(task[2]) - xScale(task[1])) // task[2] represents the end time
                    .attr("height", yScale.bandwidth())
-                   .attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue")
+                   .attr("fill", "steelblue")
                    .on("mouseover", function(event, d) {
                         // highlight the bar
                         d3.select(this)
@@ -104,17 +80,18 @@ export function drawBarChart(workerInfo) {
                             .style("visibility", "visible")
                             .style("left", (event.pageX + 10) + "px")
                             .style("top", (event.pageY + 10) + "px")
-                            .html(`${(durationInSeconds)}s  ${yLabel}`);
+                            .html(`${(durationInSeconds)}s  ${slots.slot}`);
                     })
                     .on("mouseout", function() {
                         // restore the color
-                        d3.select(this).attr("fill", task[3].includes("library") ? "#6dd1c4" : "steelblue");
+                        d3.select(this).attr("fill", "steelblue");
                         // hide tooltip
                         d3.select("#barTooltip").style("visibility", "hidden");
                     });
             });
         }
     });
+
     // adjust font size and stroke width based on the number of ticks
     const numberOfTicks = allSlots.length;
     let fontSize;
@@ -145,14 +122,10 @@ export function drawBarChart(workerInfo) {
 
     svg.append("g")
        .attr("transform", `translate(${padding.left},0)`)
-       .call(d3.axisLeft(yScale).tickFormat(id => id))
+       .call(d3.axisLeft(yScale).tickFormat(id => id.split('_')[1]))
        .selectAll(".tick text")
        .style("font-size", `${fontSize}px`); 
 
-    // set the font size and stroke width for the axis labels
     svg.selectAll(".tick line") // select all the tick lines
         .style("stroke-width", strokeWidth);
 }
-
-
-
