@@ -1,15 +1,15 @@
 #header {
     background-color: #f7f7f7;
-    position: fixed;
+    position: absolute;
+    left: 260px;
     height: 140px;
-    min-width: 300px; 
-    width: 100%;
-    min-width: 900px;
     top: 0;
-    left: 0;
+    min-width: 300px;
+    width: calc(100% - 280px);
+    min-width: 400px;
     z-index: 1000;
     text-align: center;
-    overflow: visible;
+    overflow: visible; 
     display: flex;
     justify-content: center;
     align-items: center;

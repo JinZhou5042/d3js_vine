@@ -5,6 +5,7 @@ const titles = {
     averageCpuUsagePerTaskTitle: "Function CPU Usage Distribution",
     taskExecutionTimeDistributionTitle: "Function Runtime Distribution",
     vineGraphsTitle: "Vine Graphs",
+    logDebugTitle: "debug"
 };
 
 function setTitles() {
@@ -26,6 +27,10 @@ function setTitles() {
 
     document.getElementById('vine-graphs-link').textContent = titles.vineGraphsTitle;
     document.getElementById('vine-graphs-title').textContent = titles.vineGraphsTitle;
+    
+    document.getElementById('log-debug-link').textContent = titles.logDebugTitle;
+    document.getElementById('log-debug-title').textContent = titles.logDebugTitle;
+
 }
 
 window.addEventListener('load', setTitles);

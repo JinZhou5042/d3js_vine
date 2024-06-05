@@ -29,6 +29,15 @@ def serve_data(filename):
 def custom_static(filename):
     return send_from_directory('logs', filename)
 
+@app.route('/logs/new-route', methods=['GET'])
+def new_route():
+    # 从请求中获取查询参数
+    param = request.args.get('param', default='default-value', type=str)
+    # 根据参数执行操作
+    message = f"Received parameter: {param}"
+    data = {"message": message}
+    return jsonify(data)
+
 
 def process_single_log(log_dir, data_dir):
     print(f"Processing Log: {log_dir} ...")

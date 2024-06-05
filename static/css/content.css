@@ -1,11 +1,12 @@
 #content {
-    margin-top: 140px;          
-    margin-left: 260px;         
+    position: absolute;
+    left: 260px;
+    top: 140px;
     padding: 10px 20px 0px 20px;
-    width: calc(100% - 280px);  
+    width: calc(100% - 280px);
+    height: calc(100% - 140px);
     box-sizing: border-box;     
-    position: fixed;            
     overflow-x: hidden;         
     height: calc(100% - 140px);
-    transition: margin-top 0.5s ease;
+    transition: top 0.5s ease;
 }
