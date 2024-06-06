@@ -10,3 +10,10 @@
     height: calc(100% - 140px);
     transition: top 0.5s ease;
 }
+
+#log-text-debug {
+    white-space: pre-wrap;
+    overflow: auto;
+    width: 100%;
+    display: none;     /* hide defaultly */
+}

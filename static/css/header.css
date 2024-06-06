@@ -2,41 +2,40 @@
     background-color: #f7f7f7;
     position: absolute;
     left: 260px;
-    height: 140px;
     top: 0;
-    min-width: 300px;
-    width: calc(100% - 280px);
-    min-width: 400px;
-    z-index: 1000;
+    height: 140px;
+    width: calc(100% - 260px);
     text-align: center;
-    overflow: visible; 
+    overflow: hidden; 
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #555; 
     transition: top 0.5s;
 }
 
+
 #header-left {
-    width: 300px;
-    min-width: 300px;
-    margin-right: 5%;
+    flex: 3;
+    left: 500;
+    padding-right: 5%;
 }
 
-#header-description {
+#header-right {
+    flex: 7;
+    padding-left: 5%;
     min-width: 800px;
-    overflow: auto;
 }
 
-#header-description table {
+#header-right table {
     border: none;
     box-shadow: none; 
     width: 100%;
     border-collapse: collapse;
     font-size: 16px;
 }
-#header-description th,
-#header-description td {
+#header-right th,
+#header-right td {
     font-weight: normal;                        /* no bold */
     /*border: none;                               no border */
     border: none;
@@ -45,19 +44,19 @@
     padding: 4px;
     text-align: left;
 }
-#header-description th:nth-child(odd),  /* 第1、3、5列 */
-#header-description td:nth-child(odd) {
+#header-right th:nth-child(odd),  /* 第1、3、5列 */
+#header-right td:nth-child(odd) {
     width: 15%;
 }
-#header-description th:nth-child(even), /* 第2、4、6列 */
-#header-description td:nth-child(even) {
+#header-right th:nth-child(even), /* 第2、4、6列 */
+#header-right td:nth-child(even) {
     width: 15%;
 }
 
 
 #header-logo {
     height: 50px;
-    margin-right: 10px;
+
 }
 
 #header h1 {
@@ -75,34 +74,31 @@
 
 #header-button-wrapper {
     width: 40px;
-    height: 10px;
     position: absolute;
     left: 50%;
+    top: 130px;
     transform: translateX(-50%);
-    top: 100%;
+    height: 10px;
     border-radius: 3px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #f7f7f7;
+    background-color: transparent;
     border-top: none;
-    border-right: 1px solid #555;
-    border-bottom: 1px solid #555;
-    border-left: 1px solid #555;
+    z-index: 100000;
 }
 
 #header-button {
-    width: 35px;
+    width: 80px;
     height: 10px;
-    background-color: #ddd;
+    background-color: #C0C0C0;
     cursor: pointer;
     border: none;
     clip-path: polygon(25% 60%, 50% 20%, 75% 60%);
     transition: clip-path 0.5s;
 }
 
-/* hide if the width < 900px */
-@media (max-width: 900px) {
+@media (max-width: 1500px) {
     #header-left {
         display: none;
     }

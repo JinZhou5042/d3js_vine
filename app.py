@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, send_from_directory
+from flask import Flask, render_template, jsonify, Response, abort, send_from_directory
 from generate_d3_input import generate_log_data
 import os
 
@@ -22,22 +22,24 @@ def input_path(log_folder):
     return jsonify({'error': 'Input folder not found'}), 404
 
 @app.route('/data/<path:filename>')
-def serve_data(filename):
+def serve_from_data(filename):
     return send_from_directory('data', filename)
 
 @app.route('/logs/<path:filename>')
-def custom_static(filename):
-    return send_from_directory('logs', filename)
+def serve_file(filename):
+    base_directory = os.path.abspath("logs/")
+    file_path = os.path.join(base_directory, filename)
 
-@app.route('/logs/new-route', methods=['GET'])
-def new_route():
-    # 从请求中获取查询参数
-    param = request.args.get('param', default='default-value', type=str)
-    # 根据参数执行操作
-    message = f"Received parameter: {param}"
-    data = {"message": message}
-    return jsonify(data)
+    # stream the file
+    def generate():
+        with open(file_path, "rb") as f:
+            while True:
+                chunk = f.read(4096)  # 读取固定大小的数据块
+                if not chunk:
+                    break
+                yield chunk
 
+    return Response(generate(), mimetype='text/plain')
 
 def process_single_log(log_dir, data_dir):
     print(f"Processing Log: {log_dir} ...")
