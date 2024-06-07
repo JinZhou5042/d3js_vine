@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d3.js vine</title>
+    <!-- import d3.js -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- parse csv files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- import css files -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/worker_info.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_summary.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_details.css') }}">
+    <!-- import js files-->
+    <script src="{{ url_for('static', filename='js/worker_info.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/display_current_time.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/execution_summary.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/execution_details.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/fetch_logs.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
+</head>
+
+<body>
+
+    <h1 id="worker-info-title" class="report"></h1>
+    <div class="worker-info-table-container" class="report">
+        <table id="worker-info-table">
+            <tr>
+                <th>Worker ID</th>
+                <th>Cores</th>
+                <th>Memory</th>
+                <th>Disk</th>
+                <th>GPUs</th>
+                <th>Connected Time</th>
+                <th>Disconnected Time</th>
+                <th>Lifetime</th>
+                <th>Task Count</th>
+                <th>Library Installed</th>
+                <th>Library Count</th>
+                <th>Min Runtime</th>
+                <th>Max Runtime</th>
+                <th>Avg Runtime</th>
+                <th>IP Address</th>
+                <th>Port</th>
+                <th>Hash Name</th>
+            </tr>
+        </table>
+        <div id="worker-info-scrollbar-container">
+            <div id="worker-info-virtual-scrollbar"></div>
+        </div>
+    </div>
+
+
+    <h1 id="worker-slot-function-execution-title" class="report"></h1>
+    <div id="execution-details-container" class="item-container" class="report">
+        <div id="barTooltip" class="tooltip"></div>
+        <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
+            <!-- bar chart goes here -->
+        </svg>
+    </div>
+
+    <h1 id="task-execution-summary-title" class="report"></h1>
+    <div id="histogramContainer" class="item-container" class="report">
+        <div id="histogramTooltip" class="tooltip"></div>
+        <div id="avgDurationTooltip" class="tooltip" ></div>
+        <select id="histogramSelector">
+            <option value="mode0">default</option>
+            <option value="mode1">sort by average execution time</option>
+            <option value="mode2">sory by tasks completion</option>
+        </select>
+        <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
+            <!-- histogram goes here -->
+        </svg>
+    </div>
+
+    <h1 id="average-cpu-usage-per-task-title" class="report"></h1>
+    <div id="avgCoreLoadContainer" class="violinCoreContainer" class="report">
+        <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
+            <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                <!-- avg core load plot goes here -->
+                <img id="overallAvgCoreLoadImg"  alt="Average Core Load"></img>
+            </div>
+        </div>
+        <div id="avgCoreLoadRightContainer" class="violinCoreRightContainer">
+            <div id="avgCoreLoadRightButton" class="violinCoreRightButton"></div>
+            <div id="avgCoreLoadRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+                <!-- avg core loads by worker go here -->
+            </div>
+        </div>
+    </div>
+
+    <h1 id="task-execution-time-distribution-title" class="report"></h1>
+    <div id="violinContainer" class="violinCoreContainer" class="report">
+        <div id="violinLeftContainer" class="violinCoreLeftContainer">
+            <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                <!-- violin plot goes here -->
+                <img id="allWorkersSummaryViolinImg"  alt="All Workers Summary"></img>
+            </div>
+        </div>
+        <div id="violinRightContainer" class="violinCoreRightContainer">
+            <div id="violinRightButton" class="violinCoreRightButton"></div>
+            <div id="violinRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+                <!-- workers violin plots go here -->
+            </div>
+        </div>
+    </div>
+
+    <h1 id="vine-graphs-title" class="report"></h1>
+    <div id="vineGraphsContainer" class="report">
+        <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
+        <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>
+        <div class="vineGraphContainer"><img id="performanceTasksAccumImg" alt="Tasks Accumulate"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersAccumImg" alt="Workers Accumulate"></div>
+        <div class="vineGraphContainer"><img id="performanceTasksCapacitiesImg" alt="Tasks Capabilities"></div>
+        <div class="vineGraphContainer"><img id="performanceTimeManagerImg" alt="Time Manager"></div>
+        <div class="vineGraphContainer"><img id="performanceTimeWorkersImg" alt="Time Workers"></div>
+        <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
+    </div>
+
+    </body>
+</html>

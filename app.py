@@ -13,6 +13,10 @@ def index():
     log_folders_sorted = sorted(log_folders)
     return render_template('index.html', log_folders=log_folders_sorted)
 
+@app.route('/report')
+def report():
+    return render_template('report.html')
+
 @app.route('/input-path/<log_folder>')
 def input_path(log_folder):
     input_folder_path = os.path.join(LOGS_DIR, log_folder, 'vine-logs')

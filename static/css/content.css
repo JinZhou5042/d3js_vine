@@ -11,9 +11,22 @@
     transition: top 0.5s ease;
 }
 
+.iframe-style {
+    width: 100%;  /* 或者你可以指定一个固定的宽度，如 800px */
+    height: 100%; /* 高度设置 */
+    border: none;  /* 可选，移除边框 */
+}
+
+
+
 #log-text-debug {
-    white-space: pre-wrap;
-    overflow: auto;
+    display: none;
     width: 100%;
-    display: none;     /* hide defaultly */
+    height: 100%;
+    padding: 10px;
+    font-size: 14px;
+    overflow: auto;
+    resize: vertical;
+    border: 0px;
+    outline: none;
 }
