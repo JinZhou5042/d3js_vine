@@ -1,9 +1,20 @@
 
-function setIFrame(path) {
-    var iframe = document.getElementById('content-frame');
-    if (!iframe.src.endsWith('/' + path)) {
-        iframe.src = '/' + path;
-    }
+function setIFrame(iframePath) {
+    return new Promise((resolve, reject) => {
+        const iframe = document.getElementById('content-frame');
+        if (!iframe.src.endsWith('/' + iframePath)) {
+            iframe.onload = () => {
+                resolve();
+                iframe.onload = null;
+            };
+            iframe.onerror = (error) => {
+                reject(error);
+            };
+            iframe.src = '/' + iframePath;
+        } else {
+            resolve();
+        }
+    });
 }
 
 
@@ -58,33 +69,14 @@ const titles = {
     logDebugTitle: "debug"
 };
 
-function setReportSidebarAndContentTitles() {
-    setIFrame('report');
 
-    var iframeDocument = document.getElementById('content-frame').contentDocument;
-
-    document.getElementById('worker-info-link').textContent = titles.workerConfigurationsTitle;
-    iframeDocument.getElementById('worker-info-title').textContent = titles.workerConfigurationsTitle;
-    document.getElementById('task-execution-summary-link').textContent = titles.taskExecutionSummaryTitle;
-    iframeDocument.getElementById('task-execution-summary-title').textContent = titles.taskExecutionSummaryTitle;
-    document.getElementById('worker-slot-function-execution-link').textContent = titles.workerSlotFunctionExecutionTitle;
-    iframeDocument.getElementById('worker-slot-function-execution-title').textContent = titles.workerSlotFunctionExecutionTitle;
-    document.getElementById('average-cpu-usage-per-task-link').textContent = titles.averageCpuUsagePerTaskTitle;
-    iframeDocument.getElementById('average-cpu-usage-per-task-title').textContent = titles.averageCpuUsagePerTaskTitle;
-    document.getElementById('task-execution-time-distribution-link').textContent = titles.taskExecutionTimeDistributionTitle;
-    iframeDocument.getElementById('task-execution-time-distribution-title').textContent = titles.taskExecutionTimeDistributionTitle;
-    document.getElementById('vine-graphs-link').textContent = titles.vineGraphsTitle;
-    iframeDocument.getElementById('vine-graphs-title').textContent = titles.vineGraphsTitle;
-}
-
-window.addEventListener('load', setReportSidebarAndContentTitles);
 
 //  Click on the sidebar button to scroll to the corresponding section in the iframe
 document.addEventListener('DOMContentLoaded', function() {
     var buttons = document.querySelectorAll('.report-scroll-btn');
     buttons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            setIFrame('report');
+        button.addEventListener('click', async function() {
+            await setIFrame('report');
             var targetId = this.getAttribute('data-target');
             navigateWithinIframe(targetId);
         });

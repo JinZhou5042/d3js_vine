@@ -6,64 +6,6 @@ import { drawViolins } from './violinplot.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
 
-/*
-document.addEventListener('load', function() {
-    let dataDir = '';
-    const logSelector = document.getElementById('log-selector');
-    
-    // 定义一个函数，用于处理选项改变时的逻辑
-    async function handleLogChange() {
-        const selectedLog = this.value;
-        try {
-            // wait for the data path to be fetched
-            dataDir = await getDataPath(`/input-path/${selectedLog}`);
-            // load log description
-            loadLogDescription(dataDir);
-            // load worker task data
-            let workerInfo = await d3.json(pathJoin([dataDir, 'worker_tasks.json']));
-            // draw histogram
-            plotExecutionSummary(workerInfo);
-            setupZoomAndScroll('#histogram', '#histogramContainer');
-            // function execution details
-            plotExecutionDetails(workerInfo);
-            setupZoomAndScroll('#execution-details', '#execution-details-container');
-            // draw violin plot
-            drawViolins(dataDir, workerInfo);
-            // draw core load plot
-            drawCoreLoads(dataDir, workerInfo);
-        } catch (error) {
-            console.error('Error fetching data directory:', error);
-        }
-    }
-    
-    // 为logSelector绑定change事件监听器
-    logSelector.addEventListener('change', handleLogChange);
-
-    // 如果logSelector有初始值，则手动触发change事件
-    if (logSelector.value) {
-        logSelector.dispatchEvent(new Event('change'));
-    }
-});
-*/
-
-/*
-async function loadLogDescription(dataPath) {
-    try {
-        let appInfoFilename = dataPath + (dataPath.endsWith("/") ? "" : "/") + 'app_info.json';
-        // load JSON data
-        const response = await fetch(appInfoFilename);
-        const data = await response.json();
-        // get div element
-        const div = document.querySelector('#description');
-        // show data in pre tag
-        const formattedData = JSON.stringify(data, null, 4);
-        div.innerHTML = `<pre>${formattedData}</pre>`;
-    } catch (error) {
-        console.error("Could not load JSON data", error);
-    }
-}
-*/
-
 document.getElementById('logSelector').addEventListener('change', function() {
     const selectedLog = this.value;
     fetch(`/input-path/${selectedLog}`)
@@ -71,7 +13,6 @@ document.getElementById('logSelector').addEventListener('change', function() {
         .then(data => {
             if (data.inputPath) {
                 // update image sources
-                console.log(data.inputPath);
                 document.getElementById('allWorkersSummaryViolinImg').src = `${data.inputPath}/all_workers_summary_violin.svg`;
                 document.getElementById('overallAvgCoreLoadImg').src = `${data.inputPath}/overall_core_load.svg`;
                 document.getElementById('performanceTransferImg').src = `${data.inputPath}/performance.transfer.svg`;

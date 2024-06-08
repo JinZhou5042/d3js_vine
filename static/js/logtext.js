@@ -31,7 +31,6 @@ async function loadLogFile(filePath, elementId) {
         const element = document.getElementById(elementId);
         if (element) {
             element.textContent = text;
-            console.log(element.textContent);
         } else {
             console.error(`Element with id "${elementId}" not found`);
         }
@@ -44,6 +43,5 @@ async function loadLogFile(filePath, elementId) {
             console.error(`Element with id "${elementId}" not found`);
         }
     }
-    console.log('Data loaded successfully');
 }
 
