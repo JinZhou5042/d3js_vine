@@ -11,20 +11,11 @@
     <!-- import css files -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/worker_info.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_summary.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_details.css') }}">
     <!-- import js files-->
-    <script src="{{ url_for('static', filename='js/adjust_header.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/worker_info.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/display_current_time.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/execution_summary.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/execution_details.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/report.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/fetch_logs.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/index.js') }}" type="module"></script>
 </head>
 <body>
     <div id="sidebar">
@@ -54,7 +45,9 @@
         <button data-target="#vine-graphs-title" id="vine-graphs-link" class="report-scroll-btn"></button>
 
         <div class="sidebar-section-title">Manager Logs</div>
-        <button id="log-debug-link"></a>
+        <button id="btn-debug">Debug</button>
+        <button id="btn-performance">Performance</button>
+        <button id="btn-transactions">Transactions</button>
         
         <div class="sidebar-section-title">Library Logs</div>
     </div>
@@ -104,11 +97,7 @@
 
 
     <div id="content">
-        
-        <iframe id="contentFrame" src="/report" class="iframe-style"></iframe>
-
-        <textarea id="log-text-debug" class="log-text" wrap="off" readonly></textarea>
-        
+        <iframe id="content-frame" src="/report" class="iframe-style"></iframe>        
     </div>
 
 </body>

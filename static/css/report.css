@@ -1,4 +1,4 @@
-/* styles.css */
+
 
 /* text */
 .text-div {
@@ -129,7 +129,6 @@
     display: inline-block;
     max-width: 100%;
     height: auto;
-
 }
 
 #buttons {
@@ -223,3 +222,33 @@
 }
 
 
+.item-container {
+    width: 75vw;
+    height: calc(80vw * 0.6);
+    border: 1px solid grey;
+    overflow: auto;
+}
+
+#execution-details {
+    width: 95%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+}
+
+svg * {
+    user-select: text;
+    pointer-events: auto;
+}
+
+.tooltip {
+    position: absolute;
+    visibility: hidden;
+    padding: 8px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    pointer-events: none;
+    z-index: 10;
+}

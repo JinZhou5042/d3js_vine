@@ -17,6 +17,18 @@ def index():
 def report():
     return render_template('report.html')
 
+@app.route('/debug')
+def debug():
+    return render_template('debug.html')
+
+@app.route('/performance')
+def performance():
+    return render_template('performance.html')
+
+@app.route('/transactions')
+def transactions():
+    return render_template('transactions.html')
+
 @app.route('/input-path/<log_folder>')
 def input_path(log_folder):
     input_folder_path = os.path.join(LOGS_DIR, log_folder, 'vine-logs')

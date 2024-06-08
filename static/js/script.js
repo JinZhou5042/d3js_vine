@@ -6,7 +6,8 @@ import { drawViolins } from './violinplot.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
 
-document.addEventListener('DOMContentLoaded', function() {
+/*
+document.addEventListener('load', function() {
     let dataDir = '';
     const logSelector = document.getElementById('log-selector');
     
@@ -43,9 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
         logSelector.dispatchEvent(new Event('change'));
     }
 });
+*/
 
-
-
+/*
 async function loadLogDescription(dataPath) {
     try {
         let appInfoFilename = dataPath + (dataPath.endsWith("/") ? "" : "/") + 'app_info.json';
@@ -61,6 +62,7 @@ async function loadLogDescription(dataPath) {
         console.error("Could not load JSON data", error);
     }
 }
+*/
 
 document.getElementById('logSelector').addEventListener('change', function() {
     const selectedLog = this.value;

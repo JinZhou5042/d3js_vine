@@ -9,27 +9,15 @@
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/header.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/worker_info.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_summary.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/execution_details.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
     <!-- import js files-->
-    <script src="{{ url_for('static', filename='js/worker_info.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/display_current_time.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/execution_summary.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/execution_details.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/sidebar.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/fetch_logs.js') }}" type="module"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/report.js') }}" type="module"></script>
 </head>
 
 <body>
 
-    <h1 id="worker-info-title" class="report"></h1>
-    <div class="worker-info-table-container" class="report">
+    <h1 id="worker-info-title" ></h1>
+    <div class="worker-info-table-container" >
         <table id="worker-info-table">
             <tr>
                 <th>Worker ID</th>
@@ -57,16 +45,16 @@
     </div>
 
 
-    <h1 id="worker-slot-function-execution-title" class="report"></h1>
-    <div id="execution-details-container" class="item-container" class="report">
+    <h1 id="worker-slot-function-execution-title" ></h1>
+    <div id="execution-details-container" class="item-container" >
         <div id="barTooltip" class="tooltip"></div>
         <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
             <!-- bar chart goes here -->
         </svg>
     </div>
 
-    <h1 id="task-execution-summary-title" class="report"></h1>
-    <div id="histogramContainer" class="item-container" class="report">
+    <h1 id="task-execution-summary-title" ></h1>
+    <div id="histogramContainer" class="item-container" >
         <div id="histogramTooltip" class="tooltip"></div>
         <div id="avgDurationTooltip" class="tooltip" ></div>
         <select id="histogramSelector">
@@ -79,8 +67,8 @@
         </svg>
     </div>
 
-    <h1 id="average-cpu-usage-per-task-title" class="report"></h1>
-    <div id="avgCoreLoadContainer" class="violinCoreContainer" class="report">
+    <h1 id="average-cpu-usage-per-task-title" ></h1>
+    <div id="avgCoreLoadContainer" class="violinCoreContainer" >
         <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
             <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
                 <!-- avg core load plot goes here -->
@@ -95,8 +83,8 @@
         </div>
     </div>
 
-    <h1 id="task-execution-time-distribution-title" class="report"></h1>
-    <div id="violinContainer" class="violinCoreContainer" class="report">
+    <h1 id="task-execution-time-distribution-title" ></h1>
+    <div id="violinContainer" class="violinCoreContainer" >
         <div id="violinLeftContainer" class="violinCoreLeftContainer">
             <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
                 <!-- violin plot goes here -->
@@ -111,8 +99,8 @@
         </div>
     </div>
 
-    <h1 id="vine-graphs-title" class="report"></h1>
-    <div id="vineGraphsContainer" class="report">
+    <h1 id="vine-graphs-title" ></h1>
+    <div id="vineGraphsContainer" >
         <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
         <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
         <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>

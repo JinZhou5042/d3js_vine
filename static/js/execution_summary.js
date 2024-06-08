@@ -32,6 +32,7 @@ export function plotExecutionSummary(workerInfo) {
     d3.select('#histogram').selectAll('*').remove();
     drawComponents(workerTaskData);
 
+
     window.addEventListener('resize', function() {
         d3.select('#histogram').selectAll('*').remove();
         drawComponents(workerTaskData);
