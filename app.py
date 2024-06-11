@@ -2,7 +2,6 @@ from flask import Flask, render_template, jsonify, Response, abort, send_from_di
 from generate_d3_input import generate_log_data
 import os
 
-
 app = Flask(__name__)
 
 LOGS_DIR = 'logs'
@@ -29,13 +28,12 @@ def performance():
 def transactions():
     return render_template('transactions.html')
 
-@app.route('/input-path/<log_folder>')
-def input_path(log_folder):
-    input_folder_path = os.path.join(LOGS_DIR, log_folder, 'vine-logs')
-    print(input_folder_path)
-    if os.path.exists(input_folder_path) and os.path.isdir(input_folder_path):
-        return jsonify({'inputPath': input_folder_path})
-    return jsonify({'error': 'Input folder not found'}), 404
+@app.route('/logs/<log_folder>')
+def logs(log_folder):
+    log_folder_path = os.path.join(LOGS_DIR, log_folder, 'vine-logs')
+    if os.path.exists(log_folder_path) and os.path.isdir(log_folder_path):
+        return jsonify({'logPath': log_folder_path})
+    return jsonify({'error': 'Log folder not found'}), 404
 
 @app.route('/data/<path:filename>')
 def serve_from_data(filename):
@@ -50,33 +48,24 @@ def serve_file(filename):
     def generate():
         with open(file_path, "rb") as f:
             while True:
-                chunk = f.read(4096)  # 读取固定大小的数据块
+                chunk = f.read(4096)
                 if not chunk:
                     break
                 yield chunk
 
     return Response(generate(), mimetype='text/plain')
 
-def process_single_log(log_dir, data_dir):
-    print(f"Processing Log: {log_dir} ...")
-
-    if os.path.isdir(log_dir) and os.listdir(log_dir):
-        if not os.path.exists(data_dir) or not os.path.isdir(data_dir):
-            os.makedirs(data_dir, exist_ok=True)
-        
-        generate_log_data(log_dir, data_dir)
-
 
 def process_logs():
-    print("Processing Logs ...")
     for log in os.listdir(LOGS_DIR):
         log_dir = os.path.join(LOGS_DIR, log)
         if os.path.isdir(log_dir):
             # if the folder does not contain vine-logs, or it is empty, skip
             if not os.path.exists(os.path.join(log_dir, 'vine-logs')) or not os.listdir(os.path.join(log_dir, 'vine-logs')):
                 continue 
-            data_dir = os.path.join(log_dir, 'vine-logs')
-            process_single_log(log_dir, data_dir)
+
+            print(f"Processing Log: {log_dir} ...")
+            generate_log_data(log_dir)
 
 
 if __name__ == '__main__':

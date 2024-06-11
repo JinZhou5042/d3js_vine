@@ -17,26 +17,39 @@ async function getDataPath(path) {
     }
 }
 
+async function fetchFile(filePath) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch file: ${filePath} (${response.statusText})`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
 
 window.addEventListener('load', function() {
     
     async function handleLogChange() {
-        const selectedLog = this.value;
+        const logName = this.value;
+        const taskInfoCSV = await fetchFile(`logs/${logName}/vine-logs/task_info.csv`);
+        const libraryInfoCSV = await fetchFile(`logs/${logName}/vine-logs/library_info.csv`);
+        const workerInfoJson = await fetchFile(`logs/${logName}/vine-logs/worker_info.json`);
+
         try {
-            // wait for the data path to be fetched
-            let dataDir = await getDataPath(`/input-path/${selectedLog}`);
-            // load worker task data
-            let workerInfo = await d3.json(pathJoin([dataDir, 'worker_tasks.json']));
             // draw histogram
-            plotExecutionSummary(workerInfo);
-            setupZoomAndScroll('#histogram', '#histogramContainer');
+            // plotExecutionSummary(taskInfoCSV);
+            // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            plotExecutionDetails(workerInfo);
-            setupZoomAndScroll('#execution-details', '#execution-details-container');
+            plotExecutionDetails(taskInfoCSV);
+            // setupZoomAndScroll('#execution-details', '#execution-details-container');
             // draw violin plot
-            drawViolins(dataDir, workerInfo);
+            //drawViolins(dataDir, workerInfo);
             // draw core load plot
-            drawCoreLoads(dataDir, workerInfo);
+            //drawCoreLoads(dataDir, workerInfo);
         } catch (error) {
             console.error('Error fetching data directory:', error);
         }

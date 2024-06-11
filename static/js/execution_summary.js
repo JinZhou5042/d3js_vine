@@ -1,4 +1,5 @@
-export function plotExecutionSummary(workerInfo) {
+export function plotExecutionSummary(taskInfoCSV) {
+
     // calculate the number of tasks and average duration for each worker
     let workerTaskData = [];
     let workerIndex = 1;

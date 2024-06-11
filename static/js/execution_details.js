@@ -1,131 +1,52 @@
-export function plotExecutionDetails(workerInfo) {
-    // prepare data
-    d3.select('#execution-details').selectAll('*').remove();
-    let allSlots = [];
-    let workerIndex = 1;
-    let workerIDs = Object.keys(workerInfo).filter(key => key.startsWith('worker'));
+export function plotExecutionDetails(taskInfoCSV) {
+    const taskInfo = d3.csvParse(taskInfoCSV);
 
-    workerIDs.forEach(workerID => {
-        Object.keys(workerInfo[workerID].slots).forEach(slotID => {
-            let slotTasks = workerInfo[workerID].slots[slotID];
-            if (!slotTasks[0][3].includes("library"))
-                allSlots.push({ workerIndex: workerIndex, worker: workerID, slot: slotID, type: "default" });
-        });
-        workerIndex += 1;
-    });
-
-    // create scales and draw slots
     const container = document.getElementById('execution-details-container');
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    // suppose the width of the container is the width of the SVG
-    const svgWidth = containerWidth;
-    const svgHeight = containerHeight;
-    
-    const padding = { top: 20, right: 20, bottom: 20, left: 90 };
+    const margin = {top: 20, right: 20, bottom: 40, left: 40};
+    const svgWidth = container.clientWidth - margin.left - margin.right;
+    const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
     const svg = d3.select('#execution-details')
-        .attr('viewBox', `0 0 ${svgWidth} ${svgHeight}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet');
+        .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .append('g')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    // calculate time extent
-    let first_task_dispatch = Infinity;
-    let first_task_start = Infinity;
-    let last_task_end = -Infinity;
-    Object.values(workerInfo).forEach(worker => {
-        if(worker.slots) {
-            Object.values(worker.slots).forEach(slotTasks => {
-                slotTasks.forEach(task => {
-                    first_task_dispatch = Math.min(first_task_dispatch, task[0]);
-                    first_task_start = Math.min(first_task_start, task[1]);
-                    last_task_end = Math.max(last_task_end, task[2]);
-                });
-            });
-        }
-    });
-
-    const xStartTime = first_task_start;
-    let timeExtent = [0, (last_task_end - xStartTime)];
-    
-    // create scales
+    const minTime = d3.min(taskInfo, d => +d.time_worker_start);
     const xScale = d3.scaleLinear()
-                     .domain(timeExtent)
-                     .range([padding.left, svgWidth - padding.right]);
+        .domain([0, d3.max(taskInfo, d => +d.time_worker_end - minTime)])
+        .range([0, svgWidth]);
 
+    const sortedTaskInfo = taskInfo.slice().sort((a, b) => b.worker_slot - a.worker_slot);
     const yScale = d3.scaleBand()
-                     .domain(allSlots.map(d => `worker${d.workerIndex}_slot${d.slot}`))
-                     .range([svgHeight - padding.bottom, padding.top])
-                     .padding(0.1);
+        .domain(sortedTaskInfo.map(d => d.worker_id + '-' + d.worker_slot))
+        .range([0, svgHeight])
+        .padding(0.1);
 
-    // draw slots
-    allSlots.forEach(slots => {
-        const workerData = workerInfo[slots.worker];
-        if(workerData && workerData.slots && workerData.slots[slots.slot]) {
-            const slotTasks = workerData.slots[slots.slot];
-            slotTasks.forEach(task => {
-                svg.append("rect")
-                   .attr("x", xScale(task[1] - xStartTime)) // task[1] represents the start time
-                   .attr("y", yScale(`worker${slots.workerIndex}_slot${slots.slot}`))
-                   .attr("width", xScale(task[2]) - xScale(task[1])) // task[2] represents the end time
-                   .attr("height", yScale.bandwidth())
-                   .attr("fill", "steelblue")
-                   .on("mouseover", function(event, d) {
-                        // highlight the bar
-                        d3.select(this)
-                            .attr("fill", "orange");
-                        const durationInSeconds = ((task[2] - task[1])).toFixed(4);
-                        // show tooltip
-                        d3.select("#barTooltip")
-                            .style("visibility", "visible")
-                            .style("left", (event.pageX + 10) + "px")
-                            .style("top", (event.pageY + 10) + "px")
-                            .html(`${(durationInSeconds)}s  ${slots.slot}`);
-                    })
-                    .on("mouseout", function() {
-                        // restore the color
-                        d3.select(this).attr("fill", "steelblue");
-                        // hide tooltip
-                        d3.select("#barTooltip").style("visibility", "hidden");
-                    });
-            });
-        }
-    });
+    svg.selectAll('.task-rect')
+        .data(taskInfo)
+        .enter()
+        .append('rect')
+        .attr('class', 'task-rect')
+        .attr('x', d => xScale(+d.time_worker_start - minTime))
+        .attr('y', d => yScale(d.worker_id + '-' + d.worker_slot))
+        .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
+        .attr('height', yScale.bandwidth())
+        .attr('fill', 'steelblue');
 
-    // adjust font size and stroke width based on the number of ticks
-    const numberOfTicks = allSlots.length;
-    let fontSize;
+    const xAxis = d3.axisBottom(xScale)
+        .tickSizeOuter(0)
+        .tickValues(xScale.ticks().concat(xScale.domain()[1]))
+        .tickFormat(d3.format(".1f"));
+    svg.append('g')
+        .attr('transform', `translate(0, ${svgHeight})`)
+        .call(xAxis);
 
-    // set the base font size and the threshold for the number of ticks
-    const baseFontSize = 10; // base font size
-    const tickThreshold = 50; // threshold for the number of ticks
+    const yAxis = d3.axisLeft(yScale)
+        .tickSizeOuter(0)
+        .tickFormat(d => `${d.split('-')[0]}-${d.split('-')[1]}`)
+        .tickValues(yScale.domain().filter((d, i) => i % 8 === 0));
+    svg.append('g')
+        .call(yAxis);
 
-    if (numberOfTicks > tickThreshold) {
-        // if the number of ticks exceeds the threshold, adjust the font size
-        fontSize = baseFontSize * (tickThreshold / numberOfTicks);
-    } else {
-        // if the number of ticks does not exceed the threshold, use the base font size
-        fontSize = baseFontSize;
-    }
-
-    // make sure the font size is at least 0.5 times the base font size
-    fontSize = Math.max(fontSize, 0.5);
-
-    // set the stroke width based on the font size
-    let strokeWidth = fontSize / 20; // suppose the stroke width is 1/20 of the font size
-    strokeWidth = `${Math.max(strokeWidth, 0.2)}px`; // ensure the stroke width is at least 0.2 pixels
-
-    // add axis
-    svg.append("g")
-       .attr("transform", `translate(0,${svgHeight - padding.bottom})`)
-       .call(d3.axisBottom(xScale));
-
-    svg.append("g")
-       .attr("transform", `translate(${padding.left},0)`)
-       .call(d3.axisLeft(yScale).tickFormat(id => id.split('_')[1]))
-       .selectAll(".tick text")
-       .style("font-size", `${fontSize}px`); 
-
-    svg.selectAll(".tick line") // select all the tick lines
-        .style("stroke-width", strokeWidth);
 }
