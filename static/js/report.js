@@ -44,12 +44,12 @@ window.addEventListener('load', function() {
             // plotExecutionSummary(taskInfoCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            plotExecutionDetails(taskInfoCSV);
-            // setupZoomAndScroll('#execution-details', '#execution-details-container');
+            plotExecutionDetails(taskInfoCSV, workerInfoJson);
+            setupZoomAndScroll('#execution-details', '#execution-details-container');
             // draw violin plot
-            //drawViolins(dataDir, workerInfo);
+            // drawViolins(dataDir, workerInfo);
             // draw core load plot
-            //drawCoreLoads(dataDir, workerInfo);
+            // drawCoreLoads(dataDir, workerInfo);
         } catch (error) {
             console.error('Error fetching data directory:', error);
         }

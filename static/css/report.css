@@ -33,8 +33,21 @@
     height: calc(75vw * 0.6);
     min-width: 600px;
     min-height: 400px;
-    border: 1px solid grey;
     overflow: auto;
+}
+
+#execution-details-tooltip {
+    position: absolute;
+    visibility: hidden;
+    padding: 10px;
+    white-space: nowrap;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #333;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    pointer-events: none;
 }
 
 /* Violin and Average Core Load Plota */
@@ -239,16 +252,4 @@
 svg * {
     user-select: text;
     pointer-events: auto;
-}
-
-.tooltip {
-    position: absolute;
-    visibility: hidden;
-    padding: 8px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    text-align: center;
-    pointer-events: none;
-    z-index: 10;
 }

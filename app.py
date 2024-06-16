@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, Response, abort, send_from_directory
 from generate_d3_input import generate_log_data
 import os
+import argparse
 
 app = Flask(__name__)
 
@@ -69,5 +70,10 @@ def process_logs():
 
 
 if __name__ == '__main__':
-    process_logs()
-    app.run(host='0.0.0.0', port=9122, debug=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--generate-data', default=False)
+    args = parser.parse_args()
+
+    if args.generate_data:
+        process_logs()
+    app.run(host='0.0.0.0', port=9125, debug=True)

@@ -12,16 +12,21 @@ import ast
 import numpy as np
 
 
+
 def parse_txn(txn):
     log_lines = open(txn, 'r').read().splitlines()
 
-    task_info = []
-    library_info = []
+    task_info = {}
+    library_info = {}
     worker_info = {}
     manager_info = {}
     worker_slots = {}
 
+    line_idx = 0
     for line in log_lines:
+        line_idx += 1
+        if line_idx % 10000 == 0:
+            print(f"Processing line {line_idx}")
         if line.startswith("#"):
             continue
         
@@ -71,38 +76,37 @@ def parse_txn(txn):
                     # 'when_output_received': None,
                     #############################
                 }
-                task_info.append(task)
+                task_info[obj_id] = task
             if status == 'RUNNING':
                 # a running task can be a library which does not have a ready status
                 is_library = True
                 resources_allocated = json.loads(info.split(' ', 3)[-1])
-                for task in task_info:
-                    if task['task_id'] == obj_id:
-                        is_library = False
-                        task['when_running'] = timestamp
-                        task['worker_committed'] = info.split()[0]
-                        task['time_commit_start'] = resources_allocated["time_commit_start"][0]
-                        task['time_commit_end'] = resources_allocated["time_commit_end"][0]
-                        task['size_input_mgr'] = resources_allocated["size_input_mgr"][0]
+                if obj_id in task_info:
+                    is_library = False
+                    task = task_info[obj_id]
+                    task['when_running'] = timestamp
+                    task['worker_committed'] = info.split()[0]
+                    task['time_commit_start'] = float(resources_allocated["time_commit_start"][0])
+                    task['time_commit_end'] = float(resources_allocated["time_commit_end"][0])
+                    task['size_input_mgr'] = float(resources_allocated["size_input_mgr"][0])
 
-                        # assign a slot to task
-                        worker_hash = task['worker_committed']
-                        if worker_hash not in worker_slots:
-                            worker_slots[worker_hash] = []
-                        slots = worker_slots[worker_hash]
-                        slot_found = False
-                        for slot_id, slot in enumerate(slots):
-                            if not slot['in_use']:
-                                slot['tasks'].append(task)
-                                task['worker_slot'] = slot_id + 1
-                                slot['in_use'] = True
-                                slot_found = True
-                                break
-                        if not slot_found:
-                            new_slot = {'tasks': [task], 'in_use': True}
-                            slots.append(new_slot)
-                            task['worker_slot'] = len(slots)
-                        break
+                    # assign a slot to task
+                    worker_hash = task['worker_committed']
+                    if worker_hash not in worker_slots:
+                        worker_slots[worker_hash] = []
+                    slots = worker_slots[worker_hash]
+                    slot_found = False
+                    for slot_id, slot in enumerate(slots):
+                        if not slot['in_use']:
+                            slot['tasks'].append(task)
+                            task['worker_slot'] = slot_id + 1
+                            slot['in_use'] = True
+                            slot_found = True
+                            break
+                    if not slot_found:
+                        new_slot = {'tasks': [task], 'in_use': True}
+                        slots.append(new_slot)
+                        task['worker_slot'] = len(slots)
                 if is_library:
                     library = {
                         'task_id': obj_id,
@@ -120,46 +124,39 @@ def parse_txn(txn):
                         'memory_requested(MB)': resources_allocated.get("memory", [0, ""])[0],
                         'disk_requested(MB)': resources_allocated.get("disk", [0, ""])[0],
                     }
-                    library_info.append(library)
+                    library_info[obj_id] = library
             if status == 'WAITING_RETRIEVAL':
-                for task in task_info:
-                    if task['task_id'] == obj_id:
-                        task['when_waiting_retrieval'] = timestamp
-                        slots = worker_slots[task['worker_committed']]
-                        for slot in slots:
-                            if task in slot['tasks']:
-                                slot['in_use'] = False
-                                break
-                        break
+                if obj_id in task_info:
+                    task = task_info[obj_id]
+                    task['when_waiting_retrieval'] = timestamp
+                    slots = worker_slots[task['worker_committed']]
+                    for slot in slots:
+                        if task in slot['tasks']:
+                            slot['in_use'] = False
+                            break
             if status == 'RETRIEVED':
                 try:
                     resources_retrieved = json.loads(info.split(' ', 5)[-1])
                 except json.JSONDecodeError:
                     resources_retrieved = {}
 
-                is_library = True
-                for task in task_info:
-                    if task['task_id'] == obj_id:
-                        is_library = False
-                        task['when_retrieved'] = timestamp
-                        task['retrieved_status'] = status
-                        task['time_worker_start'] = resources_retrieved.get("time_worker_start", [None])[0]
-                        task['time_worker_end'] = resources_retrieved.get("time_worker_end", [None])[0]
-                        task['size_output_mgr'] = resources_retrieved.get("size_output_mgr", [None])[0]
-                        break
-                if is_library:
-                    for library in library_info:
-                        if library['task_id'] == obj_id:
-                            library['when_retrieved'] = timestamp
-                            break
+                if obj_id in task_info:
+                    task = task_info[obj_id]
+                    task['when_retrieved'] = timestamp
+                    task['retrieved_status'] = status
+                    task['time_worker_start'] = resources_retrieved.get("time_worker_start", [None])[0]
+                    task['time_worker_end'] = resources_retrieved.get("time_worker_end", [None])[0]
+                    task['size_output_mgr'] = resources_retrieved.get("size_output_mgr", [None])[0]
+                elif obj_id in library_info:
+                    library = library_info[obj_id]
+                    library['when_retrieved'] = timestamp
             if status == 'DONE':
                 done_info = info.split() if info else []
-                for task in task_info:
-                    if task['task_id'] == obj_id:
-                        task['when_done'] = timestamp
-                        task['done_status'] = done_info[0] if len(done_info) > 0 else None
-                        task['done_code'] = done_info[1] if len(done_info) > 1 else None
-                        break
+                if obj_id in task_info:
+                    task = task_info[obj_id]
+                    task['when_done'] = timestamp
+                    task['done_status'] = done_info[0] if len(done_info) > 0 else None
+                    task['done_code'] = done_info[1] if len(done_info) > 1 else None
         if category == 'WORKER':
             if not obj_id.startswith('worker'):
                 continue
@@ -168,10 +165,10 @@ def parse_txn(txn):
                     'time_connected': timestamp,
                     'time_disconnected': None,
                     'worker_id': None,
+                    'slot_count': None,
                     'resources_reported': {},
-                    'input_transfer': {},
-                    'output_transfer': {},
-                    'cache_update': {},
+                    'disk_update': {},
+                    'cached_files': {},
                 }
             if status == 'DISCONNECTION':
                 worker_info[obj_id]['time_disconnected'] = timestamp
@@ -204,12 +201,21 @@ def parse_txn(txn):
                     }
             if status == 'CACHE_UPDATE':
                 filename, size_in_mb, wall_time, start_time = info.split(' ', 3)
+                size_in_mb = int(size_in_mb)
                 cache_update_id = len(worker_info[obj_id]['cache_update'])
+                if filename in worker_info[obj_id]['cached_files']:
+                    cache_increase = size_in_mb - worker_info[obj_id]['cached_files'][filename]
+                    worker_info[obj_id]['cached_files'][filename] = size_in_mb
+                else:
+                    cache_increase = size_in_mb
+                cache_used = worker_info[obj_id]['cache_update'][cache_update_id - 1]['disk_usage(MB)'] if cache_update_id > 0 else 0
+                worker_info[obj_id]['cached_files'][filename] = size_in_mb
                 worker_info[obj_id]['cache_update'][cache_update_id] = {
                     'filename': filename,
                     'size(MB)': size_in_mb,
                     'start_time': start_time,
                     'wall_time': wall_time,
+                    'disk_usage(MB)': cache_used + cache_increase,
                 }
 
         if category == 'LIBRARY':
@@ -229,22 +235,28 @@ def parse_txn(txn):
 
     dirname = os.path.dirname(txn)
 
-    # add a worker_id for each data structure
+    # add worker_id for each data structure
     worker_info = {k: v for k, v in sorted(worker_info.items(), key=lambda item: item[1]['time_connected'])}
     for i, worker in enumerate(worker_info, start=1):
         worker_info[worker]['worker_id'] = i
-    for task in task_info:
+    for task in task_info.values():
         worker_hash = task['worker_committed']
         task['worker_id'] = worker_info[worker_hash]['worker_id']
-    for library in library_info:
+    for library in library_info.values():
         worker_hash = library['worker_committed']
         library['worker_id'] = worker_info[worker_hash]['worker_id']
 
     # Convert lists to DataFrames
-    task_df = pd.DataFrame(task_info)
-    library_df = pd.DataFrame(library_info)
+    task_df = pd.DataFrame.from_dict(task_info, orient='index')
+    library_df = pd.DataFrame.from_dict(library_info, orient='index')
+
+    # calculate the number of slots on each worker
+    slot_counts = task_df.groupby('worker_committed')['worker_slot'].max()
+    for worker_committed, slot_count in slot_counts.items():
+        worker_info[worker_committed]['slot_count'] = slot_count
 
     # Save DataFrames to CSV
+    task_df.sort_values(by=['worker_id', 'worker_slot'], ascending=[True, False], inplace=True)
     task_df.to_csv(os.path.join(dirname, 'task_info.csv'), index=False)
     library_df.to_csv(os.path.join(dirname, 'library_info.csv'), index=False)
 
