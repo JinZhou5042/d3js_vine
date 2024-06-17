@@ -1,6 +1,7 @@
 import { plotExecutionSummary } from './execution_summary.js';
 import { setupZoomAndScroll, pathJoin } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
+import { plotAccumulatedFiles } from './accumulated_files.js';
 import { drawViolins } from './violinplot.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
@@ -37,15 +38,25 @@ window.addEventListener('load', function() {
         const logName = this.value;
         const taskInfoCSV = await fetchFile(`logs/${logName}/vine-logs/task_info.csv`);
         const libraryInfoCSV = await fetchFile(`logs/${logName}/vine-logs/library_info.csv`);
-        const workerInfoJson = await fetchFile(`logs/${logName}/vine-logs/worker_info.json`);
+        const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
+        const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_update.csv`);
 
         try {
             // draw histogram
             // plotExecutionSummary(taskInfoCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            plotExecutionDetails(taskInfoCSV, workerInfoJson);
+            plotExecutionDetails(taskInfoCSV, workerSummaryCSV);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
+
+            plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSummaryCSV);
+            setupZoomAndScroll('#worker-accumulated-cached-files', '#worker-accumulated-cached-files-container');
+            document.getElementById('worker-accumulated-cached-files-display-mode').addEventListener('change', function() {
+                const mode = this.value;
+                const useDiskUtilization = (mode === 'diskUtilization');
+                d3.select('#worker-accumulated-cached-files').selectAll('*').remove();
+                plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSummaryCSV, useDiskUtilization);
+            });
             // draw violin plot
             // drawViolins(dataDir, workerInfo);
             // draw core load plot

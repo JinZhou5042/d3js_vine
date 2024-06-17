@@ -1,6 +1,6 @@
-export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
+export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
     const taskInfo = d3.csvParse(taskInfoCSV);
-    const workerInfo = JSON.parse(workerInfoJson);
+    const workerSummary = d3.csvParse(workerSummaryCSV);
 
     const container = document.getElementById('execution-details-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 40};
@@ -16,7 +16,7 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
 
     const minTime = d3.min(taskInfo, d => +d.when_ready);
     const xScale = d3.scaleLinear()
-        .domain([0, d3.max(taskInfo, d => +d.time_worker_end - minTime)])
+        .domain([0, d3.max(taskInfo, d => +d.when_done - minTime)])
         .range([0, svgWidth]);
 
     const sortedTaskInfo = taskInfo.slice().sort((a, b) => b.worker_id - a.worker_id);
@@ -27,8 +27,16 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
     
     ////////////////////////////////////////////
     // create rectange for each worker
-    const workerEntries = Object.entries(workerInfo);
-    workerEntries.forEach(([worker, Info]) => {
+    const workerEntries = workerSummary.map(d => ({
+        worker: d.worker_hash,
+        Info: {
+            worker_id: +d.worker_id,
+            time_connected: +d.time_connected,
+            time_disconnected: +d.time_disconnected,
+            slot_count: +d.slot_count
+        }
+    }));
+    workerEntries.forEach(({ worker, Info }) => {
         let worker_id = Info.worker_id;
         const rect = svg.append('rect')
             .attr('x', xScale(+Info.time_connected - minTime))
@@ -40,7 +48,7 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
             .on('mouseover', function(event, d) {
                 d3.select(this).attr('fill', 'orange');
                 // show tooltip
-                const tooltip = document.getElementById('execution-details-tooltip');
+                const tooltip = document.getElementById('vine-tooltip');
                 tooltip.innerHTML = `
                     worker id: ${Info.worker_id}<br>
                     when connected: ${(Info.time_connected - minTime).toFixed(2)}s<br>
@@ -53,13 +61,14 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
             .on('mouseout', function(event, d) {
                 d3.select(this).attr('fill', 'lightgrey');
                 // hide tooltip
-                const tooltip = document.getElementById('execution-details-tooltip');
+                const tooltip = document.getElementById('vine-tooltip');
                 tooltip.style.visibility = 'hidden';
             });
     });
     ////////////////////////////////////////////
 
     // create rectange for each task (time extent: time_worker_start ~ time_worker_end)
+    const tooltip = document.getElementById('vine-tooltip');
     svg.selectAll('.task-worker-running-rect')
         .data(sortedTaskInfo)
         .enter()
@@ -74,7 +83,6 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
             // change color
             d3.select(this).attr('fill', 'orange');
             // show tooltip
-            const tooltip = document.getElementById('execution-details-tooltip');
             tooltip.innerHTML = `
                 task id: ${d.task_id}<br>
                 worker: ${d.worker_id} (slot ${d.worker_slot})<br>
@@ -96,7 +104,7 @@ export function plotExecutionDetails(taskInfoCSV, workerInfoJson) {
             // restore color
             d3.select(this).attr('fill', 'steelblue');
             // hide tooltip
-            const tooltip = document.getElementById('execution-details-tooltip');
+            const tooltip = document.getElementById('vine-tooltip');
             tooltip.style.visibility = 'hidden';
         });
     

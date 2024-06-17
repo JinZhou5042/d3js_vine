@@ -44,22 +44,30 @@
         </div>
     </div>
 
+    <div id="vine-tooltip" class="tooltip"></div>
 
     <h1 id="execution-details-title" >Execution Details</h1>
     <div id="execution-details-container" class="container-1" >
-        <div id="execution-details-tooltip" class="tooltip"></div>
         <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <h1 id="worker-accumulated-cached-files-title" >Accumulated Files on Each Worker</h1>
+    <div id="worker-accumulated-cached-files-container" class="container-1" >
+        <select id="worker-accumulated-cached-files-display-mode">
+            <option value="diskUsage">sort by disk usage (MB)</option>
+            <option value="diskUtilization">sort by disk utilization (%)</option>
+        </select>
+        <svg id="worker-accumulated-cached-files" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
     <h1 id="execution-summary-title" >Execution Summary</h1>
     <div id="histogramContainer" class="container-1" >
-        <div id="histogramTooltip" class="tooltip"></div>
-        <div id="avgDurationTooltip" class="tooltip" ></div>
         <select id="histogramSelector">
             <option value="mode0">default</option>
             <option value="mode1">sort by average execution time</option>
-            <option value="mode2">sory by tasks completion</option>
+            <option value="mode2">sort by tasks completion</option>
         </select>
         <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
             <!-- histogram goes here -->
