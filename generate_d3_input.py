@@ -2,14 +2,11 @@ import sys
 import argparse
 import os
 import json
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-import shutil
-from collections import defaultdict
 from datetime import datetime
 import re
 from tqdm import tqdm
+from bitarray import bitarray
 import ast
 import numpy as np
 
@@ -19,7 +16,8 @@ def parse_txn(txn):
     library_info = {}
     worker_info = {}
     manager_info = {}
-    worker_slots = {}
+    worker_coremap = {}
+    file_info = {}
 
     total_lines = 0
     with open(txn, 'r') as file:
@@ -49,6 +47,8 @@ def parse_txn(txn):
                     resources_requested = json.loads(info.split(' ', 3)[-1])
                     task = {
                         'task_id': obj_id,
+                        'worker_id': -1,
+                        'core_id': -1,
 
                         # Timestamps throughout the task lifecycle
                         'when_ready': timestamp,          # ready status on the manager
@@ -62,8 +62,6 @@ def parse_txn(txn):
                         'when_done': None,                # done status on worker
 
                         'worker_committed': None,
-                        'worker_id': None,
-                        'worker_slot': None,
 
                         'size_input_mgr': None,
                         'size_output_mgr': None,
@@ -93,29 +91,20 @@ def parse_txn(txn):
                     if obj_id in task_info:
                         is_library = False
                         task = task_info[obj_id]
+                        worker_hash = info.split()[0]
                         task['when_running'] = timestamp
-                        task['worker_committed'] = info.split()[0]
+                        task['worker_committed'] = worker_hash
                         task['time_commit_start'] = float(resources_allocated["time_commit_start"][0])
                         task['time_commit_end'] = float(resources_allocated["time_commit_end"][0])
                         task['size_input_mgr'] = float(resources_allocated["size_input_mgr"][0])
-
-                        # assign a slot to task
-                        worker_hash = task['worker_committed']
-                        if worker_hash not in worker_slots:
-                            worker_slots[worker_hash] = []
-                        slots = worker_slots[worker_hash]
-                        slot_found = False
-                        for slot_id, slot in enumerate(slots):
-                            if not slot['in_use']:
-                                slot['tasks'].append(task)
-                                task['worker_slot'] = slot_id + 1
-                                slot['in_use'] = True
-                                slot_found = True
+                        coremap = worker_coremap[worker_hash]
+                        for core_id in range(1, len(coremap)):
+                            if coremap[core_id] == 0:
+                                coremap[core_id] = 1
+                                task['core_id'] = core_id
+                                for i in range(core_id, core_id + task['cores_requested']):
+                                    coremap[i] = 1
                                 break
-                        if not slot_found:
-                            new_slot = {'tasks': [task], 'in_use': True}
-                            slots.append(new_slot)
-                            task['worker_slot'] = len(slots)
                     if is_library:
                         library = {
                             'task_id': obj_id,
@@ -126,7 +115,7 @@ def parse_txn(txn):
                             'when_started': None,
                             'when_retrieved': None,
                             'worker_committed': info.split(' ', 3)[0],
-                            'worker_id': None,
+                            'worker_id': -1,
                             'size_input_mgr': resources_allocated["size_input_mgr"][0],
                             'cores_requested': resources_allocated.get("cores", [0, ""])[0],
                             'gpus_requested': resources_allocated.get("gpus", [0, ""])[0],
@@ -138,11 +127,10 @@ def parse_txn(txn):
                     if obj_id in task_info:
                         task = task_info[obj_id]
                         task['when_waiting_retrieval'] = timestamp
-                        slots = worker_slots[task['worker_committed']]
-                        for slot in slots:
-                            if task in slot['tasks']:
-                                slot['in_use'] = False
-                                break
+                        worker_hash = task['worker_committed']
+                        coremap = worker_coremap[worker_hash]
+                        for i in range(task['core_id'], task['core_id'] + task['cores_requested']):
+                            coremap[i] = 0
                 if status == 'RETRIEVED':
                     try:
                         resources_retrieved = json.loads(info.split(' ', 5)[-1])
@@ -163,9 +151,12 @@ def parse_txn(txn):
                     done_info = info.split() if info else []
                     if obj_id in task_info:
                         task = task_info[obj_id]
+                        worker_hash = task['worker_committed']
                         task['when_done'] = timestamp
                         task['done_status'] = done_info[0] if len(done_info) > 0 else None
                         task['done_code'] = done_info[1] if len(done_info) > 1 else None
+                        worker_info[worker_hash]['tasks_done'] += 1
+                        worker_info[worker_hash]['slot_count'] = min(worker_info[task['worker_committed']]['cores'], worker_info[task['worker_committed']]['tasks_done'])
             if category == 'WORKER':
                 if not obj_id.startswith('worker'):
                     continue
@@ -173,52 +164,59 @@ def parse_txn(txn):
                     worker_info[obj_id] = {
                         'time_connected': timestamp,
                         'time_disconnected': None,
-                        'worker_id': None,
-                        'slot_count': None,
-                        'resources_reported': {},
+                        'worker_id': -1,
+                        'slot_count': 0,
+                        'tasks_done': 0,
+                        'cores': None,
+                        'memory(MB)': None,
+                        'disk(MB)': None,
                         'disk_update': {},
                         'cached_files': {},
                     }
                 if status == 'DISCONNECTION':
                     worker_info[obj_id]['time_disconnected'] = timestamp
                 if status == 'RESOURCES':
+                    # only parse the first resources reported
+                    if worker_info[obj_id]['cores'] is not None:
+                        continue
                     resources = json.loads(info)
-                    resources_reported_id = len(worker_info[obj_id]['resources_reported'])
-                    worker_info[obj_id]['resources_reported'][resources_reported_id] = {
-                        'time': timestamp,
-                        'cores': resources.get("cores", [0, ""])[0],
-                        'memory(MB)': resources.get("memory", [0, ""])[0],
-                        'disk(MB)': resources.get("disk", [0, ""])[0],
-                    }
+                    cores, memory, disk = resources.get("cores", [0, ""])[0], resources.get("memory", [0, ""])[0], resources.get("disk", [0, ""])[0]
+                    worker_info[obj_id]['cores'] = cores
+                    worker_info[obj_id]['memory(MB)'] = memory
+                    worker_info[obj_id]['disk(MB)'] = disk
+                    # for calculating task core_id
+                    worker_coremap[obj_id] = bitarray(cores + 1)
+                    worker_coremap[obj_id].setall(0)
                 if status == 'TRANSFER' or status == 'CACHE_UPDATE':
                     if status == 'TRANSFER':
                         # don't consider transfer as of now
-                        transfer_type, filename, size_in_mb, wall_time, start_time = info.split(' ', 4)
+                        transfer_type, filename, size_in_bytes, wall_time, start_time = info.split(' ', 4)
                     elif status == 'CACHE_UPDATE':
                         transfer_type = 'CACHE_UPDATE'
-                        filename, size_in_mb, wall_time, start_time = info.split(' ', 3)
+                        filename, size_in_bytes, wall_time, start_time = info.split(' ', 3)
 
                     start_time = float(start_time) / 1e6
                     wall_time = float(wall_time) / 1e6
                     # update cached_files table and calculate disk increament
-                    size_in_mb = int(size_in_mb)
+                    size_in_bytes = int(size_in_bytes)
                     if filename in worker_info[obj_id]['cached_files']:
-                        disk_increament = size_in_mb - worker_info[obj_id]['cached_files'][filename]
-                        worker_info[obj_id]['cached_files'][filename] = size_in_mb
+                        disk_increament = size_in_bytes - worker_info[obj_id]['cached_files'][filename]
+                        worker_info[obj_id]['cached_files'][filename] = size_in_bytes
                     else:
-                        disk_increament = size_in_mb
-                        worker_info[obj_id]['cached_files'][filename] = size_in_mb
+                        disk_increament = size_in_bytes
+                        worker_info[obj_id]['cached_files'][filename] = size_in_bytes
 
                     disk_update_entry_id = len(worker_info[obj_id]['disk_update'])
                     disk_update_entry = {
                         'filename': filename,
-                        'size(MB)': size_in_mb,
+                        'size_in_mb': size_in_bytes / 2**20,
                         'start_time': start_time,
                         'wall_time': wall_time,
                         'type': transfer_type,
                         'disk_increament_in_mb': disk_increament / 2**20,
                     }
                     worker_info[obj_id]['disk_update'][disk_update_entry_id] = disk_update_entry
+
             if category == 'LIBRARY':
                 if status == 'SENT':
                     for library in library_info:
@@ -234,16 +232,29 @@ def parse_txn(txn):
                 if status == 'END':
                     manager_info['time_end'] = timestamp
         pbar.close()
-    # add worker_id for each data structure
-    worker_info = {k: v for k, v in sorted(worker_info.items(), key=lambda item: item[1]['time_connected'])}
-    for i, worker in enumerate(worker_info, start=1):
-        worker_info[worker]['worker_id'] = i
+
+    #####################################################
+    # Remove invalid tasks: tasks have to run to completion
+    task_info = {task_id: task for task_id, task in task_info.items() if task['when_done'] is not None}
+    #####################################################
+    # Remove invalid workers: workers have to run at least one valid task
+    active_workers = set()
     for task in task_info.values():
-        worker_hash = task['worker_committed']
-        task['worker_id'] = worker_info[worker_hash]['worker_id']
+        active_workers.add(task['worker_committed'])
+    worker_info = {worker_hash: worker for worker_hash, worker in worker_info.items() if worker_hash in active_workers}
+    # Sort workers by time connected
+    worker_info = {k: v for k, v in sorted(worker_info.items(), key=lambda item: item[1]['time_connected'])}
+    #####################################################
+    # Add worker_id to worker_info and update that in task_info and library_info
+    worker_idx = 1
+    for worker in worker_info.values():
+        worker['worker_id'] = worker_idx
+        worker_idx += 1
+    for task in task_info.values():
+        task['worker_id'] = worker_info[task['worker_committed']]['worker_id']
     for library in library_info.values():
-        worker_hash = library['worker_committed']
-        library['worker_id'] = worker_info[worker_hash]['worker_id']
+        library['worker_id'] = worker_info[library['worker_committed']]['worker_id']
+    #####################################################
 
     return task_info, library_info, worker_info, manager_info
     
@@ -432,17 +443,17 @@ def generate_log_data(log_dir):
     
     # Convert lists to DataFrames
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
-    task_df.sort_values(by=['worker_id', 'worker_slot'], ascending=[True, False], inplace=True)
+    task_df.dropna(subset=['when_running'], inplace=True)
+    task_df['core_id'] = task_df['core_id'].astype(int)
+    # task_df['worker_slot'] = task_df['worker_slot'].astype(int)
+    # task_df.sort_values(by=['worker_id', 'worker_slot'], ascending=[True, False], inplace=True)
     library_df = pd.DataFrame.from_dict(library_info, orient='index')
-
-    # calculate the number of slots on each worker
-    slot_counts = task_df.groupby('worker_committed')['worker_slot'].max()
-    for worker_committed, slot_count in slot_counts.items():
-        worker_info[worker_committed]['slot_count'] = slot_count
 
     # Save task_df, library_df and worker_info to CSV
     task_df.to_csv(os.path.join(dirname, 'task_info.csv'), index=False)
     library_df.to_csv(os.path.join(dirname, 'library_info.csv'), index=False)
+    with open(os.path.join(dirname, 'manager_info.json'), 'w') as f:
+        json.dump(manager_info, f, indent=4)
     with open(os.path.join(dirname, 'worker_info.json'), 'w') as f:
         json.dump(worker_info, f, indent=4)
 
@@ -455,13 +466,19 @@ def generate_log_data(log_dir):
                 'worker_id': info['worker_id'],
             }
             row.update(disk_update)
-            rows.append(row)
+            if row['worker_id'] != -1:
+                rows.append(row)
+
     disk_update_df = pd.DataFrame(rows)
-    disk_update_df.sort_values(by=['worker_id', 'start_time'], ascending=[True, True], inplace=True)
-    disk_update_df['disk_usage_in_mb'] = disk_update_df.groupby('worker_id')['disk_increament_in_mb'].cumsum()
-    disk_update_df.to_csv(os.path.join(dirname, 'worker_disk_update.csv'), index=False)
-    
-    # convert resources_reported in worker_info to DataFrame
+
+    # this df may be empty
+    if not disk_update_df.empty:
+        disk_update_df.query('start_time != 0 and wall_time != 0', inplace=True)
+        disk_update_df.sort_values(by=['worker_id', 'start_time'], ascending=[True, True], inplace=True)
+        disk_update_df['disk_usage_in_mb'] = disk_update_df.groupby('worker_id')['disk_increament_in_mb'].cumsum()
+        disk_update_df.to_csv(os.path.join(dirname, 'worker_disk_update.csv'), index=False)
+
+    # convert worker_info to DataFrame
     rows = []
     for worker_hash, info in worker_info.items():
         row = {
@@ -470,15 +487,25 @@ def generate_log_data(log_dir):
             'time_connected': info['time_connected'],
             'time_disconnected': info['time_disconnected'],
             'slot_count': info['slot_count'],
-            'cores': info['resources_reported'][0]['cores'],
-            'memory(MB)': info['resources_reported'][0]['memory(MB)'],
-            'disk(MB)': info['resources_reported'][0]['disk(MB)'],
-            'tasks_ran': len(task_df[task_df['worker_committed'] == worker_hash]),
-            'peak_disk_usage(MB)': disk_update_df[disk_update_df['worker_hash'] == worker_hash]['disk_usage_in_mb'].max(),
-            'peak_disk_usage(%)': (disk_update_df[disk_update_df['worker_hash'] == worker_hash]['disk_usage_in_mb'].max() + 0.01) / info['resources_reported'][0]['disk(MB)'],
+            'cores': info['cores'],
+            'memory(MB)': info['memory(MB)'],
+            'disk(MB)': info['disk(MB)'],
+            'tasks_done': len(task_df[task_df['worker_committed'] == worker_hash]),
+            'peak_disk_usage(MB)': 0,
+            'peak_disk_usage(%)': 0,
+            'avg_task_runtime(s)': 0,
         }
+        # check if this worker has any disk updates
+        if not disk_update_df.empty and disk_update_df['worker_hash'].isin([worker_hash]).any():
+            row['peak_disk_usage(MB)'] = disk_update_df[disk_update_df['worker_hash'] == worker_hash]['disk_usage_in_mb'].max()
+            row['peak_disk_usage(%)'] = disk_update_df[disk_update_df['worker_hash'] == worker_hash]['disk_usage_in_mb'].max() / info['disk(MB)']
+        # the worker may not have any tasks
+        if row['tasks_done'] > 0:
+            row['avg_task_runtime(s)'] = task_df[task_df['worker_committed'] == worker_hash]['time_worker_end'].mean() - task_df[task_df['worker_committed'] == worker_hash]['time_worker_start'].mean()
         rows.append(row)
+
     worker_summary_df = pd.DataFrame(rows)
+    worker_summary_df = worker_summary_df.query('worker_id > 0 and tasks_done > 0')
     worker_summary_df.sort_values(by=['worker_id'], ascending=[True], inplace=True)
     worker_summary_df.to_csv(os.path.join(dirname, 'worker_summary.csv'), index=False)
 

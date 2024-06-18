@@ -1,5 +1,5 @@
 
-export function plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSummaryCSV, useDiskUtilization = false) {
+export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, useDiskUtilization) {
     // parse and preprocess data
     const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
     workerDiskUpdate.forEach(function(d) {
@@ -16,18 +16,14 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSum
     });
     
     // get the minTime, maxTime and maxDiskUsage
-    const taskInfo = d3.csvParse(taskInfoCSV);
-    const minTime = d3.min(taskInfo, d => +d.when_ready);
-    const maxTime = d3.max(taskInfo, d => +d.when_done);
+    const minTime = manager_time_start;
+    const maxTime = manager_time_end;
     let maxDiskUsage;
     if (useDiskUtilization) {
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(%)']);
     } else {
-        maxDiskUsage = d3.max(Array.from(groupedworkerDiskUpdate.values()), group =>
-            d3.max(group, d => d.disk_usage_in_mb)
-        );
+        maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(MB)']);
     }
-    console.log('maxDiskUsage:', maxDiskUsage); 
 
     const container = document.getElementById('worker-accumulated-cached-files-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 90};

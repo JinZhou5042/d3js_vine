@@ -37,26 +37,32 @@ window.addEventListener('load', function() {
     async function handleLogChange() {
         const logName = this.value;
         const taskInfoCSV = await fetchFile(`logs/${logName}/vine-logs/task_info.csv`);
+        const managerInfoJson = await fetchFile(`logs/${logName}/vine-logs/manager_info.json`);
         const libraryInfoCSV = await fetchFile(`logs/${logName}/vine-logs/library_info.csv`);
         const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
         const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_update.csv`);
+
+        const manager_time_start = JSON.parse(managerInfoJson).time_start;
+        const manager_time_end = JSON.parse(managerInfoJson).time_end;
 
         try {
             // draw histogram
             // plotExecutionSummary(taskInfoCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            plotExecutionDetails(taskInfoCSV, workerSummaryCSV);
+            plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
-            plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSummaryCSV);
+            plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
             setupZoomAndScroll('#worker-accumulated-cached-files', '#worker-accumulated-cached-files-container');
+            
             document.getElementById('worker-accumulated-cached-files-display-mode').addEventListener('change', function() {
                 const mode = this.value;
                 const useDiskUtilization = (mode === 'diskUtilization');
                 d3.select('#worker-accumulated-cached-files').selectAll('*').remove();
-                plotAccumulatedFiles(workerDiskUpdateCSV, taskInfoCSV, workerSummaryCSV, useDiskUtilization);
+                plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, useDiskUtilization);
             });
+            
             // draw violin plot
             // drawViolins(dataDir, workerInfo);
             // draw core load plot

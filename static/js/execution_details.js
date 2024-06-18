@@ -1,4 +1,4 @@
-export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
+export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time_start, manager_time_end) {
     const taskInfo = d3.csvParse(taskInfoCSV);
     const workerSummary = d3.csvParse(workerSummaryCSV);
 
@@ -14,19 +14,20 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
         .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    const minTime = d3.min(taskInfo, d => +d.when_ready);
+    const minTime = manager_time_start;
+    const maxTime = manager_time_end;
     const xScale = d3.scaleLinear()
-        .domain([0, d3.max(taskInfo, d => +d.when_done - minTime)])
+        .domain([0, maxTime - minTime])
         .range([0, svgWidth]);
 
     const sortedTaskInfo = taskInfo.slice().sort((a, b) => b.worker_id - a.worker_id);
     const yScale = d3.scaleBand()
-        .domain(sortedTaskInfo.map(d => d.worker_id + '-' + d.worker_slot))
+        .domain(sortedTaskInfo.map(d => d.worker_id + '-' + d.core_id))
         .range([0, svgHeight])
         .padding(slotPadding);
     
     ////////////////////////////////////////////
-    // create rectange for each worker
+    // create rectanges for each worker
     const workerEntries = workerSummary.map(d => ({
         worker: d.worker_hash,
         Info: {
@@ -50,6 +51,8 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
                 // show tooltip
                 const tooltip = document.getElementById('vine-tooltip');
                 tooltip.innerHTML = `
+                slot count: ${Info.slot_count}<br>
+                    height: ${yScale.bandwidth() * Info.slot_count + (yScale.step() - yScale.bandwidth()) * (Info.slot_count - 1)}px<br>
                     worker id: ${Info.worker_id}<br>
                     when connected: ${(Info.time_connected - minTime).toFixed(2)}s<br>
                     when disconnected: ${(Info.time_disconnected - minTime).toFixed(2)}s<br>
@@ -75,7 +78,7 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
         .append('rect')
         .attr('class', 'task-worker-running-rect')
         .attr('x', d => xScale(+d.time_worker_start - minTime))
-        .attr('y', d => yScale(d.worker_id + '-' + d.worker_slot))
+        .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
         .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
         .attr('height', yScale.bandwidth())
         .attr('fill', 'steelblue')
@@ -85,7 +88,7 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
             // show tooltip
             tooltip.innerHTML = `
                 task id: ${d.task_id}<br>
-                worker: ${d.worker_id} (slot ${d.worker_slot})<br>
+                worker: ${d.worker_id} (slot ${d.core_id})<br>
                 execution time: ${(d.time_worker_end - d.time_worker_start).toFixed(2)}s<br>
                 input size: ${(d.size_input_mgr - 0).toFixed(4)}MB<br>
                 output size: ${(d.size_output_mgr - 0).toFixed(4)}MB<br>
@@ -116,7 +119,7 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
         .append('rect')
         .attr('class', 'task-submitting-rect')
         .attr('x', d => xScale(+d.when_ready - minTime))
-        .attr('y', d => yScale(d.worker_id + '-' + d.worker_slot))
+        .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
         .attr('width', d => xScale(+d.time_worker_start) - xScale(+d.when_ready))
         .attr('height', yScale.bandwidth())
         .attr('fill', 'rgba(173, 216, 230, 0.2)');
@@ -145,7 +148,7 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV) {
     const tickInterval = Math.max(1, Math.floor(numWorkers / maxTicks));
     const yTicks = sortedTaskInfo
         .filter((_, i) => i % tickInterval === 0)
-        .map(d => d.worker_id + '-' + d.worker_slot);
+        .map(d => d.worker_id + '-' + d.core_id);
 
     const yAxis = d3.axisLeft(yScale)
         .tickSizeOuter(0)
