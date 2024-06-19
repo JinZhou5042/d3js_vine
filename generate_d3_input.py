@@ -282,13 +282,13 @@ def parse_taskgraph(taskgraph, task_info, task_try_count):
                 filename = right.split('-', 1)[1]
                 task_id = int(left.split('-')[1])
                 try_id = task_try_count[task_id]
-                task_info[(task_id, try_id)]['output_files'].append(filename)
+                # task_info[(task_id, try_id)]['output_files'].append(filename)
             # task consumes an input file
             elif right.startswith('task'):
                 filename = left.split('-', 1)[1]
                 task_id = int(right.split('-')[1])
                 try_id = task_try_count[task_id]
-                task_info[(task_id, try_id)]['input_files'].append(filename)
+                # task_info[(task_id, try_id)]['input_files'].append(filename)
         pbar.close()
 
     return task_info
@@ -310,22 +310,22 @@ def expand_done_task(task):
         return task_copies
     
 def convert_to_and_save_task_df(task_info, dirname):
-    print("Generating task.csv, task_done.csv, task_failed_on_manager.csv, task_failed_on_worker.csv")
-    # get task_df and divide it into successful and failed tasks
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
-    task_done_df = task_df[task_df['when_done'].notnull()]
-    task_failed_on_manager_df = task_df[task_df['when_running'].isnull() & task_df['when_ready'].notnull()]
-    task_failed_on_worker_df = task_df[task_df['when_running'].notnull() & task_df['when_waiting_retrieval'].isnull()]
-    
-    # expand task_done_df and task_failed_on_worker_df by core_id
-    task_done_df = task_done_df.apply(expand_done_task, axis=1)
-    task_failed_on_manager_df = task_failed_on_manager_df.apply(expand_done_task, axis=1)
-    task_failed_on_worker_df = task_failed_on_worker_df.apply(expand_done_task, axis=1)
-
-    # Save task_df, library_df and worker_info to CSV
     task_df.to_csv(os.path.join(dirname, 'task.csv'), index=False)
+    
+    print("Generating task_done.csv...")
+    task_done_df = task_df[task_df['when_done'].notnull()]
+    task_done_df = task_done_df.apply(expand_done_task, axis=1)
     task_done_df.to_csv(os.path.join(dirname, 'task_done.csv'), index=False)
+
+    print("Generating task_failed_on_manager.csv...")
+    task_failed_on_manager_df = task_df[task_df['when_running'].isnull() & task_df['when_ready'].notnull()]
+    task_failed_on_manager_df = task_failed_on_manager_df.apply(expand_done_task, axis=1)
     task_failed_on_manager_df.to_csv(os.path.join(dirname, 'task_failed_on_manager.csv'), index=False)
+    
+    print("Generating task_failed_on_worker.csv...")
+    task_failed_on_worker_df = task_df[task_df['when_running'].notnull() & task_df['when_waiting_retrieval'].isnull()]
+    task_failed_on_worker_df = task_failed_on_worker_df.apply(expand_done_task, axis=1)
     task_failed_on_worker_df.to_csv(os.path.join(dirname, 'task_failed_on_worker.csv'), index=False)
 
     return task_df
