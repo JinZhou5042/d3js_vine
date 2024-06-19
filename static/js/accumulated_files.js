@@ -1,5 +1,5 @@
 
-export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, useDiskUtilization) {
+export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, displayDiskUsageByPercentage) {
     // parse and preprocess data
     const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
     workerDiskUpdate.forEach(function(d) {
@@ -10,16 +10,12 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
     const groupedworkerDiskUpdate = d3.group(workerDiskUpdate, d => d.worker_id);
 
     const workerSummary = d3.csvParse(workerSummaryCSV);
-    const workerDiskSize = new Map();
-    workerSummary.forEach(d => {
-        workerDiskSize.set(d.worker_id, +d['disk(MB)']);
-    });
     
     // get the minTime, maxTime and maxDiskUsage
     const minTime = manager_time_start;
     const maxTime = manager_time_end;
     let maxDiskUsage;
-    if (useDiskUtilization) {
+    if (displayDiskUsageByPercentage) {
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(%)']);
     } else {
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(MB)']);
@@ -75,8 +71,8 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
     const line = d3.line()
         .x(d => xScale(d.start_time - minTime))
         .y(d => {
-            const diskUsage = useDiskUtilization 
-                ? d.disk_usage_in_mb / workerDiskSize.get(d.worker_id)
+            const diskUsage = displayDiskUsageByPercentage 
+                ? d.disk_usage_in_percentage
                 : d.disk_usage_in_mb;
             return yScale(diskUsage);
         });
@@ -133,7 +129,7 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
         path.attr("stroke-dasharray", `${totalLength} ${totalLength}`)
             .attr("stroke-dashoffset", totalLength)
             .transition()
-            .duration(300) 
+            .duration(0) 
             .ease(d3.easeLinear)
             .attr("stroke-dashoffset", 0);
     });

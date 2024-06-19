@@ -36,7 +36,10 @@ window.addEventListener('load', function() {
     
     async function handleLogChange() {
         const logName = this.value;
-        const taskInfoCSV = await fetchFile(`logs/${logName}/vine-logs/task_info.csv`);
+        const taskCSV = await fetchFile(`logs/${logName}/vine-logs/task_info.csv`);
+        const taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
+        
+
         const managerInfoJson = await fetchFile(`logs/${logName}/vine-logs/manager_info.json`);
         const libraryInfoCSV = await fetchFile(`logs/${logName}/vine-logs/library_info.csv`);
         const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
@@ -47,10 +50,10 @@ window.addEventListener('load', function() {
 
         try {
             // draw histogram
-            // plotExecutionSummary(taskInfoCSV);
+            // plotExecutionSummary(taskCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time_start, manager_time_end);
+            plotExecutionDetails(taskCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
             plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);

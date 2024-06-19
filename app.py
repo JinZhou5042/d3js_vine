@@ -2,6 +2,26 @@ from flask import Flask, render_template, jsonify, Response, abort, send_from_di
 from generate_d3_input import generate_log_data
 import os
 import argparse
+import sys
+import subprocess
+
+def kill_process_on_port(port):
+    try:
+        # Find the process running on the specified port
+        result = subprocess.check_output(["lsof", "-t", "-i:{}".format(port)])
+        pid = result.decode().strip()
+        if pid:
+            print("Process found, PID:", pid)
+            # Kill the process
+            subprocess.check_output(["kill", pid])
+            print("Process has been killed")
+        else:
+            print("No process found on port {}.".format(port))
+    except subprocess.CalledProcessError:
+        print("No process found on port {}.".format(port))
+    except Exception as e:
+        print("An error occurred:", e)
+        sys.exit(1)
 
 app = Flask(__name__)
 
@@ -76,4 +96,6 @@ if __name__ == '__main__':
 
     if args.generate_data:
         process_logs()
-    app.run(host='0.0.0.0', port=0, debug=True)
+        
+    kill_process_on_port(9122)
+    app.run(host='0.0.0.0', port=9122, debug=True)
