@@ -142,13 +142,15 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
         .append('g')
         .each(function(d) {
             var g = d3.select(this);
-            g.append('rect')
+            if (false) {
+                g.append('rect')
                 .attr('class', 'waiting-to-execute-on-worker')
                 .attr('x', d => xScale(+d.when_running - minTime))
                 .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
                 .attr('width', d => xScale(+d.time_worker_start) - xScale(+d.when_running))
                 .attr('height', yScale.bandwidth())
                 .attr('fill', colors['waiting-to-execute-on-worker'].normal);
+            }
             g.append('rect')
                 .attr('class', 'executing-on-worker')
                 .attr('x', d => xScale(+d.time_worker_start - minTime))
@@ -156,13 +158,15 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
                 .attr('height', yScale.bandwidth())
                 .attr('fill', colors['executing-on-worker'].normal);
-            g.append('rect')
+            if (false) {
+                g.append('rect')
                 .attr('class', 'waiting-retrieval-on-worker')
                 .attr('x', d => xScale(+d.time_worker_end - minTime))
                 .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
                 .attr('width', d => xScale(+d.when_waiting_retrieval) - xScale(+d.time_worker_end))
                 .attr('height', yScale.bandwidth())
                 .attr('fill', colors['waiting-retrieval-on-worker'].normal);
+            }
         })
         .on('mouseover', function(event, d) {
             d3.select(this).selectAll('rect').each(function() {

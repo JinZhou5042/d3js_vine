@@ -282,13 +282,13 @@ def parse_taskgraph(taskgraph, task_info, task_try_count):
                 filename = right.split('-', 1)[1]
                 task_id = int(left.split('-')[1])
                 try_id = task_try_count[task_id]
-                # task_info[(task_id, try_id)]['output_files'].append(filename)
+                task_info[(task_id, try_id)]['output_files'].append(filename)
             # task consumes an input file
             elif right.startswith('task'):
                 filename = left.split('-', 1)[1]
                 task_id = int(right.split('-')[1])
                 try_id = task_try_count[task_id]
-                # task_info[(task_id, try_id)]['input_files'].append(filename)
+                task_info[(task_id, try_id)]['input_files'].append(filename)
         pbar.close()
 
     return task_info
