@@ -310,6 +310,7 @@ def expand_done_task(task):
         return task_copies
     
 def convert_to_and_save_task_df(task_info, dirname):
+    print("Generating task.csv, task_done.csv, task_failed_on_manager.csv, task_failed_on_worker.csv")
     # get task_df and divide it into successful and failed tasks
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
     task_done_df = task_df[task_df['when_done'].notnull()]
@@ -349,6 +350,7 @@ def generate_log_data(log_dir):
         json.dump(worker_info, f, indent=4)
 
     # Convert disk_update in worker_info to DataFrame
+    print("Generating worker_disk_update.csv...")
     rows = []
     for worker_hash, worker in worker_info.items():
         for disk_update in worker['disk_update'].values():
@@ -368,6 +370,7 @@ def generate_log_data(log_dir):
         disk_update_df.to_csv(os.path.join(dirname, 'worker_disk_update.csv'), index=False)
 
     # convert worker_info to DataFrame
+    print("Generating worker_summary.csv...")
     rows = []
     for worker_hash, info in worker_info.items():
         row = {
