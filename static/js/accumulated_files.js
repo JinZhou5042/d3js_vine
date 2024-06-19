@@ -2,10 +2,9 @@
 export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, displayDiskUsageByPercentage) {
     // parse and preprocess data
     const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
+
     workerDiskUpdate.forEach(function(d) {
         d.start_time = +d.start_time;
-        d.disk_increament_in_mb = +d.disk_increament_in_mb;
-        d.disk_usage_in_mb = +d.disk_usage_in_mb;
     });
     const groupedworkerDiskUpdate = d3.group(workerDiskUpdate, d => d.worker_id);
 
@@ -22,7 +21,7 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
     }
 
     const container = document.getElementById('worker-accumulated-cached-files-container');
-    const margin = {top: 20, right: 20, bottom: 40, left: 90};
+    const margin = {top: 20, right: 20, bottom: 40, left: 60};
     const svgWidth = container.clientWidth - margin.left - margin.right;
     const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
@@ -63,20 +62,25 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
             yScale.domain()[0] + (yScale.domain()[1] - yScale.domain()[0]) * 0.75,
             yScale.domain()[1]
         ])
-        .tickFormat(d3.format(".6f"));
+        .tickFormat(displayDiskUsageByPercentage === true ? d3.format(".4f") : d3.format(".2f"));
     svg.append('g')
         .call(yAxis);
 
     // Create line generator
     const line = d3.line()
-        .x(d => xScale(d.start_time - minTime))
+        .x(d => {
+            if (d.start_time - minTime < 0) {
+                console.log('d', d);
+            }
+            return xScale(d.start_time - minTime);
+        })
         .y(d => {
             const diskUsage = displayDiskUsageByPercentage 
-                ? d.disk_usage_in_percentage
-                : d.disk_usage_in_mb;
+                ? d['disk_usage(%)']
+                : d['disk_usage(MB)'];
             return yScale(diskUsage);
         });
-
+        
     // Draw lines for each worker
     const tooltip = document.getElementById('vine-tooltip');
     groupedworkerDiskUpdate.forEach((value, key) => {
@@ -86,9 +90,9 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
             .attr("class", "line")
             .attr("fill", "none")
             .attr("stroke", originalColor)  // Assign color using a categorical scheme
+            .attr("data-original-color", originalColor)
             .attr("stroke-width", 0.8)
             .attr("d", line)
-            .attr("data-original-color", originalColor)
             .on("mouseover", function(event, d) {
                 // change color
                 d3.select(this).raise();

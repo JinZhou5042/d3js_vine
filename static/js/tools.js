@@ -8,8 +8,8 @@ export function setupZoomAndScroll(svgSelector, containerSelector) {
     let initialHeight = svgElement.getBoundingClientRect().height;
 
     // Define the maximum and minimum zoom scales.
-    const maxWidth = initialWidth * 100; // Max width is 20 times the initial width.
-    const maxHeight = initialHeight * 100; // Max height is 20 times the initial height.
+    const maxWidth = initialWidth * 20; // Max width is 20 times the initial width.
+    const maxHeight = initialHeight * 20; // Max height is 20 times the initial height.
     const minWidth = initialWidth * 0.95; // Min width is 80% of the initial width.
     const minHeight = initialHeight * 0.95; // Min height is 80% of the initial height.
 

@@ -53,11 +53,11 @@
     </div>
 
     <h1 id="worker-accumulated-cached-files-title" >Accumulated Files on Each Worker</h1>
+    <select id="worker-accumulated-cached-files-display-mode">
+        <option value="diskUsage">sort by disk usage (MB)</option>
+        <option value="diskUtilization">sort by disk utilization (%)</option>
+    </select>
     <div id="worker-accumulated-cached-files-container" class="container-1" >
-        <select id="worker-accumulated-cached-files-display-mode">
-            <option value="diskUsage">sort by disk usage (MB)</option>
-            <option value="diskUtilization">sort by disk utilization (%)</option>
-        </select>
         <svg id="worker-accumulated-cached-files" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>

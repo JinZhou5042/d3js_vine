@@ -95,6 +95,7 @@ def parse_txn(txn):
                 if status == 'RUNNING':
                     # a running task can be a library which does not have a ready status
                     resources_allocated = json.loads(info.split(' ', 3)[-1])
+                    try_id = task_try_count[task_id]
                     if task_id in task_try_count:
                         task = task_info[(task_id, try_id)]
                         worker_hash = info.split()[0]

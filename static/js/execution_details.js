@@ -1,13 +1,7 @@
-export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time_start, manager_time_end) {
-    const taskInfo = d3.csvParse(taskInfoCSV);
-    console.log('taskInfo:', taskInfo)
-    const tasksDone = taskInfo.filter(d => d.when_done != "").slice().sort((a, b) => b.worker_id - a.worker_id);;
-    const tasksFailedOnWorker = taskInfo.filter(d => d.when_running != "" && d.when_waiting_retrieval == "");
-    const tasksFailedOnManager = taskInfo.filter(d => d.when_ready != "" && d.when_running == "");
-
-    console.log('tasksDone:', tasksDone.length);
-    console.log('tasksFailedOnWorker:', tasksFailedOnWorker.length);
-    console.log('tasksFailedOnManager:', tasksFailedOnManager.length);
+export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end) {
+    const taskDone = d3.csvParse(taskDoneCSV);
+    const taskFailedOnWorker = d3.csvParse(taskFailedOnWorkerCSV);
+    const workerSummary = d3.csvParse(workerSummaryCSV);
 
     const container = document.getElementById('execution-details-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 40};
@@ -27,7 +21,6 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time
         .domain([0, maxTime - minTime])
         .range([0, svgWidth]);
     // set y scale
-    const workerSummary = d3.csvParse(workerSummaryCSV);
     const workerCoresMap = [];
     workerSummary.forEach(d => {
         for (let i = 1; i <= +d.cores; i++) {
@@ -36,7 +29,7 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time
     });
     const yScale = d3.scaleBand()
         .domain(workerCoresMap)
-        .range([0, svgHeight])
+        .range([svgHeight, 0])
         .padding(0.1);
 
     // draw x axis
@@ -54,50 +47,75 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time
         .attr('transform', `translate(0, ${svgHeight + yScale.bandwidth()})`)
         .call(xAxis);
 
-    console.log(workerCoresMap);
+    const colors = {
+        'worker': {
+            'normal': 'lightgrey',
+            'highlight': 'orange',
+        },
+        'ready-on-manager': {
+            'normal': 'red',
+            'highlight': '#72bbb0',
+        },
+        'waiting-to-execute-on-worker': {
+            'normal': 'lightblue',
+            'highlight': '#72bbb0',
+        },
+        'executing-on-worker': {
+            'normal': 'steelblue',
+            'highlight': 'orange',
+        },
+        'waiting-retrieval-on-worker': {
+            'normal': '#40909f',
+            'highlight': '#bed380',
+        },
+        'task-failed-on-worker-rect': {
+            'normal': '#ad2c23',
+            'highlight': 'orange',
+        },
+    }
     
     // draw y axis
-    const numWorkers = workerSummary.length;
+    const totalWorkers = workerSummary.length;
     const maxTicks = 5;
-    const tickInterval = Math.max(1, Math.floor(numWorkers / maxTicks));
-    const yTicks = tasksDone
-        .filter((_, i) => i % tickInterval === 0)
-        .map(d => d.worker_id + '-' + d.core_id);
+    const tickInterval = Math.ceil(totalWorkers / maxTicks);
+    const selectedTicks = [];
+    for (let i = totalWorkers - 1; i >= 0; i -= tickInterval) {
+        selectedTicks.unshift(`${workerSummary[i].worker_id}-${workerSummary[i].cores}`);
+    }
     const yAxis = d3.axisLeft(yScale)
         .tickSizeOuter(0)
-        .tickValues(yTicks)
+        .tickValues(selectedTicks)
         .tickFormat(d => d.split('-')[0]);
     svg.append('g')
         .call(yAxis);
-    
+
     ////////////////////////////////////////////
-    /*
     // create rectanges for each worker
+    const tooltip = document.getElementById('vine-tooltip');
     const workerEntries = workerSummary.map(d => ({
         worker: d.worker_hash,
         Info: {
             worker_id: +d.worker_id,
             time_connected: +d.time_connected,
             time_disconnected: +d.time_disconnected,
-            slot_count: +d.slot_count
+            cores: +d.cores,
         }
     }));
     workerEntries.forEach(({ worker, Info }) => {
         let worker_id = Info.worker_id;
         const rect = svg.append('rect')
             .attr('x', xScale(+Info.time_connected - minTime))
-            .attr('y', yScale(worker_id + '-' + Info.slot_count))
+            .attr('y', yScale(worker_id + '-' + Info.cores))
             .attr('width', xScale(+Info.time_disconnected - minTime) - xScale(+Info.time_connected - minTime))
-            .attr('height', yScale.bandwidth() * Info.slot_count + (yScale.step() - yScale.bandwidth()) * (Info.slot_count - 1))
-            .attr('fill', 'lightgrey')
+            .attr('height', yScale.bandwidth() * Info.cores + (yScale.step() - yScale.bandwidth()) * (Info.cores - 1))
+            .attr('fill', colors.worker.normal)
             .attr('opacity', 0.3)
             .on('mouseover', function(event, d) {
-                d3.select(this).attr('fill', 'orange');
+                d3.select(this)
+                    .attr('fill', colors.worker.highlight);
                 // show tooltip
-                const tooltip = document.getElementById('vine-tooltip');
                 tooltip.innerHTML = `
-                slot count: ${Info.slot_count}<br>
-                    height: ${yScale.bandwidth() * Info.slot_count + (yScale.step() - yScale.bandwidth()) * (Info.slot_count - 1)}px<br>
+                    cores: ${Info.cores}<br>
                     worker id: ${Info.worker_id}<br>
                     when connected: ${(Info.time_connected - minTime).toFixed(2)}s<br>
                     when disconnected: ${(Info.time_disconnected - minTime).toFixed(2)}s<br>
@@ -107,50 +125,66 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time
                 tooltip.style.left = (event.pageX + 10) + 'px';
             })
             .on('mouseout', function(event, d) {
-                d3.select(this).attr('fill', 'lightgrey');
+                d3.select(this)
+                    .attr('fill', colors.worker.normal);
                 // hide tooltip
-                const tooltip = document.getElementById('vine-tooltip');
                 tooltip.style.visibility = 'hidden';
             });
     });
-    */
+    
     ////////////////////////////////////////////
 
-    // create rectange for each task (time extent: time_worker_start ~ time_worker_end)
-    const tooltip = document.getElementById('vine-tooltip');
-    svg.selectAll('.task-worker-running-rect')
-        .data(tasksDone)
+    ////////////////////////////////////////////
+    // create rectange for each successful task (time extent: when_running ~ time_worker_start)
+    svg.selectAll('.task-rect')
+        .data(taskDone)
         .enter()
-        .append('rect')
-        .attr('class', 'task-worker-running-rect')
-        .attr('x', d => xScale(+d.time_worker_start - minTime))
+        .append('g')
         .each(function(d) {
-            // d.core_id is a number of array
-            const coreIds = JSON.parse(d.core_id);
-            coreIds.forEach(coreId => {
-                const y = yScale(`${d.worker_id}-${coreId}`);
-                d3.select(this)
-                    .clone(true)
-                    .attr('y', y);
-                // console.log('y:', y, 'coreId:', coreId, 'worker_id:', d.worker_id);
-            });
+            var g = d3.select(this);
+            g.append('rect')
+                .attr('class', 'waiting-to-execute-on-worker')
+                .attr('x', d => xScale(+d.when_running - minTime))
+                .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
+                .attr('width', d => xScale(+d.time_worker_start) - xScale(+d.when_running))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', colors['waiting-to-execute-on-worker'].normal);
+            g.append('rect')
+                .attr('class', 'executing-on-worker')
+                .attr('x', d => xScale(+d.time_worker_start - minTime))
+                .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
+                .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', colors['executing-on-worker'].normal);
+            g.append('rect')
+                .attr('class', 'waiting-retrieval-on-worker')
+                .attr('x', d => xScale(+d.time_worker_end - minTime))
+                .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
+                .attr('width', d => xScale(+d.when_waiting_retrieval) - xScale(+d.time_worker_end))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', colors['waiting-retrieval-on-worker'].normal);
         })
-        .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
-        .attr('height', yScale.bandwidth())
-        .attr('fill', 'steelblue')
         .on('mouseover', function(event, d) {
-            // change color
-            d3.select(this).attr('fill', 'orange');
+            d3.select(this).selectAll('rect').each(function() {
+                if (this.classList.contains('waiting-to-execute-on-worker')) {
+                    d3.select(this).attr('fill', colors['waiting-to-execute-on-worker'].highlight);
+                } else if (this.classList.contains('executing-on-worker')) {
+                    d3.select(this).attr('fill', colors['executing-on-worker'].highlight);
+                } else if (this.classList.contains('waiting-retrieval-on-worker')) {
+                    d3.select(this).attr('fill', colors['waiting-retrieval-on-worker'].highlight);
+                }
+            });
+            
             // show tooltip
             tooltip.innerHTML = `
                 task id: ${d.task_id}<br>
-                worker: ${d.worker_id} (slot ${d.core_id})<br>
+                worker: ${d.worker_id} (core ${d.core_id})<br>
                 execution time: ${(d.time_worker_end - d.time_worker_start).toFixed(2)}s<br>
                 input size: ${(d.size_input_mgr - 0).toFixed(4)}MB<br>
                 output size: ${(d.size_output_mgr - 0).toFixed(4)}MB<br>
                 when ready: ${(d.when_ready - minTime).toFixed(2)}s<br>
-                when running: ${(d.when_running - minTime).toFixed(20)}s<br>
-                when actually running: ${(d.time_worker_start - minTime).toFixed(20)}s<br>
+                when running: ${(d.when_running - minTime).toFixed(2)}s<br>
+                when actually running: ${(d.time_worker_start - minTime).toFixed(2)}s<br>
                 when actually done: ${(d.time_worker_end - minTime).toFixed(2)}s<br>
                 when waiting retrieval: ${(d.when_waiting_retrieval - minTime).toFixed(2)}s<br>
                 when retrieved: ${(d.when_retrieved - minTime).toFixed(2)}s<br>
@@ -160,13 +194,59 @@ export function plotExecutionDetails(taskInfoCSV, workerSummaryCSV, manager_time
             tooltip.style.left = (event.pageX + 10) + 'px';
         })
         .on('mouseout', function() {
-            // restore color
-            d3.select(this).attr('fill', 'steelblue');
             // hide tooltip
-            const tooltip = document.getElementById('vine-tooltip');
+            tooltip.style.visibility = 'hidden';
+            // restore color
+            d3.select(this).selectAll('rect').each(function() {
+                if (this.classList.contains('waiting-to-execute-on-worker')) {
+                    d3.select(this).attr('fill', colors['waiting-to-execute-on-worker'].normal);
+                } else if (this.classList.contains('executing-on-worker')) {
+                    d3.select(this).attr('fill', colors['executing-on-worker'].normal);
+                } else if (this.classList.contains('waiting-retrieval-on-worker')) {
+                    d3.select(this).attr('fill', colors['waiting-retrieval-on-worker'].normal);
+                }
+            });
+        });
+    ////////////////////////////////////////////
+
+    ////////////////////////////////////////////
+    // create rectange for each failed task (time extent: time_worker_start ~ time_worker_end)
+    svg.selectAll('.task-failed-on-worker-rect')
+        .data(taskFailedOnWorker)
+        .enter()
+        .append('rect')
+        .attr('class', 'task-failed-on-worker-rect')
+        .attr('x', d => xScale(+d.when_running - minTime))
+        .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
+        .attr('width', d => xScale(+d.when_next_ready) - xScale(+d.when_running))
+        .attr('height', yScale.bandwidth())
+        .attr('fill', colors['task-failed-on-worker-rect'].normal)
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+            // change color
+            d3.select(this).attr('fill', colors['task-failed-on-worker-rect'].highlight);
+            // show tooltip
+            tooltip.innerHTML = `
+                task id: ${d.task_id}<br>
+                worker: ${d.worker_id} (core ${d.core_id})<br>
+                execution time: ${(d.when_next_ready - d.when_running).toFixed(2)}s<br>
+                input size: ${(d.size_input_mgr - 0).toFixed(4)}MB<br>
+                when ready: ${(d.when_ready - minTime).toFixed(2)}s<br>
+                when running: ${(d.when_running - minTime).toFixed(2)}s<br>
+                when next ready: ${(d.when_next_ready - minTime).toFixed(2)}s<br>`;
+            tooltip.style.visibility = 'visible';
+            tooltip.style.top = (event.pageY + 10) + 'px';
+            tooltip.style.left = (event.pageX + 10) + 'px';
+        })
+        .on('mouseout', function() {
+            // restore color
+            d3.select(this).attr('fill', colors['task-failed-on-worker-rect'].normal);
+            // hide tooltip
             tooltip.style.visibility = 'hidden';
         });
-    
+
+    ////////////////////////////////////////////
+
     // create rectange for each task (time extent: when_ready ~ time_worker_start)
     /*
     svg.selectAll('.task-waiting-rect')
