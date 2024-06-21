@@ -110,6 +110,15 @@ def generate_data(log_dir):
             }
             if len(disk_update['when_stage_in']) < len(disk_update['when_stage_out']):
                 print(f"Warning: worker {worker_hash} has more stage-outs than stage-ins on file {filename}.")
+            if len(disk_update['when_stage_in']) > len(disk_update['when_stage_out']):
+                # manually add a stage-out at the end of the log
+                when_stage_in = disk_update['when_stage_in'][-1]
+                worker_connected_id = 0
+                for worker_connected in worker['time_connected']:
+                    if worker_connected < when_stage_in and worker['time_disconnected'][worker_connected_id] > when_stage_in:
+                        disk_update['when_stage_out'].append(worker['time_disconnected'][worker_connected_id])
+                        break
+
             for time_stage_in in disk_update['when_stage_in']:
                 row_copy = copy.deepcopy(row)
                 row_copy['time'] = time_stage_in

@@ -73,6 +73,10 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
             'normal': '#ad2c23',
             'highlight': 'orange',
         },
+        'recovery-task': {
+            'normal': '#ea67a9',
+            'highlight': 'orange',
+        },
     }
     
     // draw y axis
@@ -157,7 +161,9 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
                 .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
                 .attr('height', yScale.bandwidth())
-                .attr('fill', colors['executing-on-worker'].normal);
+                .attr('fill', function(d) {
+                    return d.is_recovery_task === "True" ? colors['recovery-task'].normal : colors['executing-on-worker'].normal;
+                });            
             if (false) {
                 g.append('rect')
                 .attr('class', 'waiting-retrieval-on-worker')
@@ -205,7 +211,9 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 if (this.classList.contains('waiting-to-execute-on-worker')) {
                     d3.select(this).attr('fill', colors['waiting-to-execute-on-worker'].normal);
                 } else if (this.classList.contains('executing-on-worker')) {
-                    d3.select(this).attr('fill', colors['executing-on-worker'].normal);
+                    d3.select(this).attr('fill', function(d) {
+                        return d.is_recovery_task === "True" ? colors['recovery-task'].normal : colors['executing-on-worker'].normal;
+                    });  
                 } else if (this.classList.contains('waiting-retrieval-on-worker')) {
                     d3.select(this).attr('fill', colors['waiting-retrieval-on-worker'].normal);
                 }
