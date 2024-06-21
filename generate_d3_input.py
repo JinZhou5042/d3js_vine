@@ -32,7 +32,9 @@ def expand_done_task(task):
 def convert_to_and_save_task_df(task_info, dirname):
     print("Generating task.csv...")
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
-    task_df['when_running'] = np.minimum(task_df['when_running'], task_df['time_worker_start'])
+    # in some cases, the when_running is a little bit larger than time_worker_start
+    mask = task_df['time_worker_start'].gt(0) & task_df['time_worker_start'].notna()
+    task_df.loc[mask, 'when_running'] = np.minimum(task_df.loc[mask, 'when_running'], task_df.loc[mask, 'time_worker_start'])
     task_df.to_csv(os.path.join(dirname, 'task.csv'), index=False)
 
     print("Generating task_done.csv...")
