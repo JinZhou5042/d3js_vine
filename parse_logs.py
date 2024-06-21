@@ -312,7 +312,7 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
                 try_count = task_try_count[task_id]
                 for try_id in range(1, try_count + 1):
                     task_info[(task_id, try_id)]['is_recovery_task'] = True
-
+        pbar.close()
     return worker_info
 
 
