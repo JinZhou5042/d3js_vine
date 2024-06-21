@@ -4,11 +4,14 @@ import time
 from tqdm import tqdm
 import re
 from datetime import datetime
+import pytz
 
 
 def datestring_to_timestamp(datestring):
+    eastern = pytz.timezone('US/Eastern')
     date_obj = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f")
-    unix_timestamp = time.mktime(date_obj.timetuple()) + (date_obj.microsecond / 1000000)
+    localized_date = eastern.localize(date_obj)
+    unix_timestamp = localized_date.timestamp()
     return unix_timestamp
 
 
@@ -299,6 +302,9 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
                 datestring = parts[0] + " " + parts[1]
                 timestamp = datestring_to_timestamp(datestring)
                 worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
+                if filename == "temp-rnd-wiusuexqxpzqzjv" and worker_hash == "worker-2a7443b82d33bd07eb5980cd6b3f999e":
+                    print(f"datestring = {datestring}")
+                    print(f"timestamp = {timestamp}")
                 try:
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_out'].append(timestamp)
                     if len(worker_info[worker_hash]['disk_update'][filename]['when_stage_out']) > len(worker_info[worker_hash]['disk_update'][filename]['when_stage_in']):
