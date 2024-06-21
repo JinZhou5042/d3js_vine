@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, Response, abort, send_from_directory
-from generate_d3_input import generate_log_data
+from generate_d3_input import generate_data
 import os
 import argparse
 import sys
@@ -86,7 +86,7 @@ def process_logs():
                 continue 
 
             print(f"Processing Log: {log_dir} ...")
-            generate_log_data(log_dir)
+            generate_data(log_dir)
 
 
 if __name__ == '__main__':

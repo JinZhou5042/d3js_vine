@@ -4,7 +4,7 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
     const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
 
     workerDiskUpdate.forEach(function(d) {
-        d.start_time = +d.start_time;
+        d.start_time = +d.time;
     });
     const groupedworkerDiskUpdate = d3.group(workerDiskUpdate, d => d.worker_id);
 
@@ -72,12 +72,18 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
             if (d.start_time - minTime < 0) {
                 console.log('d', d);
             }
+            if (isNaN(d.start_time - minTime)) {
+                console.log('d.start_time - minTime is NaN', d);
+            }
             return xScale(d.start_time - minTime);
         })
         .y(d => {
             const diskUsage = displayDiskUsageByPercentage 
                 ? d['disk_usage(%)']
                 : d['disk_usage(MB)'];
+            if (isNaN(diskUsage)) {
+                console.log('diskUsage is NaN', d);
+            }
             return yScale(diskUsage);
         });
         

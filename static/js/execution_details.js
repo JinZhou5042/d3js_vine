@@ -1,3 +1,4 @@
+
 export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end) {
     const taskDone = d3.csvParse(taskDoneCSV);
     const taskFailedOnWorker = d3.csvParse(taskFailedOnWorkerCSV);
@@ -130,8 +131,7 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 // hide tooltip
                 tooltip.style.visibility = 'hidden';
             });
-    });
-    
+    });    
     ////////////////////////////////////////////
 
     ////////////////////////////////////////////
@@ -142,12 +142,12 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
         .append('g')
         .each(function(d) {
             var g = d3.select(this);
-            if (false) {
+            if (true) {
                 g.append('rect')
                 .attr('class', 'waiting-to-execute-on-worker')
                 .attr('x', d => xScale(+d.when_running - minTime))
                 .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
-                .attr('width', d => xScale(+d.time_worker_start) - xScale(+d.when_running))
+                .attr('width', xScale(+d.time_worker_start) - xScale(+d.when_running)) 
                 .attr('height', yScale.bandwidth())
                 .attr('fill', colors['waiting-to-execute-on-worker'].normal);
             }
@@ -211,6 +211,7 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 }
             });
         });
+
     ////////////////////////////////////////////
 
     ////////////////////////////////////////////
@@ -250,19 +251,5 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
         });
 
     ////////////////////////////////////////////
-
-    // create rectange for each task (time extent: when_ready ~ time_worker_start)
-    /*
-    svg.selectAll('.task-waiting-rect')
-        .data(sortedTaskInfo)
-        .enter()
-        .append('rect')
-        .attr('class', 'task-submitting-rect')
-        .attr('x', d => xScale(+d.when_ready - minTime))
-        .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
-        .attr('width', d => xScale(+d.time_worker_start) - xScale(+d.when_ready))
-        .attr('height', yScale.bandwidth())
-        .attr('fill', 'rgba(173, 216, 230, 0.2)');
-    */
 
 }
