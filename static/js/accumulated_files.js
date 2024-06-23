@@ -70,7 +70,7 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
     const line = d3.line()
         .x(d => {
             if (d.start_time - minTime < 0) {
-                console.log('d', d);
+                console.log('d.start_time - minTime < 0, d.start_time = ', d.start_time, 'minTime = ', minTime);
             }
             if (isNaN(d.start_time - minTime)) {
                 console.log('d.start_time - minTime is NaN', d);

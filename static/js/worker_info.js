@@ -25,7 +25,7 @@ async function fetchDataAndUpdateTable() {
                 if (Object.values(item).every(value => value === "")) {
                     return; 
                 }
-                
+
                 const row = table.insertRow();
                 for (let key in item) {
                     const cell = row.insertCell();

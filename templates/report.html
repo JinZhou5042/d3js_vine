@@ -15,33 +15,51 @@
 </head>
 
 <body>
-
-    <h1 id="worker-information-title" >Worker Information</h1>
-    <div class="worker-info-table-container" >
-        <table id="worker-info-table">
-            <tr>
-                <th>Worker ID</th>
-                <th>Cores</th>
-                <th>Memory</th>
-                <th>Disk</th>
-                <th>GPUs</th>
-                <th>Connected Time</th>
-                <th>Disconnected Time</th>
-                <th>Lifetime</th>
-                <th>Task Count</th>
-                <th>Library Installed</th>
-                <th>Library Count</th>
-                <th>Min Runtime</th>
-                <th>Max Runtime</th>
-                <th>Avg Runtime</th>
-                <th>IP Address</th>
-                <th>Port</th>
-                <th>Hash Name</th>
-            </tr>
+    <h1 id="general-statistics-title" >General Statistics</h1>
+    <h2>TASK</h2>
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-task-table">
+            <thead>
+                <tr>
+                    <th>category</th>
+                    <th>submitted</th>
+                    <th>ready</th>
+                    <th>running</th>
+                    <th>waiting_retrieval</th>
+                    <th>retrieved</th>
+                    <th>done</th>
+                    <th>workers</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
         </table>
-        <div id="worker-info-scrollbar-container">
-            <div id="worker-info-virtual-scrollbar"></div>
-        </div>
+    </div>
+    <h2>WORKER</h2>
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-worker-table">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>hash</th>
+                    <th>machine</th>
+                    <th>ip</th>
+                    <th>port</th>
+                    <th>when connected</th>
+                    <th>when disconnected</th>
+                    <th>lifetime(s)</th>
+                    <th>cores</th>
+                    <th>memory (MB)</th>
+                    <th>disk (MB)</th>
+                    <th>tasks done</th>
+                    <th>tasks average runtime</th>
+                    <th>peak disk usage (MB)</th>
+                    <th>peak disk usage (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
     </div>
 
     <div id="vine-tooltip" class="tooltip"></div>

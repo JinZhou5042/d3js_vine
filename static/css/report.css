@@ -27,9 +27,8 @@
     border: 1px solid grey;
 }
 
-
 .container-1 {
-    width: 75vw;
+    width: 90vw;
     height: calc(75vw * 0.6);
     min-width: 600px;
     min-height: 400px;
@@ -48,6 +47,23 @@
     color: #333;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     pointer-events: none;
+}
+
+/* General Statistics */
+.table-container {
+    border-collapse: collapse;
+    border-radius: 5px;
+    overflow: auto;
+    width: 90vw;
+    max-height: 40vh;
+    overflow: auto;
+    white-space: nowrap;
+}
+.table-container th,
+.table-container td {
+    padding: 7px 15px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 /* Violin and Average Core Load Plota */
@@ -113,10 +129,10 @@
     top: 0; /* 从父容器顶部开始 */
     height: 10%; /* 占据父容器高度的10% */
     left: 0; /* 从父容器左侧开始 */
-    right: 0; /* 伸展至父容器右侧，确保横向占满 */
+    right: 0;
     display: flex;
-    overflow-x: auto; /* 允许在X轴方向滚动 */
-    white-space: nowrap; /* 防止元素换行，确保横向排列 */
+    overflow-x: auto;
+    white-space: nowrap;
     gap: 5px; /* 按钮之间的间隔 */
     padding: 0px 10px; /* 顺序是：上 右 下 左 */
     -ms-overflow-style: none; /* IE和Edge的滚动条隐藏 */

@@ -33,8 +33,9 @@ function displayCurrentTime() {
     });
     document.getElementById("current-time").innerHTML = dateString;
 }
-window.addEventListener('load', displayCurrentTime);
+// window.addEventListener('load', displayCurrentTime);
 
+/*
 // Hide or show the header when the button is clicked
 document.getElementById('header-button').addEventListener('click', function() {
     var header = document.getElementById('header');
@@ -57,6 +58,7 @@ document.getElementById('header-button').addEventListener('click', function() {
     }
     content.offsetHeight;
 });
+*/
 
 // Set the sidebar and content titles for the report page
 const titles = {

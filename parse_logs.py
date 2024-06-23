@@ -96,12 +96,14 @@ def parse_txn(txn):
                         'is_recovery_task': False,
 
                     }
+                    if task['cores_requested'] == 0:
+                        task['cores_requested'] = 1
                     task_info[(task_id, try_id)] = task
                 if status == 'RUNNING':
                     # a running task can be a library which does not have a ready status
                     resources_allocated = json.loads(info.split(' ', 3)[-1])
-                    try_id = task_try_count[task_id]
                     if task_id in task_try_count:
+                        try_id = task_try_count[task_id]
                         task = task_info[(task_id, try_id)]
                         worker_hash = info.split()[0]
                         task['when_running'] = timestamp
@@ -211,6 +213,15 @@ def parse_txn(txn):
 
                     start_time = float(start_time) / 1e6
                     wall_time = float(wall_time) / 1e6
+
+                    # start time should be after the manager start time
+                    if start_time < manager_info['time_start']:
+                        # consider xxx.04224 and xxx.0 as the same time
+                        if abs(start_time - manager_info['time_start']) < 1:
+                            start_time = manager_info['time_start']
+                        else:
+                            print(f"Warning: {transfer_type} start time {start_time} is before manager start time {manager_info['time_start']}")
+
                     # update disk usage
                     size_in_bytes = int(size_in_bytes)
                     if filename not in worker_info[obj_id]['disk_update']:
@@ -225,11 +236,11 @@ def parse_txn(txn):
 
             if category == 'LIBRARY':
                 if status == 'SENT':
-                    for library in library_info:
+                    for library in library_info.values():
                         if library['task_id'] == obj_id:
                             library['when_sent'] = timestamp
                 if status == 'STARTED':
-                    for library in library_info:
+                    for library in library_info.values():
                         if library['task_id'] == obj_id:
                             library['when_started'] = timestamp
             if category == 'MANAGER':
@@ -242,7 +253,7 @@ def parse_txn(txn):
     return task_info, task_try_count, library_info, worker_info, manager_info
 
 
-def parse_debug(debug, worker_info, task_info, task_try_count):
+def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
 
     total_lines = 0
     with open(debug, 'r') as file:
@@ -261,7 +272,7 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
             if "worker-id" in parts:
                 worker_id_id = parts.index("worker-id")
                 worker_hash = parts[worker_id_id + 1]
-                worker_machine_name = parts[worker_id_id - 1]
+                worker_machine_name = parts[worker_id_id - 3]
                 worker_ip, worker_port = parts[worker_id_id - 2][1:-2].split(':')
                 worker_address_hash_map[(worker_ip, worker_port)] = worker_hash
                 if worker_hash in worker_info:
@@ -278,6 +289,11 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
                 filename = parts[file_id + 1]
                 size = int(parts[file_id + 2]) / 2**20
                 start_time = float(parts[file_id + 4])
+                if start_time < manager_info['time_start']:
+                    if abs(start_time - manager_info['time_start']) < 1:
+                        start_time = manager_info['time_start']
+                    else:
+                        print(f"Warning: put start time {start_time} is before manager start time {manager_info['time_start']}")
                 worker_ip, worker_port = parts[file_id - 1][1:-2].split(':')
                 worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
                 if filename not in worker_info[worker_hash]['disk_update']:
@@ -302,9 +318,6 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
                 datestring = parts[0] + " " + parts[1]
                 timestamp = datestring_to_timestamp(datestring)
                 worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
-                if filename == "temp-rnd-wiusuexqxpzqzjv" and worker_hash == "worker-2a7443b82d33bd07eb5980cd6b3f999e":
-                    print(f"datestring = {datestring}")
-                    print(f"timestamp = {timestamp}")
                 try:
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_out'].append(timestamp)
                     if len(worker_info[worker_hash]['disk_update'][filename]['when_stage_out']) > len(worker_info[worker_hash]['disk_update'][filename]['when_stage_in']):
@@ -318,6 +331,7 @@ def parse_debug(debug, worker_info, task_info, task_try_count):
                 try_count = task_try_count[task_id]
                 for try_id in range(1, try_count + 1):
                     task_info[(task_id, try_id)]['is_recovery_task'] = True
+                    task_info[(task_id, try_id)]['category'] = "recovery_task"
         pbar.close()
     return worker_info
 

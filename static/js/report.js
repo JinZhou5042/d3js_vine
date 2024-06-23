@@ -1,4 +1,5 @@
 import { plotExecutionSummary } from './execution_summary.js';
+import { fillGeneralStatistics } from './general_statistics.js';
 import { setupZoomAndScroll, pathJoin } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotAccumulatedFiles } from './accumulated_files.js';
@@ -37,12 +38,14 @@ window.addEventListener('load', function() {
     async function handleLogChange() {
         const logName = this.value;
 
+        const generalStatisticsTaskCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_task.csv`);
+        const generalStatisticsWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_worker.csv`);
+
         const taskDoneCSV = await fetchFile(`logs/${logName}/vine-logs/task_done.csv`);
         const taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
         const taskFailedOnWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_worker.csv`);
 
         const managerInfoJson = await fetchFile(`logs/${logName}/vine-logs/manager_info.json`);
-        const libraryInfoCSV = await fetchFile(`logs/${logName}/vine-logs/library_info.csv`);
         const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
         const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_update.csv`);
 
@@ -54,6 +57,8 @@ window.addEventListener('load', function() {
             // plotExecutionSummary(taskCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
+            fillGeneralStatistics(generalStatisticsTaskCSV, generalStatisticsWorkerCSV);
+
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 

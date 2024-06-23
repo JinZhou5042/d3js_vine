@@ -21,6 +21,7 @@ def expand_done_task(task):
         task['core_id'] = cores[0]
         return task
     else:
+        print("Warning: task has multiple cores.")
         task_copies = []
         for core in cores:
             task_copy = task.copy()
@@ -63,7 +64,7 @@ def generate_data(log_dir):
 
     task_info, task_try_count, library_info, worker_info, manager_info = parse_txn(txn)
     task_info = parse_taskgraph(taskgraph, task_info, task_try_count)
-    worker_info = parse_debug(debug, worker_info, task_info, task_try_count)
+    worker_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info)
     
     #####################################################
     # Remove invalid workers: workers didn't commit any task
@@ -144,20 +145,21 @@ def generate_data(log_dir):
     rows = []
     for worker_hash, info in worker_info.items():
         row = {
-            'worker_hash': worker_hash,
             'worker_id': info['worker_id'],
+            'worker_hash': worker_hash,
             'worker_machine_name': info['worker_machine_name'],
             'worker_ip': info['worker_ip'],
             'worker_port': info['worker_port'],
             'time_connected': info['time_connected'],
             'time_disconnected': info['time_disconnected'],
+            'lifetime(s)': 0,
             'cores': info['cores'],
             'memory(MB)': info['memory(MB)'],
             'disk(MB)': info['disk(MB)'],
             'tasks_done': 0,
+            'avg_task_runtime(s)': 0,
             'peak_disk_usage(MB)': 0,
             'peak_disk_usage(%)': 0,
-            'avg_task_runtime(s)': 0,
         }
         # calculate the number of tasks done by this worker
         tasks_committed = task_df[task_df['worker_committed'] == worker_hash]
@@ -176,21 +178,71 @@ def generate_data(log_dir):
             row_copy = copy.deepcopy(row)
             row_copy['time_connected'] = info['time_connected'][i]
             row_copy['time_disconnected'] = info['time_disconnected'][i]
+            row_copy['lifetime(s)'] = info['time_disconnected'][i] - info['time_connected'][i]
             rows.append(row_copy)
 
     worker_summary_df = pd.DataFrame(rows)
     worker_summary_df = worker_summary_df.sort_values(by=['worker_id'], ascending=[True])
     worker_summary_df.to_csv(os.path.join(dirname, 'worker_summary.csv'), index=False)
 
+    #####################################################
+    # General Statistics
+    print("Generating general_statistics.csv...")
+    general_statistics_task_df = task_df.groupby('category').agg({
+        'task_id': 'nunique',
+        'when_ready': lambda x: (x > 0).sum(),
+        'when_running': lambda x: (x > 0).sum(),
+        'when_waiting_retrieval': lambda x: (x > 0).sum(),
+        'when_retrieved': lambda x: (x > 0).sum(),
+        'when_done': lambda x: (x > 0).sum(),
+        'worker_id': 'nunique',
+    }).rename(columns={
+        'task_id': 'submitted',
+        'when_ready': 'ready',
+        'when_running': 'running',
+        'when_waiting_retrieval': 'waiting_retrieval',
+        'when_retrieved': 'retrieved',
+        'when_done': 'done',
+        'worker_id': 'workers',
+    }).reset_index()
+    total_df = pd.DataFrame(columns=general_statistics_task_df.columns)
+    total_df.loc[0, 'category'] = 'TOTAL'
+    for col in ['submitted', 'ready', 'running', 'waiting_retrieval', 'retrieved', 'done']:
+        total_df.loc[0, col] = general_statistics_task_df[col].sum()
+    total_df.loc[0, 'workers'] = task_df['worker_id'].nunique()
+    general_statistics_task_df = pd.concat([general_statistics_task_df, total_df], ignore_index=True)
+    general_statistics_task_df = general_statistics_task_df.sort_values('submitted', ascending=False)
+    general_statistics_task_df.to_csv(os.path.join(dirname, 'general_statistics_task.csv'), index=False)
+
+    general_statistics_worker_df = pd.DataFrame(worker_summary_df)
+    # convert time_connected and time_disconnected to datetime
+    general_statistics_worker_df['time_connected'] = general_statistics_worker_df['time_connected'].apply(int)
+    general_statistics_worker_df['time_disconnected'] = general_statistics_worker_df['time_disconnected'].apply(int)
+    general_statistics_worker_df['time_connected'] = pd.to_datetime(general_statistics_worker_df['time_connected'], unit='s')
+    general_statistics_worker_df['time_disconnected'] = pd.to_datetime(general_statistics_worker_df['time_disconnected'], unit='s')
+    # round the values
+    general_statistics_worker_df[['avg_task_runtime(s)', 'peak_disk_usage(MB)', 'peak_disk_usage(%)', 'lifetime(s)']] = general_statistics_worker_df[['avg_task_runtime(s)', 'peak_disk_usage(MB)', 'peak_disk_usage(%)', 'lifetime(s)']].round(2)
+    general_statistics_worker_df.to_csv(os.path.join(dirname, 'general_statistics_worker.csv'), index=False)
+    #####################################################
+
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="This script is used to plot a figure for a transaction log")
-    parser.add_argument('--log-dir', type=str, default='most-recent')
-    parser.add_argument('--print', action='store_true')
-    args = parser.parse_args()
+    # parser = argparse.ArgumentParser(description="This script is used to plot a figure for a transaction log")
+    # parser.add_argument('--log-dir', type=str, default='most-recent')
+    # parser.add_argument('--print', action='store_true')
+    # args = parser.parse_args()
+    # log_dir = args.log_dir
 
-    log_dir = args.log_dir
+    if len(sys.argv) > 1:
+        log_dir = sys.argv[1]
+    else:
+        with os.scandir('logs') as entries:
+            for entry in entries:
+                if entry.is_dir():
+                    log_dir = os.path.join('logs', entry.name)
+                    break
+
     data_dir = os.path.join(log_dir, 'vine-logs')
 
     generate_data(log_dir)
