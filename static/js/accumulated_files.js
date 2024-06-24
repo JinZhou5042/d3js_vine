@@ -20,12 +20,12 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(MB)']);
     }
 
-    const container = document.getElementById('worker-accumulated-cached-files-container');
+    const container = document.getElementById('per-worker-disk-usage-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 60};
     const svgWidth = container.clientWidth - margin.left - margin.right;
     const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
-    const svg = d3.select('#worker-accumulated-cached-files')
+    const svg = d3.select('#per-worker-disk-usage')
         .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append("g")

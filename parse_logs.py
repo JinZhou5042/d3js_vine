@@ -245,9 +245,24 @@ def parse_txn(txn):
                             library['when_started'] = timestamp
             if category == 'MANAGER':
                 if status == 'START':
-                    manager_info['time_start'] = timestamp
+                    manager_info = {
+                        'time_start': timestamp,
+                        'time_end': None,
+                        'lifetime(s)': None,
+                        'time_start_human': None,
+                        'time_end_human': None,
+                        'tasks_submitted': 0,
+                        'tasks_done': 0,
+                        'tasks_failed_on_manager': 0,
+                        'tasks_failed_on_worker': 0,
+                        'max_task_try_count': 0,
+                        'total_workers': 0,
+                        'active_workers': 0,
+                        'max_concurrent_workers': 0,
+                    }
                 if status == 'END':
                     manager_info['time_end'] = timestamp
+                    manager_info['lifetime(s)'] = round(manager_info['time_end'] - manager_info['time_start'], 2)
         pbar.close()
 
     return task_info, task_try_count, library_info, worker_info, manager_info

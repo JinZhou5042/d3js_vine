@@ -38,37 +38,38 @@ window.addEventListener('load', function() {
     async function handleLogChange() {
         const logName = this.value;
 
+        const generalStatisticsManagerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_manager.csv`);
         const generalStatisticsTaskCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_task.csv`);
         const generalStatisticsWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_worker.csv`);
+        const generalStatisticsFileCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_file.csv`);
 
         const taskDoneCSV = await fetchFile(`logs/${logName}/vine-logs/task_done.csv`);
         const taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
         const taskFailedOnWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_worker.csv`);
 
-        const managerInfoJson = await fetchFile(`logs/${logName}/vine-logs/manager_info.json`);
         const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
-        const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_update.csv`);
+        const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_usage.csv`);
 
-        const manager_time_start = JSON.parse(managerInfoJson).time_start;
-        const manager_time_end = JSON.parse(managerInfoJson).time_end;
+        const manager_time_start = d3.csvParse(generalStatisticsManagerCSV)[0].time_start;
+        const manager_time_end = d3.csvParse(generalStatisticsManagerCSV)[0].time_end;
 
         try {
             // draw histogram
             // plotExecutionSummary(taskCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            fillGeneralStatistics(generalStatisticsTaskCSV, generalStatisticsWorkerCSV);
+            fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV);
 
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
             plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
-            setupZoomAndScroll('#worker-accumulated-cached-files', '#worker-accumulated-cached-files-container');
+            setupZoomAndScroll('#per-worker-disk-usage', '#per-worker-disk-usage-container');
             
-            document.getElementById('worker-accumulated-cached-files-display-mode').addEventListener('change', function() {
+            document.getElementById('per-worker-disk-usage-display-mode').addEventListener('change', function() {
                 const mode = this.value;
                 const useDiskUtilization = (mode === 'diskUtilization');
-                d3.select('#worker-accumulated-cached-files').selectAll('*').remove();
+                d3.select('#per-worker-disk-usage').selectAll('*').remove();
                 plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, useDiskUtilization);
             });
             

@@ -16,7 +16,30 @@
 
 <body>
     <h1 id="general-statistics-title" >General Statistics</h1>
-    <h2>TASK</h2>
+    <h2>Manager</h2>
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-manager-table">
+            <thead>
+                <tr>
+                    <th>when connected</th>
+                    <th>when disconnected</th>
+                    <th>lifetime (s)</th>
+                    <th>tasks submitted</th>
+                    <th>tasks done</th>
+                    <th>tasks failed on manager</th>
+                    <th>tasks failed on worker</th>
+                    <th>max task try count</th>
+                    <th>workers connected</th>
+                    <th>active workers</th>
+                    <th>max concurrent workers</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Task</h2>
     <div id="general-statistics-container" class="table-container">
         <table id="general-statistics-task-table">
             <thead>
@@ -35,7 +58,8 @@
             </tbody>
         </table>
     </div>
-    <h2>WORKER</h2>
+
+    <h2>Worker</h2>
     <div id="general-statistics-container" class="table-container">
         <table id="general-statistics-worker-table">
             <thead>
@@ -62,6 +86,23 @@
         </table>
     </div>
 
+    <h2>File</h2>
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-file-table">
+            <thead>
+                <tr>
+                    <th>filename</th>
+                    <th>size (MB)</th>
+                    <th>workers held</th>
+                    <th>producers</th>
+                    <th>consumers</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
     <div id="vine-tooltip" class="tooltip"></div>
 
     <h1 id="execution-details-title" >Execution Details</h1>
@@ -70,16 +111,17 @@
         </svg>
     </div>
 
-    <h1 id="worker-accumulated-cached-files-title" >Accumulated Files on Each Worker</h1>
-    <select id="worker-accumulated-cached-files-display-mode">
+    <h1 id="per-worker-disk-usage-title" >Worker Disk Usage</h1>
+    <select id="per-worker-disk-usage-display-mode">
         <option value="diskUsage">sort by disk usage (MB)</option>
         <option value="diskUtilization">sort by disk utilization (%)</option>
     </select>
-    <div id="worker-accumulated-cached-files-container" class="container-1" >
-        <svg id="worker-accumulated-cached-files" xmlns="http://www.w3.org/2000/svg">
+    <div id="per-worker-disk-usage-container" class="container-1" >
+        <svg id="per-worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
+    <!--
     <h1 id="execution-summary-title" >Execution Summary</h1>
     <div id="histogramContainer" class="container-1" >
         <select id="histogramSelector">
@@ -88,7 +130,6 @@
             <option value="mode2">sort by tasks completion</option>
         </select>
         <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
-            <!-- histogram goes here -->
         </svg>
     </div>
 
@@ -96,14 +137,12 @@
     <div id="avgCoreLoadContainer" class="violinCoreContainer" >
         <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
             <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
-                <!-- avg core load plot goes here -->
                 <img id="overallAvgCoreLoadImg"  alt="Average Core Load"></img>
             </div>
         </div>
         <div id="avgCoreLoadRightContainer" class="violinCoreRightContainer">
             <div id="avgCoreLoadRightButton" class="violinCoreRightButton"></div>
             <div id="avgCoreLoadRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
-                <!-- avg core loads by worker go here -->
             </div>
         </div>
     </div>
@@ -112,14 +151,12 @@
     <div id="violinContainer" class="violinCoreContainer" >
         <div id="violinLeftContainer" class="violinCoreLeftContainer">
             <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
-                <!-- violin plot goes here -->
                 <img id="allWorkersSummaryViolinImg"  alt="All Workers Summary"></img>
             </div>
         </div>
         <div id="violinRightContainer" class="violinCoreRightContainer">
             <div id="violinRightButton" class="violinCoreRightButton"></div>
             <div id="violinRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
-                <!-- workers violin plots go here -->
             </div>
         </div>
     </div>
@@ -137,6 +174,6 @@
         <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
         <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
     </div>
-
+-->
     </body>
 </html>
