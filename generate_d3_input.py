@@ -208,10 +208,11 @@ def convert_to_and_save_task_df(task_info, manager_info, dirname):
 
     return task_df
 
-def generate_worker_disk_usage_df(worker_info, dirname):
+def generate_worker_disk_usage_df(worker_info, file_info, dirname):
     print("Generating worker_disk_usage.csv...")
     rows = []
     for worker_hash, worker in worker_info.items():
+        worker_id = worker['worker_id']
         for filename, disk_update in worker['disk_update'].items():
             # Initial checks for disk update logs
             len_in = len(disk_update['when_stage_in'])
@@ -225,16 +226,27 @@ def generate_worker_disk_usage_df(worker_info, dirname):
                                             if connected < when_stage_in and worker['time_disconnected'][i] > when_stage_in), None)
                 if worker_connected_id is not None:
                     disk_update['when_stage_out'].append(worker['time_disconnected'][worker_connected_id])
+            if len_in != len_out:
+                print(f"Warning: worker {worker_hash} has different number of stage-ins and stage-outs on file {filename}.")
+            if filename in file_info:
+                if 'size(MB)' not in file_info[filename]:
+                    file_info[filename]['size(MB)'] = disk_update['size(MB)']
+                    file_info[filename]['worker_holding'] = []
+                else:
+                    if file_info[filename]['size(MB)'] != disk_update['size(MB)']:
+                        print(f"Warning: size mismatch for file {filename} size in disk_update: {disk_update['size(MB)']} size in file_info: {file_info[filename]['size(MB)']}")
+                for i in range(len_in):
+                    file_info[filename]['worker_holding'].append((worker_id, round(disk_update['when_stage_in'][i], 2), round(disk_update['when_stage_out'][i], 2)))
 
             # Preparing row data
-            for time_point, size_modifier in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],
+            for time, disk_increment in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],
                                                  [disk_update['size(MB)']] * len_in + [-disk_update['size(MB)']] * len_out):
                 rows.append({
                     'worker_hash': worker_hash,
-                    'worker_id': worker['worker_id'],
+                    'worker_id':worker_id,
                     'filename': filename,
-                    'time': time_point,
-                    'size(MB)': size_modifier
+                    'time': time,
+                    'size(MB)': disk_increment
                 })
 
     worker_disk_usage_df = pd.DataFrame(rows)
@@ -246,7 +258,7 @@ def generate_worker_disk_usage_df(worker_info, dirname):
         worker_disk_usage_df['disk_usage(%)'] = worker_disk_usage_df['disk_usage(MB)'] / worker_disk_usage_df['worker_hash'].map(lambda x: worker_info[x]['disk(MB)'])
         worker_disk_usage_df.to_csv(os.path.join(dirname, 'worker_disk_usage.csv'), index=False)
 
-    return worker_disk_usage_df
+    return worker_disk_usage_df, file_info
 
 def generate_data(log_dir):
 
@@ -267,8 +279,46 @@ def generate_data(log_dir):
 
     generate_library_summary(library_info, dirname)
 
-    worker_disk_usage_df = generate_worker_disk_usage_df(worker_info, dirname)
-    
+    ###### file info ######
+    file_info = {}
+
+    for index, row in task_df.iterrows():
+        # exclude recovery tasks 
+        if row['category'] == 'recovery_task':
+            continue
+        task_id = row['task_id']
+        input_files = row['input_files']
+        output_files = row['output_files']
+
+        for file in input_files:
+            # exclude metadata files (only exist as input of some tasks)
+            if file.startswith('file-meta'):
+                continue
+            if file not in file_info:
+                file_info[file] = {'producers': [], 'consumers': []}
+            file_info[file]['consumers'].append(task_id)
+
+        for file in output_files:
+            if file not in file_info:
+                file_info[file] = {'producers': [], 'consumers': []}
+            file_info[file]['producers'].append(task_id)
+
+
+    worker_summary_df, file_info  = generate_worker_disk_usage_df(worker_info, file_info, dirname)
+
+    data = []
+    for filename, info in file_info.items():
+        data.append({
+            'filename': filename,
+            'size(MB)': round(info['size(MB)'], 6),
+            'num_worker_holding': len(info['worker_holding']),
+            'producers': info['producers'],
+            'consumers': info['consumers']
+        })
+    file_info_df = pd.DataFrame(data)
+    file_info_df.to_csv(os.path.join(dirname, 'general_statistics_file.csv'), index=False)
+    ############
+ 
     worker_summary_df = generate_worker_summary(worker_info, task_df, worker_disk_usage_df, dirname)
     
     generate_general_statistics(task_df, worker_summary_df, manager_info, num_total_workers, num_active_workers, dirname)
