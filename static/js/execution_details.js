@@ -188,12 +188,12 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                     d3.select(this).attr('fill', colors['waiting-retrieval-on-worker'].highlight);
                 }
             });
-            
+            console.log(d);
             // show tooltip
             tooltip.innerHTML = `
                 task id: ${d.task_id}<br>
                 worker: ${d.worker_id} (core ${d.core_id})<br>
-                category: ${d.category}<br>
+                category: ${d.category.replace(/^<|>$/g, '')}<br>
                 execution time: ${(d.time_worker_end - d.time_worker_start).toFixed(2)}s<br>
                 input size: ${(d.size_input_mgr - 0).toFixed(4)}MB<br>
                 output size: ${(d.size_output_mgr - 0).toFixed(4)}MB<br>
