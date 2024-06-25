@@ -130,7 +130,7 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
                 const yValue = yScale.invert(yPosition);
                 tooltip.innerHTML = `
                     worker id: ${key}<br>
-                    time: ${xValue.toFixed(2)}<br>
+                    time: ${xValue.toFixed(2)}s<br>
                     disk usage: ${yValue.toFixed(2)}<br>
                 `;
 
