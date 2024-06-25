@@ -304,7 +304,7 @@ def generate_data(log_dir):
             file_info[file]['producers'].append(task_id)
 
 
-    worker_summary_df, file_info  = generate_worker_disk_usage_df(worker_info, file_info, dirname)
+    worker_disk_usage_df, file_info  = generate_worker_disk_usage_df(worker_info, file_info, dirname)
 
     data = []
     for filename, info in file_info.items():
