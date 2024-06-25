@@ -86,8 +86,8 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
             }
             return yScale(diskUsage);
         });
-        
-    // Draw lines for each worker
+
+    // Draw accumulated disk usage
     const tooltip = document.getElementById('vine-tooltip');
     groupedworkerDiskUpdate.forEach((value, key) => {
         const originalColor = d3.schemeCategory10[key % 10];
@@ -107,8 +107,15 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
                     .attr("stroke", "orange")
                     .attr("stroke-width", 2);
                 // show tooltip
+                const svgRect = svg.node().getBoundingClientRect();
+                const xPosition = (event.clientX - svgRect.left) * (svgWidth / svgRect.width);
+                const yPosition = (event.clientY - svgRect.top) * (svgHeight / svgRect.height);
+                const xValue = xScale.invert(xPosition);
+                const yValue = yScale.invert(yPosition);
                 tooltip.innerHTML = `
                     worker id: ${key}<br>
+                    time: ${xValue.toFixed(2)}<br>
+                    disk usage: ${yValue.toFixed(2)}<br>
                 `;
 
                 tooltip.style.visibility = 'visible';
@@ -116,6 +123,18 @@ export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, mana
                 tooltip.style.left = (event.pageX + 10) + 'px';
             })
             .on("mousemove", function(event) {
+                const svgRect = svg.node().getBoundingClientRect();
+                const xPosition = (event.clientX - svgRect.left) * (svgWidth / svgRect.width);
+                const yPosition = (event.clientY - svgRect.top) * (svgHeight / svgRect.height);
+                const xValue = xScale.invert(xPosition);
+                const yValue = yScale.invert(yPosition);
+                tooltip.innerHTML = `
+                    worker id: ${key}<br>
+                    time: ${xValue.toFixed(2)}<br>
+                    disk usage: ${yValue.toFixed(2)}<br>
+                `;
+
+                tooltip.style.visibility = 'visible';
                 tooltip.style.top = (event.pageY + 10) + 'px';
                 tooltip.style.left = (event.pageX + 10) + 'px';
             })

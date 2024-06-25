@@ -129,6 +129,10 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 tooltip.style.top = (event.pageY + 10) + 'px';
                 tooltip.style.left = (event.pageX + 10) + 'px';
             })
+            .on('mousemove', function(event) {
+                tooltip.style.top = (event.pageY + 10) + 'px';
+                tooltip.style.left = (event.pageX + 10) + 'px';
+            })
             .on('mouseout', function(event, d) {
                 d3.select(this)
                     .attr('fill', colors.worker.normal);
@@ -200,6 +204,10 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                 when retrieved: ${(d.when_retrieved - minTime).toFixed(2)}s<br>
                 when done: ${(d.when_done - minTime).toFixed(2)}s<br>`;
             tooltip.style.visibility = 'visible';
+            tooltip.style.top = (event.pageY + 10) + 'px';
+            tooltip.style.left = (event.pageX + 10) + 'px';
+        })
+        .on('mousemove', function(event) {
             tooltip.style.top = (event.pageY + 10) + 'px';
             tooltip.style.left = (event.pageX + 10) + 'px';
         })

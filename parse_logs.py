@@ -300,6 +300,8 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                 continue
             if putting_file:
                 putting_file = False
+                if "file" not in parts:
+                    continue
                 file_id = parts.index("file")
                 filename = parts[file_id + 1]
                 size = int(parts[file_id + 2]) / 2**20
