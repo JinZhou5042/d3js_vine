@@ -12,7 +12,7 @@ import json
 def print_json(json_obj):
     print(json.dumps(json_obj, indent=2))
 
-base_dir = "/Users/jinzhou/Applications/d3js_vine"
+base_dir = os.getcwd()
 logs_dir = os.path.join(base_dir, 'logs')
 with os.scandir(logs_dir) as entries:
     for entry in entries:
