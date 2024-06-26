@@ -45,6 +45,7 @@ def parse_txn(txn):
                 continue
 
             info = info[0] if info else "{}"
+
             if category == 'TASK':
                 task_id = int(obj_id)
                 if status == 'READY':
@@ -328,8 +329,10 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info, fil
                         'when_stage_in': [start_time],
                         'when_stage_out': [],
                     }
+                    
                 else:
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_in'].append(start_time)
+
                 if (size != worker_info[worker_hash]['disk_update'][filename]['size(MB)']):
                     print("Warning: size mismatch for file", filename, "size in debug: ", size, "size in txn: ", worker_info[worker_hash]['disk_update'][filename]['size(MB)'])
                 if filename not in file_info:
@@ -344,6 +347,25 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info, fil
                 # already handled in parse_txn
                 continue
 
+            if "infile" in parts or "outfile" in parts:
+                file_id = parts.index("infile") if "infile" in parts else parts.index("outfile")
+                worker_address = parts[file_id - 1][1:-2]
+                worker_ip, worker_port = worker_address.split(':')
+                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
+                cached_name = parts[file_id + 1]
+                manager_site_name = parts[file_id + 2]
+
+                if manager_site_name in file_info:
+                    del file_info[manager_site_name]
+                else:
+                    # this is normal, as we use the manager_site_name for inputs in the transactions log
+                    # and the cached_name for outputs in the debug log
+                    pass
+
+                # update disk usage
+                if manager_site_name in worker_info[worker_hash]['disk_update']:
+                    del worker_info[worker_hash]['disk_update'][manager_site_name]
+                    
             if "unlink" in parts:
                 unlink_id = parts.index("unlink")
                 filename = parts[unlink_id + 1]

@@ -217,15 +217,6 @@ def generate_worker_disk_usage_df(worker_info, dirname):
             # Initial checks for disk update logs
             len_in = len(disk_update['when_stage_in'])
             len_out = len(disk_update['when_stage_out'])
-            # if len_in < len_out:
-                # print(f"Warning: worker {worker_hash} has more stage-outs than stage-ins on file {filename}.")
-            # if len_in > len_out:
-                # manually add a stage-out at the end of the log
-                # when_stage_in = disk_update['when_stage_in'][-1]
-                # worker_connected_id = next((i for i, connected in enumerate(worker['time_connected'])
-                #                             if connected < when_stage_in and worker['time_disconnected'][i] > when_stage_in), None)
-                # if worker_connected_id is not None:
-                #     disk_update['when_stage_out'].append(worker['time_disconnected'][worker_connected_id])
             if len_in != len_out:
                 print(f"Warning: worker {worker_hash} has different number of stage-ins and stage-outs on file {filename}. stages_in: {len_in}, stages_out: {len_out}")
 
