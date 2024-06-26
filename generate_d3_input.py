@@ -208,7 +208,7 @@ def convert_to_and_save_task_df(task_info, manager_info, dirname):
 
     return task_df
 
-def generate_worker_disk_usage_df(worker_info, file_info, dirname):
+def generate_worker_disk_usage_df(worker_info, dirname):
     print("Generating worker_disk_usage.csv...")
     rows = []
     for worker_hash, worker in worker_info.items():
@@ -226,17 +226,8 @@ def generate_worker_disk_usage_df(worker_info, file_info, dirname):
                                             if connected < when_stage_in and worker['time_disconnected'][i] > when_stage_in), None)
                 if worker_connected_id is not None:
                     disk_update['when_stage_out'].append(worker['time_disconnected'][worker_connected_id])
-            if len_in != len_out:
-                print(f"Warning: worker {worker_hash} has different number of stage-ins and stage-outs on file {filename}.")
-            if filename in file_info:
-                if 'size(MB)' not in file_info[filename]:
-                    file_info[filename]['size(MB)'] = disk_update['size(MB)']
-                    file_info[filename]['worker_holding'] = []
-                else:
-                    if file_info[filename]['size(MB)'] != disk_update['size(MB)']:
-                        print(f"Warning: size mismatch for file {filename} size in disk_update: {disk_update['size(MB)']} size in file_info: {file_info[filename]['size(MB)']}")
-                for i in range(len_in):
-                    file_info[filename]['worker_holding'].append((worker_id, round(disk_update['when_stage_in'][i], 2), round(disk_update['when_stage_out'][i], 2)))
+            if len(disk_update['when_stage_in']) != len(disk_update['when_stage_out']):
+                print(f"Warning: worker {worker_hash} has different number of stage-ins and stage-outs on file {filename}. stages_in: {len_in}, stages_out: {len_out}")
 
             # Preparing row data
             for time, disk_increment in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],
@@ -258,7 +249,7 @@ def generate_worker_disk_usage_df(worker_info, file_info, dirname):
         worker_disk_usage_df['disk_usage(%)'] = worker_disk_usage_df['disk_usage(MB)'] / worker_disk_usage_df['worker_hash'].map(lambda x: worker_info[x]['disk(MB)'])
         worker_disk_usage_df.to_csv(os.path.join(dirname, 'worker_disk_usage.csv'), index=False)
 
-    return worker_disk_usage_df, file_info
+    return worker_disk_usage_df
 
 def generate_data(log_dir):
 
@@ -267,9 +258,11 @@ def generate_data(log_dir):
     debug = os.path.join(dirname, 'debug')
     taskgraph = os.path.join(dirname, 'taskgraph')
 
-    task_info, task_try_count, library_info, worker_info, manager_info = parse_txn(txn)
-    task_info = parse_taskgraph(taskgraph, task_info, task_try_count)
-    worker_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info)
+    task_info, task_try_count, library_info, worker_info, manager_info, file_info = parse_txn(txn)
+    task_info = parse_taskgraph(taskgraph, task_info, task_try_count, file_info)
+    worker_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info, file_info)
+    # clean the file_info
+    file_info = {k: v for k, v in file_info.items() if v['producers'] and v['consumers']}
     
     worker_info, num_total_workers, num_active_workers = remove_invalid_workers(worker_info, task_info, library_info)
     task_df = convert_to_and_save_task_df(task_info, manager_info, dirname)
@@ -279,32 +272,7 @@ def generate_data(log_dir):
 
     generate_library_summary(library_info, dirname)
 
-    ###### file info ######
-    file_info = {}
-
-    for index, row in task_df.iterrows():
-        # exclude recovery tasks 
-        if row['category'] == 'recovery_task':
-            continue
-        task_id = row['task_id']
-        input_files = row['input_files']
-        output_files = row['output_files']
-
-        for file in input_files:
-            # exclude metadata files (only exist as input of some tasks)
-            if file.startswith('file-meta'):
-                continue
-            if file not in file_info:
-                file_info[file] = {'producers': [], 'consumers': []}
-            file_info[file]['consumers'].append(task_id)
-
-        for file in output_files:
-            if file not in file_info:
-                file_info[file] = {'producers': [], 'consumers': []}
-            file_info[file]['producers'].append(task_id)
-
-
-    worker_disk_usage_df, file_info  = generate_worker_disk_usage_df(worker_info, file_info, dirname)
+    worker_disk_usage_df  = generate_worker_disk_usage_df(worker_info, dirname)
 
     data = []
     for filename, info in file_info.items():

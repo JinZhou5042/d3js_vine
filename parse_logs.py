@@ -234,6 +234,15 @@ def parse_txn(txn):
                     else:
                         worker_info[obj_id]['disk_update'][filename]['when_stage_in'].append(start_time)
 
+                    # update file_info
+                    if filename not in file_info:
+                        file_info[filename] = {
+                            'size(MB)': size_in_bytes / 2**20,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
+
             if category == 'LIBRARY':
                 if status == 'SENT':
                     for library in library_info.values():
@@ -265,10 +274,10 @@ def parse_txn(txn):
                     manager_info['lifetime(s)'] = round(manager_info['time_end'] - manager_info['time_start'], 2)
         pbar.close()
 
-    return task_info, task_try_count, library_info, worker_info, manager_info
+    return task_info, task_try_count, library_info, worker_info, manager_info, file_info
 
 
-def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
+def parse_debug(debug, worker_info, task_info, task_try_count, manager_info, file_info):
 
     total_lines = 0
     with open(debug, 'r') as file:
@@ -323,7 +332,14 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_in'].append(start_time)
                 if (size != worker_info[worker_hash]['disk_update'][filename]['size(MB)']):
                     print("Warning: size mismatch for file", filename, "size in debug: ", size, "size in txn: ", worker_info[worker_hash]['disk_update'][filename]['size(MB)'])
-            
+                if filename not in file_info:
+                    file_info[filename] = {
+                        'size(MB)': size,
+                        'producers': [],
+                        'consumers': [],
+                        'worker_holding': [],
+                    }
+
             if "cache-update" in parts:
                 # already handled in parse_txn
                 continue
@@ -335,10 +351,20 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                 datestring = parts[0] + " " + parts[1]
                 timestamp = datestring_to_timestamp(datestring)
                 worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
+                worker_id = worker_info[worker_hash]['worker_id']
                 try:
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_out'].append(timestamp)
                     if len(worker_info[worker_hash]['disk_update'][filename]['when_stage_out']) > len(worker_info[worker_hash]['disk_update'][filename]['when_stage_in']):
                         print(f"Warning: file {filename} stage out more than stage in for worker {worker_hash}")
+                    if filename not in file_info:
+                        print(f"Warning: file {filename} not found in file_info")
+                        file_info[filename] = {
+                            'size(MB)': 0,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
+                    file_info[filename]['worker_holding'].append((worker_id, worker_info[worker_hash]['disk_update'][filename]['when_stage_in'][-1], timestamp))
                 except KeyError:
                     pass
                     # print("Warning: file", filename, f"not found in disk_update for worker {worker_ip}:{worker_port} {worker_hash}")    
@@ -353,7 +379,7 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
     return worker_info
 
 
-def parse_taskgraph(taskgraph, task_info, task_try_count):
+def parse_taskgraph(taskgraph, task_info, task_try_count, file_info):
     total_lines = 0
     with open(taskgraph, 'r') as file:
         for line in file:
@@ -375,12 +401,23 @@ def parse_taskgraph(taskgraph, task_info, task_try_count):
                 task_id = int(left.split('-')[1])
                 try_id = task_try_count[task_id]
                 task_info[(task_id, try_id)]['output_files'].append(filename)
+                if filename not in file_info:
+                    print(f"Warning: file {filename} not found in file_info")
+                file_info[filename]['producers'].append(task_id)
             # task consumes an input file
             elif right.startswith('task'):
                 filename = left.split('-', 1)[1]
                 task_id = int(right.split('-')[1])
                 try_id = task_try_count[task_id]
                 task_info[(task_id, try_id)]['input_files'].append(filename)
+                if filename not in file_info:
+                    file_info[filename] = {
+                        'size(MB)': 0,
+                        'producers': [],
+                        'consumers': [],
+                        'worker_holding': [],
+                    }
+                file_info[filename]['consumers'].append(task_id)
         pbar.close()
 
     return task_info
