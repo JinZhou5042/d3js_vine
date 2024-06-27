@@ -158,28 +158,25 @@ class OrthogonalListGraph:
         critical_path.reverse()
         return critical_path
     
-    def visualize_components(self):
-        if not self.components:
-            self.update_components()
-        pbar = tqdm.tqdm(total=len(self.components))
-        for i, component in enumerate(self.components):
-            dot = graphviz.Digraph(comment=f'Task Subgraph {i+1}')
-            
-            for vertex_id in component:
-                dot.node(str(vertex_id), str(vertex_id))
-            
-            for vertex_id in component:
-                vertex = self.vertices[vertex_id]
-                edge = vertex.first_out
-                while edge:
-                    if edge.head in component:
-                        dot.edge(str(edge.tail), str(edge.head), label=str(round(edge.weight, 4)))
-                    edge = edge.tail_link
-            
-            dot.attr(rankdir='TB')
-            dot.render(f'output/task_subgraph_{i+1}', format='svg', view=False)
-            pbar.update(1)
-        pbar.close()
+    def plot_component(self, component, view=False, save_to=None):
+        if not save_to:
+            print("Error: save_to is not provided.")
+            return
+        dot = graphviz.Digraph()
+        
+        for vertex_id in component:
+            dot.node(str(vertex_id), str(vertex_id))
+
+        for vertex_id in component:
+            vertex = self.vertices[vertex_id]
+            edge = vertex.first_out
+            while edge:
+                if edge.head in component:
+                    dot.edge(str(edge.tail), str(edge.head), label=str(round(edge.weight, 4)))
+                edge = edge.tail_link
+        
+        dot.attr(rankdir='TB')
+        dot.render(save_to, format='svg', view=view)
 
 import ast
 
@@ -206,14 +203,34 @@ for index, row in task_dag_df.iterrows():
                 graph.add_edge(row['task_id'], target_task_id, weight=weight)
 
 
-graph.visualize_components()
+graph.update_components()
 
-for component in graph.components:
-    critical_path = graph.find_critical_path_in_component(component)
-    total_time = 0
-    for i, task_id in enumerate(critical_path):
-        total_time += graph.vertices[task_id].task_life_time
-        if i < len(critical_path) - 1:
-            total_time += graph.edges[(task_id, critical_path[i+1])].weight
+graph_info = {}
 
-    print(f"Critical Path: {critical_path},  total_time: {total_time}")
+for i, component in enumerate(graph.components):
+    # visualize this subgraph
+    graph_id = i + 1
+    graph.plot_component(component, save_to=os.path.join(dirname, f"subgraph_{graph_id}"), view=False)
+    root = component[0]
+    graph_info[root] = {
+        'graph_id': graph_id,
+        'num_tasks': len(component),
+        'num_critical_tasks': 0,
+        'critical_tasks': 0,
+        'time_critical_nodes': [],
+        'time_critical_edges': [],
+        'time_critical_path': 0,
+        'tasks': component,
+    }
+    graph_info[root]['critical_tasks'] = graph.find_critical_path_in_component(component)
+    graph_info[root]['num_critical_tasks'] = len(graph_info[root]['critical_tasks'])
+    for i, task_id in enumerate(graph_info[root]['critical_tasks']):
+        graph_info[root]['time_critical_nodes'].append(graph.vertices[task_id].task_life_time)
+        if i < len(graph_info[root]['critical_tasks']) - 1:
+            graph_info[root]['time_critical_edges'].append(graph.edges[(task_id, graph_info[root]['critical_tasks'][i+1])].weight)
+
+    graph_info[root]['time_critical_path'] = sum(graph_info[root]['time_critical_nodes']) + sum(graph_info[root]['time_critical_edges'])
+
+
+graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
+graph_info_df.to_csv(os.path.join(dirname, 'general_statistics_dag.csv'), index=False)

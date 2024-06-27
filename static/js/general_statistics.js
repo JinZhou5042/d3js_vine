@@ -1,9 +1,10 @@
 
-export function fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV) {
+export function fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV, generalStatisticsDAGCSV) {
     fillGeneralStatisticsManager(generalStatisticsManagerCSV);
     fillGeneralStatisticsTask(generalStatisticsTaskCSV);
     fillGeneralStatisticsWorker(generalStatisticsWorkerCSV);
     fillGeneralStatisticsFile(generalStatisticsFileCSV);
+    fillGeneralStatisticsDAG(generalStatisticsDAGCSV);
 }
 
 function fillGeneralStatisticsManager(generalStatisticsManagerCSV) {
@@ -87,4 +88,23 @@ function fillGeneralStatisticsFile(generalStatisticsFileCSV) {
     rows.append('td').text(d => d.num_worker_holding);
     rows.append('td').text(d => d.producers);
     rows.append('td').text(d => d.consumers);
+}
+
+function fillGeneralStatisticsDAG(generalStatisticsDAGCSV) {
+    const generalStatisticsDAG = d3.csvParse(generalStatisticsDAGCSV);
+    const tbody = d3.select('#general-statistics-dag-table').select('tbody');
+
+    const rows = tbody.selectAll('tr')
+        .data(generalStatisticsDAG)
+        .enter()
+        .append('tr');
+
+    rows.append('td').text(d => d.graph_id);
+    rows.append('td').text(d => d.num_tasks);
+    rows.append('td').text(d => d.num_critical_tasks);
+    rows.append('td').text(d => d.critical_tasks);
+    rows.append('td').text(d => d.time_critical_nodes);
+    rows.append('td').text(d => d.time_critical_edges);
+    rows.append('td').text(d => d.time_critical_path);
+    rows.append('td').text(d => d.tasks);
 }

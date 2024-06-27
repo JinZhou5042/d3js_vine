@@ -283,8 +283,6 @@ def generate_data(log_dir):
     generate_general_statistics(task_df, worker_summary_df, manager_info, num_total_workers, num_active_workers, dirname)
 
    
-
-
 if __name__ == '__main__':
 
     # parser = argparse.ArgumentParser(description="This script is used to plot a figure for a transaction log")

@@ -42,6 +42,7 @@ window.addEventListener('load', function() {
         const generalStatisticsTaskCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_task.csv`);
         const generalStatisticsWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_worker.csv`);
         const generalStatisticsFileCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_file.csv`);
+        const generalStatisticsDAGCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_dag.csv`);
 
         const taskDoneCSV = await fetchFile(`logs/${logName}/vine-logs/task_done.csv`);
         const taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
@@ -58,7 +59,7 @@ window.addEventListener('load', function() {
             // plotExecutionSummary(taskCSV);
             // setupZoomAndScroll('#histogram', '#histogramContainer');
             // function execution details
-            fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV);
+            fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV, generalStatisticsDAGCSV);
 
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
