@@ -1,4 +1,29 @@
 
+async function getDataPath(path) {
+    try {
+        const response = await fetch(path);
+        const data = await response.json();
+        if (data.inputPath) {
+            return data.inputPath;
+        }
+    } catch (error) {
+        console.error('Error updating data path:', error);
+    }
+}
+
+export async function fetchFile(filePath) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch file: ${filePath} (${response.statusText})`);
+        }
+        return await response.text();
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
 export function setupZoomAndScroll(svgSelector, containerSelector) {
     const svgElement = document.querySelector(svgSelector); // Select the SVG element.
     const container = document.querySelector(containerSelector); // Select the container of the SVG.

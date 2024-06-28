@@ -60,19 +60,9 @@ document.getElementById('header-button').addEventListener('click', function() {
 });
 */
 
-// Set the sidebar and content titles for the report page
-const titles = {
-    taskExecutionSummaryTitle: "Function Execution Summary",
-    workerConfigurationsTitle: "Worker Information",
-    workerSlotFunctionExecutionTitle: "Function Execution Details",
-    averageCpuUsagePerTaskTitle: "Function CPU Usage Distribution",
-    taskExecutionTimeDistributionTitle: "Function Runtime Distribution",
-    vineGraphsTitle: "Vine Graphs",
-    logDebugTitle: "debug"
-};
 
 
-
+////////////////////////////////////////////////////////////////////////////////////
 //  Click on the sidebar button to scroll to the corresponding section in the iframe
 document.addEventListener('DOMContentLoaded', function() {
     var buttons = document.querySelectorAll('.report-scroll-btn');
@@ -120,3 +110,12 @@ document.addEventListener('DOMContentLoaded', function() {
         setIFrame('transactions');
     });
 });
+////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////////////////

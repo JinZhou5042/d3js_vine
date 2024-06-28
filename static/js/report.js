@@ -1,36 +1,12 @@
 import { plotExecutionSummary } from './execution_summary.js';
 import { fillGeneralStatistics } from './general_statistics.js';
-import { setupZoomAndScroll, pathJoin } from './tools.js';
+import { setupZoomAndScroll, pathJoin, fetchFile } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotWorkerDiskUsage } from './worker_disk_usage.js';
+import { plotDAGComponentByID } from './dag.js';
 import { drawViolins } from './violinplot.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
-
-async function getDataPath(path) {
-    try {
-        const response = await fetch(path);
-        const data = await response.json();
-        if (data.inputPath) {
-            return data.inputPath;
-        }
-    } catch (error) {
-        console.error('Error updating data path:', error);
-    }
-}
-
-async function fetchFile(filePath) {
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch file: ${filePath} (${response.statusText})`);
-        }
-        return await response.text();
-    } catch (error) {
-        console.error(error);
-        throw error;
-    }
-}
 
 
 window.addEventListener('load', function() {
@@ -55,15 +31,17 @@ window.addEventListener('load', function() {
         const manager_time_end = d3.csvParse(generalStatisticsManagerCSV)[0].time_end;
 
         try {
-            // draw histogram
-            // plotExecutionSummary(taskCSV);
-            // setupZoomAndScroll('#histogram', '#histogramContainer');
-            // function execution details
+
             fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV, generalStatisticsDAGCSV);
 
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
+            document.getElementById('button-dag-choose').addEventListener('click', function() {
+                const dagID = document.getElementById('input-dag-choose').value.trim();
+                plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logName);
+            });
+        
             plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
             setupZoomAndScroll('#per-worker-disk-usage', '#per-worker-disk-usage-container');
             document.getElementById('display-worker-disk-usage-by-percentage').addEventListener('click', function() {
@@ -72,10 +50,7 @@ window.addEventListener('load', function() {
                 d3.select('#per-worker-disk-usage').selectAll('*').remove();
                 plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, this.classList.contains('report-button-active'));
             });
-            // draw violin plot
-            // drawViolins(dataDir, workerInfo);
-            // draw core load plot
-            // drawCoreLoads(dataDir, workerInfo);
+
         } catch (error) {
             console.error('Error fetching data directory:', error);
         }
@@ -88,5 +63,26 @@ window.addEventListener('load', function() {
     // Initialize the report iframe if the logSelector has an initial value
     if (logSelector.value) {
         logSelector.dispatchEvent(new Event('change'));
+    }
+});
+
+
+window.addEventListener('load', function() {
+
+    const button = document.getElementById('button-dag-choose');
+    const input = document.getElementById('input-dag-choose');
+
+    button.addEventListener('click', function() {
+        const dagId = input.value.trim();
+        
+        if (dagId) {
+            showDAG(dagId);
+        } else {
+            alert('Please enter a DAG ID');
+        }
+    });
+
+    function showDAG(dagId) {
+        console.log(dagId);
     }
 });
