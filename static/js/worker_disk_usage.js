@@ -1,5 +1,5 @@
 
-export function plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, displayDiskUsageByPercentage) {
+export function plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, displayDiskUsageByPercentage) {
     // parse and preprocess data
     const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
 

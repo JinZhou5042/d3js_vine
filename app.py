@@ -66,6 +66,9 @@ def serve_file(filename):
     file_path = os.path.join(base_directory, filename)
 
     # stream the file
+    if not os.path.exists(file_path):
+        # skip and don't abort
+        return Response(status=404)
     def generate():
         with open(file_path, "rb") as f:
             while True:

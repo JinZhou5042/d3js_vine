@@ -2,7 +2,7 @@ import { plotExecutionSummary } from './execution_summary.js';
 import { fillGeneralStatistics } from './general_statistics.js';
 import { setupZoomAndScroll, pathJoin } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
-import { plotAccumulatedFiles } from './accumulated_files.js';
+import { plotWorkerDiskUsage } from './worker_disk_usage.js';
 import { drawViolins } from './violinplot.js';
 import { drawCoreLoads } from './cpu_load_plot.js';
 
@@ -64,16 +64,14 @@ window.addEventListener('load', function() {
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
-            plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
+            plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
             setupZoomAndScroll('#per-worker-disk-usage', '#per-worker-disk-usage-container');
-            
-            document.getElementById('per-worker-disk-usage-display-mode').addEventListener('change', function() {
-                const mode = this.value;
-                const useDiskUtilization = (mode === 'diskUtilization');
+            document.getElementById('display-worker-disk-usage-by-percentage').addEventListener('click', function() {
+                this.classList.toggle('report-button-active');
+                // first clean the plot
                 d3.select('#per-worker-disk-usage').selectAll('*').remove();
-                plotAccumulatedFiles(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, useDiskUtilization);
+                plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, this.classList.contains('report-button-active'));
             });
-            
             // draw violin plot
             // drawViolins(dataDir, workerInfo);
             // draw core load plot

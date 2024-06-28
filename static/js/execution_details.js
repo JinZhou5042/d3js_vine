@@ -4,49 +4,24 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
     const taskFailedOnWorker = d3.csvParse(taskFailedOnWorkerCSV);
     const workerSummary = d3.csvParse(workerSummaryCSV);
 
+    const minTime = manager_time_start;
+    const maxTime = manager_time_end;
+
     const container = document.getElementById('execution-details-container');
-    const margin = {top: 20, right: 20, bottom: 40, left: 40};
+
+    const margin = calculateMargin(container, workerSummary);
+    
     const svgWidth = container.clientWidth - margin.left - margin.right;
     const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
+    // initialize svg
     const svg = d3.select('#execution-details')
         .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    // set x scale
-    const minTime = manager_time_start;
-    const maxTime = manager_time_end;
-    const xScale = d3.scaleLinear()
-        .domain([0, maxTime - minTime])
-        .range([0, svgWidth]);
-    // set y scale
-    const workerCoresMap = [];
-    workerSummary.forEach(d => {
-        for (let i = 1; i <= +d.cores; i++) {
-            workerCoresMap.push(`${d.worker_id}-${i}`);
-        }
-    });
-    const yScale = d3.scaleBand()
-        .domain(workerCoresMap)
-        .range([svgHeight, 0])
-        .padding(0.1);
-
-    // draw x axis
-    const xAxis = d3.axisBottom(xScale)
-        .tickSizeOuter(0)
-        .tickValues([
-            xScale.domain()[0],
-            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.25,
-            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.5,
-            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.75,
-            xScale.domain()[1]
-        ])
-        .tickFormat(d3.format(".1f"));
-    svg.append('g')
-        .attr('transform', `translate(0, ${svgHeight + yScale.bandwidth()})`)
-        .call(xAxis);
+    const { xScale, yScale } = plotAxis(svg, svgWidth, svgHeight, minTime, maxTime, workerSummary);
 
     const colors = {
         'worker': {
@@ -78,21 +53,6 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
             'highlight': 'orange',
         },
     }
-    
-    // draw y axis
-    const totalWorkers = workerSummary.length;
-    const maxTicks = 5;
-    const tickInterval = Math.ceil(totalWorkers / maxTicks);
-    const selectedTicks = [];
-    for (let i = totalWorkers - 1; i >= 0; i -= tickInterval) {
-        selectedTicks.unshift(`${workerSummary[i].worker_id}-${workerSummary[i].cores}`);
-    }
-    const yAxis = d3.axisLeft(yScale)
-        .tickSizeOuter(0)
-        .tickValues(selectedTicks)
-        .tickFormat(d => d.split('-')[0]);
-    svg.append('g')
-        .call(yAxis);
 
     ////////////////////////////////////////////
     // create rectanges for each worker
@@ -268,5 +228,93 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
         });
 
     ////////////////////////////////////////////
+}
+
+function calculateMargin(container, workerSummary) {
+    const margin = {top: 40, right: 30, bottom: 40, left: 30};
+    const svgWidth = container.clientWidth - margin.left - margin.right;
+    const svgHeight = container.clientHeight - margin.top - margin.bottom;
+
+    const tempSvg = d3.select('#execution-details')
+        .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .append('g')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+    const workerCoresMap = [];
+    workerSummary.forEach(d => {
+        for (let i = 1; i <= +d.cores; i++) {
+            workerCoresMap.push(`${d.worker_id}-${i}`);
+        }
+    });
+
+    const yScale = d3.scaleBand()
+        .domain(workerCoresMap)
+        .range([svgHeight, 0])
+        .padding(0.1);
+
+    const yAxis = d3.axisLeft(yScale)
+        .tickSizeOuter(0);
+
+    tempSvg.append('g').call(yAxis);
+
+    const maxTickWidth = d3.max(tempSvg.selectAll('.tick text').nodes(), d => d.getBBox().width);
+    tempSvg.remove();
+
+    margin.left = maxTickWidth + 15;
+
+    return margin
+}
+
+function plotAxis(svg, svgWidth, svgHeight, minTime, maxTime, workerSummary) {
+    // set x scale
+    const xScale = d3.scaleLinear()
+        .domain([0, maxTime - minTime])
+        .range([0, svgWidth]);
+    // set y scale
+    const workerCoresMap = [];
+    workerSummary.forEach(d => {
+        for (let i = 1; i <= +d.cores; i++) {
+            workerCoresMap.push(`${d.worker_id}-${i}`);
+        }
+    });
+    const yScale = d3.scaleBand()
+        .domain(workerCoresMap)
+        .range([svgHeight, 0])
+        .padding(0.1);
+    // draw x axis
+    const xAxis = d3.axisBottom(xScale)
+        .tickSizeOuter(0)
+        .tickValues([
+            xScale.domain()[0],
+            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.25,
+            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.5,
+            xScale.domain()[0] + (xScale.domain()[1] - xScale.domain()[0]) * 0.75,
+            xScale.domain()[1]
+        ])
+        .tickFormat(d3.format(".1f"));
+    svg.append('g')
+        .attr('transform', `translate(0, ${svgHeight})`)
+        .call(xAxis);
+
+    // draw y axis
+    const totalWorkers = workerSummary.length;
+    const maxTicks = 5;
+    const tickInterval = Math.ceil(totalWorkers / maxTicks);
+    const selectedTicks = [];
+    for (let i = totalWorkers - 1; i >= 0; i -= tickInterval) {
+        selectedTicks.unshift(`${workerSummary[i].worker_id}-${workerSummary[i].cores}`);
+    }
+    const yAxis = d3.axisLeft(yScale)
+        .tickSizeOuter(0)
+        .tickValues(selectedTicks)
+        .tickFormat(d => d.split('-')[0]);
+    svg.append('g')
+        .call(yAxis);
+
+    return { xScale, yScale };
+}
+
+function plotSVG() {
 
 }

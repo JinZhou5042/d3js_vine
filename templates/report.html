@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>d3.js vine</title>
     <!-- import d3.js -->
-    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
@@ -126,30 +126,39 @@
     <div id="vine-tooltip" class="tooltip"></div>
 
     <h1 id="execution-details-title" >Execution Details</h1>
-    <div id="execution-details-container" class="container-1" >
+    <div id="execution-details-container" class="container-alpha" >
         <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
     <h1 id="dag-components-title" >DAG Components</h1>
-    <div id="dag-components-container" class="container-1" >
+    <div class="report-toolbox">
+        <input type="text" id="input-id" class="report-input-box" placeholder="Enter DAG ID">
+        <button class="report-button">Show DAG</button>
+        <input type="text" id="input-id" class="report-input-box" placeholder="Enter Task ID">
+        <button class="report-button">Query Task</button>
+    </div>
+    <div id="dag-components-container" class="container-alpha" >
         <svg id="dag-components" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
-    <h1 id="per-worker-disk-usage-title" >Worker Disk Usage</h1>
-    <select id="per-worker-disk-usage-display-mode">
-        <option value="diskUsage">sort by disk usage (MB)</option>
-        <option value="diskUtilization">sort by disk utilization (%)</option>
-    </select>
-    <div id="per-worker-disk-usage-container" class="container-1" >
+    <h1 id="per-worker-disk-usage-title">Worker Disk Usage</h1>
+
+    <div class="report-toolbox">
+        <button id="display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
+        <input type="text" id="input-id" class="report-input-box" placeholder="Enter ID">
+        <button class="report-button">Highlight Worker</button>
+    </div>
+
+    <div id="per-worker-disk-usage-container" class="container-alpha" >
         <svg id="per-worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
     <!--
     <h1 id="execution-summary-title" >Execution Summary</h1>
-    <div id="histogramContainer" class="container-1" >
+    <div id="histogramContainer" class="container-alpha" >
         <select id="histogramSelector">
             <option value="mode0">default</option>
             <option value="mode1">sort by average execution time</option>

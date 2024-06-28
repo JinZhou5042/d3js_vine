@@ -1,38 +1,25 @@
-
-
-/* text */
-.text-div {
-    width: 75vw;
-    padding: 10px; /* 内边距20像素 */
-    border: 1px solid #cccccc; /* 边框 */
-    margin-top: 20px; /* 上边距 */
-    font-size: 16px; /* 字体大小 */
-    color: #333333; /* 字体颜色 */
-    text-align: left; /* 文本居中显示 */
+html {
+    font-size: 4px;
 }
 
-/* Histogram */
-.histogram {
-    width: 950%;
-    height: 100%;
-    display: block;
-    margin: 0 auto;
+body {
+    font-size: 1rem;
+}
+body h1 {
+    font-size: 6rem;
+}
+body h2 {
+    font-size: 5rem;
 }
 
-/* worker configs table */
-#workerConfigsContainer {
-    width: 75vw;
-    height: calc(80vw * 0.6);
-    overflow: scroll;
-    border: 1px solid grey;
-}
-
-.container-1 {
-    width: 90vw;
-    height: calc(75vw * 0.6);
-    min-width: 600px;
-    min-height: 400px;
+/* Containers */
+.container-alpha {
+    width: 90%;
+    height: 40vh;
+    min-width: 500px;
+    min-height: 200px;
     overflow: auto;
+    border: 1px solid #ccc;
 }
 
 #vine-tooltip {
@@ -43,10 +30,62 @@
     background-color: white;
     border: 1px solid black;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 3rem;
     color: #333;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     pointer-events: none;
+}
+
+/* Execution Details svg */
+#execution-details {
+    width: 100%;
+    height: 100%;
+}
+
+/* Button */
+.report-button {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    font-size: 3rem;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    font-weight: normal;
+}
+.report-button:hover {
+    background-color: #e6e6e6;
+}
+.report-button-active {
+    background: linear-gradient(to right, #cccccc, #d4d4d4);
+}
+
+/* Tool Box*/
+.report-toolbox {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    align-items: flex-start;
+    flex-direction: row;
+    margin-bottom: 10px;
+}
+
+/* Input Box */
+.input-label {
+    margin-right: 10px;
+    font-size: 3rem;
+    font-family: 'Open Sans', sans-serif;
+}
+.report-input-box {
+    width: 10%;
+    padding: 8px 16px;
+    font-size: 3rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 /* General Statistics */
@@ -58,6 +97,7 @@
     max-height: 40vh;
     overflow: auto;
     white-space: nowrap;
+    font-size: 4rem;
 }
 .table-container th,
 .table-container td {
@@ -83,72 +123,72 @@
 .violinCoreLeftContainer {
     display: flex;
     flex-grow: 0;
-    flex-shrink: 0; /* 防止容器在空间不足时缩小 */
+    flex-shrink: 0; 
     flex-basis: 50%;
-    height: 100%; /* 子容器填满父容器的高度 */
-    position: relative; /* 允许子元素相对于此定位 */
+    height: 100%; 
+    position: relative; 
     max-height: 100%;
 }
 
 .violinCoreRightContainer {
     display: flex;
     flex-grow: 0;
-    flex-shrink: 0; /* 防止容器在空间不足时缩小 */
+    flex-shrink: 0; 
     flex-basis: 50%;
-    height: 100%; /* 子容器填满父容器的高度 */
-    position: relative; /* 允许子元素相对于此定位 */
+    height: 100%; 
+    position: relative; 
     max-height: 100%;
 }
 
 
 .violinCoreLeftSummaryContainer {
-    position: absolute; /* 使用绝对定位 */
-    top: 10%; /* 从父容器顶部向下偏移10% */
-    left: 0; /* 从父容器左侧开始 */
-    right: 0; /* 延伸到父容器的右侧 */
-    bottom: 0; /* 延伸到父容器的底部 */
+    position: absolute; 
+    top: 10%; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
     display: flex;
-    overflow-x: hidden; /* 关闭x方向上的滚动条 */
-    overflow-y: hidden; /* 关闭y方向上的滚动条 */
+    overflow-x: hidden; 
+    overflow-y: hidden; 
     align-items: center;
 }
 
 
 #allWorkersSummaryViolinImg {
-    width: 100%;  /* 例如，使图片宽度适应容器宽度 */
-    height: auto; /* 保持图片的原始宽高比 */
+    width: 100%; 
+    height: auto;
 }
 
 #overallAvgCoreLoadImg {
-    width: 100%;  /* 例如，使图片宽度适应容器宽度 */
-    height: auto; /* 保持图片的原始宽高比 */
+    width: 100%; 
+    height: auto;
 }
 
 .violinCoreRightButton {
-    position: absolute; /* 相对于父容器定位 */
-    top: 0; /* 从父容器顶部开始 */
-    height: 10%; /* 占据父容器高度的10% */
-    left: 0; /* 从父容器左侧开始 */
+    position: absolute;
+    top: 0;
+    height: 10%;
+    left: 0;
     right: 0;
     display: flex;
     overflow-x: auto;
     white-space: nowrap;
-    gap: 5px; /* 按钮之间的间隔 */
-    padding: 0px 10px; /* 顺序是：上 右 下 左 */
-    -ms-overflow-style: none; /* IE和Edge的滚动条隐藏 */
-    scrollbar-width: thin; /* Firefox的滚动条样式调整 */
-    scrollbar-color: #888 #f0f0f0; /* Firefox的滚动条颜色调整 */
+    gap: 5px;
+    padding: 0px 10px;
+    -ms-overflow-style: none;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f0f0f0;
 }
 
 .violinCoreRightDetailsByWorkerContainer {
-    position: absolute; /* 使用绝对定位 */
-    top: 10%; /* 从父容器顶部向下偏移20% */
-    left: 0; /* 从父容器左侧开始 */
-    right: 0; /* 延伸到父容器的右侧 */
-    bottom: 0; /* 延伸到父容器的底部 */
+    position: absolute; 
+    top: 10%;
+    left: 0;
+    right: 0;
+    bottom: 0; 
     display: flex;
     overflow-x: auto;
-    overflow-y: hidden; /* 隐藏Y轴滚动条 */
+    overflow-y: hidden; 
     align-items: center;
     gap: 10px;
     padding: 10px;
@@ -169,45 +209,40 @@
 
 #buttons {
     display: flex;
-    overflow-x: auto; /* 允许在X轴方向滚动 */
-    white-space: nowrap; /* 防止元素换行，确保横向排列 */
-    gap: 5px; /* 按钮之间的间隔 */
-    padding: 0px 10px 0px 10px; /* 顺序是：上 右 下 左 */
-    -ms-overflow-style: none; /* IE和Edge的滚动条隐藏 */
-    scrollbar-width: thin; /* Firefox的滚动条样式调整 */
-    scrollbar-color: #888 #f0f0f0; /* Firefox的滚动条颜色调整 */
+    overflow-x: auto; 
+    white-space: nowrap; 
+    gap: 5px; 
+    padding: 0px 10px 0px 10px; 
+    -ms-overflow-style: none; 
+    scrollbar-width: thin; 
+    scrollbar-color: #888 #f0f0f0; 
 }
 
 #buttons::-webkit-scrollbar {
-    height: 2px; /* 调整滚动条高度 */
+    height: 2px; 
 }
 
 #buttons::-webkit-scrollbar-track {
-    background: #f0f0f0; /* 滚动条轨道颜色 */
+    background: #f0f0f0; 
 }
 
 #buttons::-webkit-scrollbar-thumb {
-    background: #888; /* 滚动条颜色 */
-    border-radius: 4px; /* 滚动条圆角 */
+    background: #888; 
+    border-radius: 4px; 
 }
 
 #buttons::-webkit-scrollbar-thumb:hover {
-    background: #555; /* 滚动条hover时的颜色 */
+    background: #555; 
 }
 
 .workerCheckbox + label {
-    display: inline-flex; /* 使用inline-flex代替inline-block以提供更灵活的布局选项 */
-    align-items: center; /* 垂直居中复选框和标签 */
-    margin-right: 10px; /* 在复选框和标签之间添加间隔 */
-    white-space: nowrap; /* 防止标签内文本换行 */
+    display: inline-flex; 
+    align-items: center; 
+    margin-right: 10px; 
+    white-space: nowrap; 
 }
 
 
-
-
-
-
-/* 容器样式 */
 .container {
     display: flex;
 }
@@ -233,37 +268,6 @@
     animation: text-highlight-animation 2s forwards;
 }
 
-
-
-/* Vine Graphs */
-#vineGraphsContainer {
-    width: 75vw;
-    height: auto;
-    border: 1px solid grey;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px; /* 元素之间的间隙 */
-}
-
-.vineGraphContainer {
-    width: calc(50% - 10px); /* 减去gap一半的宽度 */
-    box-sizing: border-box;
-    padding: 10px; /* 元素的内边距 */
-}
-
-.vineGraphContainer img {
-    max-width: 100%; /* 限制图片最大宽度不超过容器宽度 */
-    height: auto; /* 高度自动调整以保持图片的原始比例 */
-    display: block; /* 防止图片底部出现额外空间 */
-}
-
-
-#execution-details {
-    width: 95%;
-    height: 100%;
-    display: block;
-    margin: 0 auto;
-}
 
 svg * {
     user-select: text;
