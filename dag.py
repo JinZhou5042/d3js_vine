@@ -207,7 +207,9 @@ graph.update_components()
 
 graph_info = {}
 
+pbar = tqdm.tqdm(total=len(graph.components))
 for i, component in enumerate(graph.components):
+    pbar.update(1)
     # visualize this subgraph
     graph_id = i + 1
     graph.plot_component(component, save_to=os.path.join(dirname, f"subgraph_{graph_id}"), view=False)
@@ -231,6 +233,7 @@ for i, component in enumerate(graph.components):
 
     graph_info[root]['time_critical_path'] = sum(graph_info[root]['time_critical_nodes']) + sum(graph_info[root]['time_critical_edges'])
 
+pbar.close()
 
 graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
 graph_info_df.to_csv(os.path.join(dirname, 'general_statistics_dag.csv'), index=False)

@@ -8,7 +8,6 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
     const maxTime = manager_time_end;
 
     const container = document.getElementById('execution-details-container');
-
     const margin = calculateMargin(container, workerSummary);
     
     const svgWidth = container.clientWidth - margin.left - margin.right;
@@ -148,7 +147,7 @@ export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerS
                     d3.select(this).attr('fill', colors['waiting-retrieval-on-worker'].highlight);
                 }
             });
-            console.log(d);
+
             // show tooltip
             tooltip.innerHTML = `
                 task id: ${d.task_id}<br>

@@ -94,6 +94,8 @@ def parse_txn(txn):
 
                         'input_files': [],
                         'output_files': [],
+                        'size_input_files(MB)': 0,
+                        'size_output_files(MB)': 0,
                         'is_recovery_task': False,
 
                     }
@@ -347,10 +349,9 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info, fil
                 # already handled in parse_txn
                 continue
 
-            if "infile" in parts or "outfile" in parts:
+            if ("infile" in parts or "outfile" in parts) and "needs" not in parts:
                 file_id = parts.index("infile") if "infile" in parts else parts.index("outfile")
                 worker_address = parts[file_id - 1][1:-2]
-                worker_ip, worker_port = worker_address.split(':')
                 worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
                 cached_name = parts[file_id + 1]
                 manager_site_name = parts[file_id + 2]

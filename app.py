@@ -97,8 +97,8 @@ if __name__ == '__main__':
     parser.add_argument('--generate-data', default=False)
     args = parser.parse_args()
 
+    kill_process_on_port(9122)
     if args.generate_data:
         process_logs()
         
-    kill_process_on_port(9122)
     app.run(host='0.0.0.0', port=9122, debug=True)

@@ -15,10 +15,13 @@ body h2 {
 /* Containers */
 .container-alpha {
     width: 90%;
-    height: 40vh;
+    height: 60vh;
     min-width: 500px;
     min-height: 200px;
     overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     border: 1px solid #ccc;
 }
 
@@ -49,6 +52,49 @@ body h2 {
     height: 100%;
 }
 
+/* Label */
+.report-label-container {
+    position: relative;
+    display: inline-block;
+    justify-content: center;
+    padding-right: 2rem;
+    align-items: center;
+    height: 100%;
+    font-size: 3rem;
+    font-family: 'Open Sans', sans-serif;
+}
+
+/* Input Box */
+.report-input-box {
+    padding: 8px 16px;
+    font-size: 3rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+/* Selector */
+.report-selector {
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    font-size: 3rem;
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    font-weight: normal;
+}
+
+.report-input-box:focus,
+.report-selector:focus{
+    border-color: #66afe9;
+    box-shadow: 0 0 5px rgba(102, 175, 233, 0.6);
+    padding: 8px 16px;
+    margin-right: 10px;
+    font-size: 3rem;
+}
+
 /* Button */
 .report-button {
     padding: 8px 16px;
@@ -65,6 +111,7 @@ body h2 {
 }
 .report-button:hover {
     background-color: #e6e6e6;
+    box-shadow: 0 0 5px rgba(102, 175, 233, 0.6);
 }
 .report-button-active {
     background: linear-gradient(to right, #cccccc, #d4d4d4);
@@ -72,27 +119,32 @@ body h2 {
 
 /* Tool Box*/
 .report-toolbox {
-    display: flex;
+    position: relative;
     justify-content: flex-start;
     align-items: center;
     align-items: flex-start;
     flex-direction: row;
     margin: 10px 0px;
+    width: 90%;
+    min-width: 500px;
 }
 
-/* Input Box */
-.input-label {
-    margin-right: 10px;
-    font-size: 3rem;
-    font-family: 'Open Sans', sans-serif;
-}
-.report-input-box {
-    width: 10%;
-    padding: 8px 16px;
-    font-size: 3rem;
+
+/* DAG */
+#dag-components-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
     border: 1px solid #ccc;
-    border-radius: 5px;
-    transition: all 0.3s ease;
+}
+
+
+#dag-components {
+    display: inline-block;
+    max-width: 100%;
+    max-height: 100%;
+    overflow: auto;
 }
 
 /* General Statistics */
@@ -113,170 +165,3 @@ body h2 {
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* Violin and Average Core Load Plota */
-
-.violinCoreContainer {
-    display: flex;
-    overflow: hidden;
-    justify-content: space-between;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    width: 75vw;
-    height: calc(80vw * 0.4);
-    overflow: hidden;
-    border: 1px solid grey;
-}
-
-.violinCoreLeftContainer {
-    display: flex;
-    flex-grow: 0;
-    flex-shrink: 0; 
-    flex-basis: 50%;
-    height: 100%; 
-    position: relative; 
-    max-height: 100%;
-}
-
-.violinCoreRightContainer {
-    display: flex;
-    flex-grow: 0;
-    flex-shrink: 0; 
-    flex-basis: 50%;
-    height: 100%; 
-    position: relative; 
-    max-height: 100%;
-}
-
-
-.violinCoreLeftSummaryContainer {
-    position: absolute; 
-    top: 10%; 
-    left: 0; 
-    right: 0; 
-    bottom: 0;
-    display: flex;
-    overflow-x: hidden; 
-    overflow-y: hidden; 
-    align-items: center;
-}
-
-
-#allWorkersSummaryViolinImg {
-    width: 100%; 
-    height: auto;
-}
-
-#overallAvgCoreLoadImg {
-    width: 100%; 
-    height: auto;
-}
-
-.violinCoreRightButton {
-    position: absolute;
-    top: 0;
-    height: 10%;
-    left: 0;
-    right: 0;
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    gap: 5px;
-    padding: 0px 10px;
-    -ms-overflow-style: none;
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f0f0f0;
-}
-
-.violinCoreRightDetailsByWorkerContainer {
-    position: absolute; 
-    top: 10%;
-    left: 0;
-    right: 0;
-    bottom: 0; 
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden; 
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-}
-
-
-.workerViolin {
-    display: inline-block;
-    max-width: 100%;
-    height: auto;
-}
-
-.workerAvgCoreLoad {
-    display: inline-block;
-    max-width: 100%;
-    height: auto;
-}
-
-#buttons {
-    display: flex;
-    overflow-x: auto; 
-    white-space: nowrap; 
-    gap: 5px; 
-    padding: 0px 10px 0px 10px; 
-    -ms-overflow-style: none; 
-    scrollbar-width: thin; 
-    scrollbar-color: #888 #f0f0f0; 
-}
-
-#buttons::-webkit-scrollbar {
-    height: 2px; 
-}
-
-#buttons::-webkit-scrollbar-track {
-    background: #f0f0f0; 
-}
-
-#buttons::-webkit-scrollbar-thumb {
-    background: #888; 
-    border-radius: 4px; 
-}
-
-#buttons::-webkit-scrollbar-thumb:hover {
-    background: #555; 
-}
-
-.workerCheckbox + label {
-    display: inline-flex; 
-    align-items: center; 
-    margin-right: 10px; 
-    white-space: nowrap; 
-}
-
-
-.container {
-    display: flex;
-}
-
-
-.item {
-    margin-bottom: 20px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-}
-
-@keyframes text-highlight-animation {
-    from {
-        background-color: grey;
-    }
-    to {
-        background-color: transparent;
-    }
-}
-
-.text-highlight {
-    animation: text-highlight-animation 2s forwards;
-}
-
-
-svg * {
-    user-select: text;
-    pointer-events: auto;
-}

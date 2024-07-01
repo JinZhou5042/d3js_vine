@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>d3.js vine</title>
     <!-- import d3.js -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <!-- graphviz -->
+
+    <!-- dagre -->
+    <script src="https://dagrejs.github.io/project/dagre-d3/latest/dagre-d3.js"></script>
+    <script src="https://dagrejs.github.io/project/dagre-d3/latest/dagre-d3.min.js"></script>
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
@@ -142,14 +147,16 @@
         </table>
     </div>
     <div class="report-toolbox">
-        <input type="text" id="input-dag-choose" class="report-input-box" placeholder="Enter DAG ID">
-        <button id="button-dag-choose" class="report-button">Show DAG</button>
+        <div class="report-label-container">
+            <p>Select a DAG ID: </p>
+        </div>
+        <select id="dag-id-selector" class="report-selector"></select>
+
         <input type="text" id="input-id" class="report-input-box" placeholder="Enter Task ID">
         <button class="report-button">Query Task</button>
     </div>
-    <div id="dag-components-container" class="container-alpha" >
-        <svg id="dag-components" xmlns="http://www.w3.org/2000/svg">
-        </svg>
+    <div id="dag-components-container" class="container-alpha">
+        <div id="dag-components"></div>
     </div>
 
     <h1 id="per-worker-disk-usage-title">Worker Disk Usage</h1>

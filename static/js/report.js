@@ -1,11 +1,8 @@
-import { plotExecutionSummary } from './execution_summary.js';
 import { fillGeneralStatistics } from './general_statistics.js';
-import { setupZoomAndScroll, pathJoin, fetchFile } from './tools.js';
+import { setupZoomAndScroll, fetchFile } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotWorkerDiskUsage } from './worker_disk_usage.js';
 import { plotDAGComponentByID } from './dag.js';
-import { drawViolins } from './violinplot.js';
-import { drawCoreLoads } from './cpu_load_plot.js';
 
 
 
@@ -37,10 +34,7 @@ window.addEventListener('load', function() {
             plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
-            document.getElementById('button-dag-choose').addEventListener('click', function() {
-                const dagID = document.getElementById('input-dag-choose').value.trim();
-                plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logName);
-            });
+            plotDAGComponentByID(1, generalStatisticsDAGCSV, logName);
         
             plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
             setupZoomAndScroll('#per-worker-disk-usage', '#per-worker-disk-usage-container');
@@ -66,23 +60,3 @@ window.addEventListener('load', function() {
     }
 });
 
-
-window.addEventListener('load', function() {
-
-    const button = document.getElementById('button-dag-choose');
-    const input = document.getElementById('input-dag-choose');
-
-    button.addEventListener('click', function() {
-        const dagId = input.value.trim();
-        
-        if (dagId) {
-            showDAG(dagId);
-        } else {
-            alert('Please enter a DAG ID');
-        }
-    });
-
-    function showDAG(dagId) {
-        console.log(dagId);
-    }
-});
