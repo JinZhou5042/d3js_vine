@@ -1,4 +1,4 @@
-import { fetchFile } from './tools.js';
+import { setupZoomAndScroll, fetchFile } from './tools.js';
 
 
 export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logName) {
@@ -8,6 +8,10 @@ export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logNa
 
         if (dag) {
             try {
+                let rows = document.querySelectorAll('#general-statistics-dag-table tbody tr');
+                rows.forEach(row => {
+                    row.style.backgroundColor = 'white';
+                });
                 const svgElement = d3.select('#dag-components');
                 svgElement.selectAll('*').remove();
             
@@ -19,9 +23,9 @@ export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logNa
                     .attr('preserveAspectRatio', 'xMidYMid meet');
 
                 // highlight the selected row
-                const rows = document.querySelectorAll('#general-statistics-dag-table tbody tr');
+                rows = document.querySelectorAll('#general-statistics-dag-table tbody tr');
                 rows.forEach(row => {
-                    if (+row.__data__.graph_id === dagID) {
+                    if (+row.__data__.graph_id === +dagID) {
                         row.style.backgroundColor = '#f2f2f2';
                     }
                 });

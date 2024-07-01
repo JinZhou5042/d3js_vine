@@ -181,7 +181,7 @@ def generate_worker_summary(worker_info, task_df, worker_disk_usage_df, dirname)
     print(f"Time taken: {time.time() - time_start}")
     return worker_summary_df
 
-def convert_to_and_save_task_df(task_info, manager_info, dirname):
+def handle_task_info(task_info, manager_info, file_info, dirname):
     print("Generating task.csv...")
 
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
@@ -191,6 +191,15 @@ def convert_to_and_save_task_df(task_info, manager_info, dirname):
         np.minimum(task_df['when_running'], task_df['time_worker_start']),
         task_df['when_running']
     )
+
+    def calculate_total_size_of_files(files):
+        total_size = 0
+        for file in files:
+            total_size += file_info[file]['size(MB)']
+        return round(total_size, 4)
+    
+    task_df['size_input_files(MB)'] = task_df['input_files'].apply(calculate_total_size_of_files)
+    task_df['size_output_files(MB)'] = task_df['output_files'].apply(calculate_total_size_of_files)
 
     task_df.to_csv(os.path.join(dirname, 'task.csv'), index=False)
 
@@ -252,11 +261,9 @@ def generate_data(log_dir):
     task_info, task_try_count, library_info, worker_info, manager_info, file_info = parse_txn(txn)
     task_info = parse_taskgraph(taskgraph, task_info, task_try_count, file_info)
     worker_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info, file_info)
-    # clean the file_info
-    file_info = {k: v for k, v in file_info.items() if v['producers'] and v['consumers']}
-    
+
     worker_info, num_total_workers, num_active_workers = remove_invalid_workers(worker_info, task_info, library_info)
-    task_df = convert_to_and_save_task_df(task_info, manager_info, dirname)
+    task_df = handle_task_info(task_info, manager_info, file_info, dirname)
 
     with open(os.path.join(dirname, 'worker_info.json'), 'w') as f:
         json.dump(worker_info, f, indent=4)
@@ -265,6 +272,8 @@ def generate_data(log_dir):
 
     worker_disk_usage_df  = generate_worker_disk_usage_df(worker_info, dirname)
 
+    ############
+    file_info = {k: v for k, v in file_info.items() if v['producers'] and v['consumers']}
     data = []
     for filename, info in file_info.items():
         data.append({

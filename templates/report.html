@@ -91,23 +91,6 @@
         </table>
     </div>
 
-    <h2>File</h2>
-    <div id="general-statistics-container" class="table-container">
-        <table id="general-statistics-file-table">
-            <thead>
-                <tr>
-                    <th>filename</th>
-                    <th>size (MB)</th>
-                    <th>workers held</th>
-                    <th>producers</th>
-                    <th>consumers</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-
 
     <div id="vine-tooltip" class="tooltip"></div>
 
@@ -160,7 +143,21 @@
     </div>
 
     <h1 id="per-worker-disk-usage-title">Worker Disk Usage</h1>
-
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-file-table">
+            <thead>
+                <tr>
+                    <th>filename</th>
+                    <th>size (MB)</th>
+                    <th>workers held</th>
+                    <th>producers</th>
+                    <th>consumers</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
     <div class="report-toolbox">
         <button id="display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
         <input type="text" id="input-id" class="report-input-box" placeholder="Enter ID">
