@@ -1,18 +1,18 @@
 
-export function plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, displayDiskUsageByPercentage) {
-    // parse and preprocess data
-    const workerDiskUpdate = d3.csvParse(workerDiskUpdateCSV);
+export function plotWorkerDiskUsage(displayDiskUsageByPercentage = false, highlightWorkerID = null) {
+    // first remove all the elements in the svg
+    d3.select('#worker-disk-usage').selectAll('*').remove();
 
-    workerDiskUpdate.forEach(function(d) {
+    window.workerDiskUpdate.forEach(function(d) {
         d.start_time = +d.time;
     });
-    const groupedworkerDiskUpdate = d3.group(workerDiskUpdate, d => d.worker_id);
+    const groupedworkerDiskUpdate = d3.group(window.workerDiskUpdate, d => d.worker_id);
 
-    const workerSummary = d3.csvParse(workerSummaryCSV);
+    const workerSummary = window.workerSummary;
     
     // get the minTime, maxTime and maxDiskUsage
-    const minTime = manager_time_start;
-    const maxTime = manager_time_end;
+    const minTime = window.manager_time_start;
+    const maxTime = window.manager_time_end;
     let maxDiskUsage;
     if (displayDiskUsageByPercentage) {
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(%)']);
@@ -20,12 +20,12 @@ export function plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manag
         maxDiskUsage = d3.max(workerSummary, d => +d['peak_disk_usage(MB)']);
     }
 
-    const container = document.getElementById('per-worker-disk-usage-container');
+    const container = document.getElementById('worker-disk-usage-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 60};
     const svgWidth = container.clientWidth - margin.left - margin.right;
     const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
-    const svg = d3.select('#per-worker-disk-usage')
+    const svg = d3.select('#worker-disk-usage')
         .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append("g")
@@ -90,20 +90,34 @@ export function plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manag
     // Draw accumulated disk usage
     const tooltip = document.getElementById('vine-tooltip');
     groupedworkerDiskUpdate.forEach((value, key) => {
-        const originalColor = d3.schemeCategory10[key % 10];
+        key = +key;
+        let lineColor;
+        let strokeWidth = 0.8;
+        if (highlightWorkerID !== null && key === highlightWorkerID) {
+            lineColor = 'orange';
+            strokeWidth = 2;
+        } else if (highlightWorkerID !== null) {
+            lineColor = 'lightgray';
+        } else {
+            lineColor = d3.schemeCategory10[key % 10];
+        }
+        console.log('strokeWidth = ', strokeWidth);
         const path = svg.append("path")
             .datum(value)
             .attr("class", "line")
             .attr("fill", "none")
-            .attr("stroke", originalColor)  // Assign color using a categorical scheme
-            .attr("data-original-color", originalColor)
-            .attr("stroke-width", 0.8)
-            .attr("d", line)
-            .on("mouseover", function(event, d) {
+            .attr("stroke", lineColor)  // Assign color using a categorical scheme
+            .attr("original-color", lineColor)
+            .attr("stroke-width", strokeWidth)
+            .attr("original-stroke-width", strokeWidth)
+            .attr("d", line);
+        
+        if (highlightWorkerID === null) {
+            path.on("mouseover", function(event, d) {
                 // change color
-                d3.select(this).raise();
                 d3.selectAll("path.line").attr("stroke", "lightgray");
                 d3.select(this)
+                    .raise()
                     .attr("stroke", "orange")
                     .attr("stroke-width", 2);
                 // show tooltip
@@ -141,27 +155,87 @@ export function plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manag
             .on("mouseout", function(d) {
                 // remove highlight
                 d3.selectAll("path.line").each(function() {
-                    const originalColor = d3.select(this).attr("data-original-color");
+                    const originalColor = d3.select(this).attr("original-color");
                     d3.select(this).attr("stroke", originalColor);
                 });
-                const originalColor = d3.select(this).attr("data-original-color");
+                const originalColor = d3.select(this).attr("original-color");
                 d3.select(this)
                     .attr("stroke", originalColor)
                     .attr("stroke-width", 0.8);
                 // hide tooltip
                 tooltip.style.visibility = 'hidden';
             });
-
-        const totalLength = path.node().getTotalLength();
-    
-        // add animation
-        path.attr("stroke-dasharray", `${totalLength} ${totalLength}`)
-            .attr("stroke-dashoffset", totalLength)
-            .transition()
-            .duration(0) 
-            .ease(d3.easeLinear)
-            .attr("stroke-dashoffset", 0);
+        }
     });
+    
+    // traverse the lines and raise the highlighted line
+    let highlightedLine = null;
+    if (highlightWorkerID) {
+        d3.selectAll("path.line").each(function() {
+            const workerID = +d3.select(this).datum()[0].worker_id;
+            if (workerID === highlightWorkerID) {
+                d3.select(this).raise();
+                highlightedLine = d3.select(this);
+            }
+        });
+    }
 
+    if (highlightedLine) {
 
+        d3.select('#worker-disk-usage').on("mousemove", function(event) {
+            const [mouseX, mouseY] = d3.pointer(event, this);
+            const positionX = xScale.invert(mouseX - margin.left);
+            const positionY = yScale.invert(mouseY - margin.top);
+    
+            let minDistance = Infinity;
+            let closestPoint = null;
+    
+            const lineData = highlightedLine.datum();
+
+            lineData.forEach(point => {
+                const pointX = point['start_time'] - minTime;
+                const pointY = point['disk_usage(MB)'];
+    
+                const distance = Math.sqrt(Math.pow(positionX - pointX, 2) + Math.pow(positionY - pointY, 2));
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPoint = point;
+                }
+            });
+    
+            if (closestPoint) {
+                const pointX = xScale(closestPoint['start_time'] - minTime);
+                const pointY = yScale(closestPoint[displayDiskUsageByPercentage ? 'disk_usage(%)' : 'disk_usage(MB)']);
+                tooltip.innerHTML = `
+                    worker id: ${closestPoint.worker_id}<br>
+                    filename: ${closestPoint.filename}<br>
+                    time: ${(+closestPoint.start_time - minTime).toFixed(2)}s<br>
+                    disk contribute: ${(+closestPoint['size(MB)']).toFixed(4)}MB<br>
+                    disk usage: ${(+closestPoint[displayDiskUsageByPercentage ? 'disk_usage(%)' : 'disk_usage(MB)']).toFixed(2)}${displayDiskUsageByPercentage ? '%' : 'MB'}<br>
+                `;
+
+                tooltip.style.visibility = 'visible';
+                tooltip.style.top = (pointY + margin.top + container.getBoundingClientRect().top + window.scrollY + 5) + 'px';
+                tooltip.style.left = (pointX + margin.left + container.getBoundingClientRect().left + window.scrollX + 5) + 'px';
+            }
+        });
+    }
 }
+
+document.getElementById('button-display-worker-disk-usage-by-percentage').addEventListener('click', async function() {
+    this.classList.toggle('report-button-active');
+    // first clean the plot
+    d3.select('#worker-disk-usage').selectAll('*').remove();
+    plotWorkerDiskUsage(this.classList.contains('report-button-active'));
+});
+
+document.getElementById('button-display-worker-disk-usage-by-worker-id').addEventListener('click', async function() {
+    let workerID = document.getElementById('input-display-worker-disk-usage-by-worker-id').value;
+    if (!window.workerDiskUpdate.some(d => d.worker_id === workerID)) {
+        workerID = null;
+    } else {
+        workerID = +workerID;
+    }
+    plotWorkerDiskUsage(false, workerID);
+});

@@ -1,18 +1,17 @@
 
-export function fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV, generalStatisticsDAGCSV) {
-    fillGeneralStatisticsManager(generalStatisticsManagerCSV);
-    fillGeneralStatisticsTask(generalStatisticsTaskCSV);
-    fillGeneralStatisticsWorker(generalStatisticsWorkerCSV);
-    fillGeneralStatisticsFile(generalStatisticsFileCSV);
-    fillGeneralStatisticsDAG(generalStatisticsDAGCSV);
+export function fillGeneralStatistics() {
+    fillGeneralStatisticsManager();
+    fillGeneralStatisticsTask();
+    fillGeneralStatisticsWorker();
+    fillGeneralStatisticsFile();
+    fillGeneralStatisticsDAG();
 }
 
-function fillGeneralStatisticsManager(generalStatisticsManagerCSV) {
-    const generalStatisticsManager = d3.csvParse(generalStatisticsManagerCSV);
+function fillGeneralStatisticsManager() {
     const tbody = d3.select('#general-statistics-manager-table').select('tbody');
 
     const rows = tbody.selectAll('tr')
-        .data(generalStatisticsManager)
+        .data(window.generalStatisticsManager)
         .enter()
         .append('tr');
 
@@ -29,12 +28,11 @@ function fillGeneralStatisticsManager(generalStatisticsManagerCSV) {
     rows.append('td').text(d => d.max_concurrent_workers);
 }
 
-function fillGeneralStatisticsTask(generalStatisticsTaskCSV) {
-    const generalStatisticsTask = d3.csvParse(generalStatisticsTaskCSV);
+function fillGeneralStatisticsTask() {
     const tbody = d3.select('#general-statistics-task-table').select('tbody');
 
     const rows = tbody.selectAll('tr')
-        .data(generalStatisticsTask)
+        .data(window.generalStatisticsTask)
         .enter()
         .append('tr');
 
@@ -48,12 +46,11 @@ function fillGeneralStatisticsTask(generalStatisticsTaskCSV) {
     rows.append('td').text(d => d.workers);
 }
 
-function fillGeneralStatisticsWorker(generalStatisticsWorkerCSV) {
-    const generalStatisticsWorker = d3.csvParse(generalStatisticsWorkerCSV);
+function fillGeneralStatisticsWorker() {
     const tbody = d3.select('#general-statistics-worker-table').select('tbody');
 
     const rows = tbody.selectAll('tr')
-        .data(generalStatisticsWorker)
+        .data(window.generalStatisticsWorker)
         .enter()
         .append('tr');
 
@@ -74,12 +71,11 @@ function fillGeneralStatisticsWorker(generalStatisticsWorkerCSV) {
     rows.append('td').text(d => d['peak_disk_usage(%)']);
 }
 
-function fillGeneralStatisticsFile(generalStatisticsFileCSV) {
-    const generalStatisticsFile = d3.csvParse(generalStatisticsFileCSV);
+function fillGeneralStatisticsFile() {
     const tbody = d3.select('#general-statistics-file-table').select('tbody');
 
     const rows = tbody.selectAll('tr')
-        .data(generalStatisticsFile)
+        .data(window.generalStatisticsFile)
         .enter()
         .append('tr');
 
@@ -90,12 +86,11 @@ function fillGeneralStatisticsFile(generalStatisticsFileCSV) {
     rows.append('td').text(d => d.consumers);
 }
 
-function fillGeneralStatisticsDAG(generalStatisticsDAGCSV) {
-    const generalStatisticsDAG = d3.csvParse(generalStatisticsDAGCSV);
+function fillGeneralStatisticsDAG() {
     const tbody = d3.select('#general-statistics-dag-table').select('tbody');
 
     const rows = tbody.selectAll('tr')
-        .data(generalStatisticsDAG)
+        .data(window.generalStatisticsDAG)
         .enter()
         .append('tr');
 

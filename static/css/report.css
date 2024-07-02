@@ -19,7 +19,7 @@ body h2 {
     min-width: 500px;
     min-height: 200px;
     overflow: auto;
-    display: flex;
+    display: inline-block;
     justify-content: center;
     align-items: center;
     border: 1px solid #ccc;
@@ -33,7 +33,7 @@ body h2 {
     background-color: white;
     border: 1px solid black;
     border-radius: 8px;
-    font-size: 2rem;
+    font-size: 3rem;
     color: #333;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     pointer-events: none;

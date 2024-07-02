@@ -135,14 +135,14 @@
         </div>
         <select id="dag-id-selector" class="report-selector"></select>
 
-        <input type="text" id="input-id" class="report-input-box" placeholder="Enter Task ID">
-        <button class="report-button">Query Task</button>
+        <input type="text" id="input-task-id" class="report-input-box" placeholder="Enter Task ID">
+        <button class="report-button">Analyze Task</button>
     </div>
     <div id="dag-components-container" class="container-alpha">
         <div id="dag-components"></div>
     </div>
 
-    <h1 id="per-worker-disk-usage-title">Worker Disk Usage</h1>
+    <h1 id="worker-disk-usage-title">Worker Disk Usage</h1>
     <div id="general-statistics-container" class="table-container">
         <table id="general-statistics-file-table">
             <thead>
@@ -159,13 +159,13 @@
         </table>
     </div>
     <div class="report-toolbox">
-        <button id="display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
-        <input type="text" id="input-id" class="report-input-box" placeholder="Enter ID">
-        <button class="report-button">Highlight Worker</button>
+        <button id="button-display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
+        <input type="text" id="input-display-worker-disk-usage-by-worker-id" class="report-input-box" placeholder="Enter Worker ID">
+        <button id="button-display-worker-disk-usage-by-worker-id" class="report-button">Analyze Worker</button>
     </div>
 
-    <div id="per-worker-disk-usage-container" class="container-alpha" >
-        <svg id="per-worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
+    <div id="worker-disk-usage-container" class="container-alpha" >
+        <svg id="worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 

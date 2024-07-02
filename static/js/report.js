@@ -9,41 +9,48 @@ import { plotDAGComponentByID } from './dag.js';
 window.addEventListener('load', function() {
     
     async function handleLogChange() {
-        const logName = this.value;
+        window.logName = this.value;
+        const logName = window.logName;
 
-        const generalStatisticsManagerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_manager.csv`);
-        const generalStatisticsTaskCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_task.csv`);
-        const generalStatisticsWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_worker.csv`);
-        const generalStatisticsFileCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_file.csv`);
-        const generalStatisticsDAGCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_dag.csv`);
+        window.generalStatisticsManagerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_manager.csv`);
+        window.generalStatisticsTaskCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_task.csv`);
+        window.generalStatisticsWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_worker.csv`);
+        window.generalStatisticsFileCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_file.csv`);
+        window.generalStatisticsDAGCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_dag.csv`);
+        window.taskDoneCSV = await fetchFile(`logs/${logName}/vine-logs/task_done.csv`);
+        window.taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
+        window.taskFailedOnWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_worker.csv`);
+        window.workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
+        window.workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_usage.csv`);
 
-        const taskDoneCSV = await fetchFile(`logs/${logName}/vine-logs/task_done.csv`);
-        const taskFailedOnManagerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_manager.csv`);
-        const taskFailedOnWorkerCSV = await fetchFile(`logs/${logName}/vine-logs/task_failed_on_worker.csv`);
+        window.generalStatisticsManager = d3.csvParse(window.generalStatisticsManagerCSV);
+        window.generalStatisticsTask = d3.csvParse(window.generalStatisticsTaskCSV);
+        window.generalStatisticsWorker = d3.csvParse(window.generalStatisticsWorkerCSV);
+        window.generalStatisticsFile = d3.csvParse(window.generalStatisticsFileCSV);
+        window.generalStatisticsDAG = d3.csvParse(window.generalStatisticsDAGCSV);
+        window.taskDone = d3.csvParse(window.taskDoneCSV);
+        window.taskFailedOnManager = d3.csvParse(window.taskFailedOnManagerCSV);
+        window.taskFailedOnWorker = d3.csvParse(window.taskFailedOnWorkerCSV);
+        window.workerSummary = d3.csvParse(window.workerSummaryCSV);
+        window.workerDiskUpdate = d3.csvParse(window.workerDiskUpdateCSV);
 
-        const workerSummaryCSV = await fetchFile(`logs/${logName}/vine-logs/worker_summary.csv`);
-        const workerDiskUpdateCSV = await fetchFile(`logs/${logName}/vine-logs/worker_disk_usage.csv`);
+        window.manager_time_start = d3.csvParse(window.generalStatisticsManagerCSV)[0].time_start;
+        window.manager_time_end = d3.csvParse(window.generalStatisticsManagerCSV)[0].time_end;
 
-        const manager_time_start = d3.csvParse(generalStatisticsManagerCSV)[0].time_start;
-        const manager_time_end = d3.csvParse(generalStatisticsManagerCSV)[0].time_end;
+        window.parent.document.dispatchEvent(new Event('dataLoaded'));
 
         try {
 
-            fillGeneralStatistics(generalStatisticsManagerCSV, generalStatisticsTaskCSV, generalStatisticsWorkerCSV, generalStatisticsFileCSV, generalStatisticsDAGCSV);
+            fillGeneralStatistics();
 
-            plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end);
+            plotExecutionDetails();
             setupZoomAndScroll('#execution-details', '#execution-details-container');
 
-            plotDAGComponentByID(1, generalStatisticsDAGCSV, logName);
+            plotDAGComponentByID(1);
         
-            plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, false);
-            setupZoomAndScroll('#per-worker-disk-usage', '#per-worker-disk-usage-container');
-            document.getElementById('display-worker-disk-usage-by-percentage').addEventListener('click', function() {
-                this.classList.toggle('report-button-active');
-                // first clean the plot
-                d3.select('#per-worker-disk-usage').selectAll('*').remove();
-                plotWorkerDiskUsage(workerDiskUpdateCSV, workerSummaryCSV, manager_time_start, manager_time_end, this.classList.contains('report-button-active'));
-            });
+            plotWorkerDiskUsage(false);
+            setupZoomAndScroll('#worker-disk-usage', '#worker-disk-usage-container');
+
 
         } catch (error) {
             console.error('Error fetching data directory:', error);

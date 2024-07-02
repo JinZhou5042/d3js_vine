@@ -1,11 +1,11 @@
 
-export function plotExecutionDetails(taskDoneCSV, taskFailedOnWorkerCSV, workerSummaryCSV, manager_time_start, manager_time_end) {
-    const taskDone = d3.csvParse(taskDoneCSV);
-    const taskFailedOnWorker = d3.csvParse(taskFailedOnWorkerCSV);
-    const workerSummary = d3.csvParse(workerSummaryCSV);
+export function plotExecutionDetails() {
+    const taskDone = window.taskDone;
+    const taskFailedOnWorker = window.taskFailedOnWorker;
+    const workerSummary = window.workerSummary;
 
-    const minTime = manager_time_start;
-    const maxTime = manager_time_end;
+    const minTime = window.manager_time_start;
+    const maxTime = window.manager_time_end;
 
     const container = document.getElementById('execution-details-container');
     const margin = calculateMargin(container, workerSummary);

@@ -1,9 +1,7 @@
-import { setupZoomAndScroll, fetchFile } from './tools.js';
 
-
-export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logName) {
+export async function plotDAGComponentByID(dagID) {
     try {
-        const generalStatisticsDAG = d3.csvParse(generalStatisticsDAGCSV);
+        const generalStatisticsDAG = window.generalStatisticsDAG;
         const dag = generalStatisticsDAG.find(d => d.graph_id === dagID.toString());
 
         if (dag) {
@@ -15,7 +13,7 @@ export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logNa
                 const svgElement = d3.select('#dag-components');
                 svgElement.selectAll('*').remove();
             
-                const svgContent = await d3.svg(`logs/${logName}/vine-logs/subgraph_${dagID}.svg`);
+                const svgContent = await d3.svg(`logs/${window.logName}/vine-logs/subgraph_${dagID}.svg`);
                 svgElement.node().appendChild(svgContent.documentElement);
                 const insertedSVG = svgElement.select('svg');
         
@@ -41,10 +39,10 @@ export async function plotDAGComponentByID(dagID, generalStatisticsDAGCSV, logNa
     }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+window.parent.document.addEventListener('dataLoaded', function() {
     const selectDAG = document.getElementById('dag-id-selector');
-
-    const { dagIDs, logName, generalStatisticsDAGCSV } = await fetchDAGIDs();
+    
+    const dagIDs = window.generalStatisticsDAG.map(dag => dag.graph_id);
 
     dagIDs.forEach(dagID => {
         const option = document.createElement('option');
@@ -55,17 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     selectDAG.addEventListener('change', async () => {
         const selectedDAGID = selectDAG.value;
-        await plotDAGComponentByID(selectedDAGID, generalStatisticsDAGCSV, logName);
+        await plotDAGComponentByID(selectedDAGID);
     });
 });
 
-async function fetchDAGIDs() {
-    const logSelector = window.parent.document.getElementById('log-selector');
-    const logName = logSelector.value;
-
-    const generalStatisticsDAGCSV = await fetchFile(`logs/${logName}/vine-logs/general_statistics_dag.csv`);
-    const generalStatisticsDAG = d3.csvParse(generalStatisticsDAGCSV);
-    const dagIDs = generalStatisticsDAG.map(dag => dag.graph_id);
-
-    return { dagIDs, logName, generalStatisticsDAGCSV };
-}
