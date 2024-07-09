@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>d3.js vine</title>
+    <!-- import d3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- import jquery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>    
+    <!-- import datatables -->
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/4.0.1/js/dataTables.fixedHeader.js"></script>
+    <script src="https://cdn.datatables.net/fixedcolumns/5.0.1/js/dataTables.fixedColumns.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/4.0.1/css/fixedHeader.bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/5.0.1/css/fixedColumns.bootstrap.css">
+
+
+    <!-- parse csv files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- import css files -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
+    <!-- import js files-->
+    <script src="{{ url_for('static', filename='js/report.js') }}" type="module"></script>
+</head>
+
+<body>
+    <h1 id="general-statistics-title" >General Statistics</h1>
+    <h2>Manager</h2>
+    <div id="general-statistics-container" class="table-container">
+        <table id="general-statistics-manager-table">
+            <thead>
+                <tr>
+                    <th>when connected</th>
+                    <th>when disconnected</th>
+                    <th>lifetime (s)</th>
+                    <th>tasks submitted</th>
+                    <th>tasks done</th>
+                    <th>tasks failed on manager</th>
+                    <th>tasks failed on worker</th>
+                    <th>max task try count</th>
+                    <th>workers connected</th>
+                    <th>active workers</th>
+                    <th>max concurrent workers</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Task</h2>
+    <div class="table-container">
+        <button id="button-reset-task-table" class="report-button">Reset</button>
+        <button id="button-convert-task-timestamp" class="report-button">Convert Timestamp</button>
+        <input type="text" id="input-search-task-by-id" class="report-input-box" placeholder="Search by ID">
+        <button id="button-search-task-by-id" class="report-button">Search</button>
+        <input type="text" id="input-search-task-by-category" class="report-input-box" placeholder="Search by Category">
+        <button id="button-search-task-by-category" class="report-button">Search</button>
+        <input type="text" id="input-search-task-by-filename" class="report-input-box" placeholder="Search by Filename">
+        <button id="button-search-task-by-filename" class="report-button">Search</button>
+        <table id="general-statistics-task-table" class="display">
+            <thead>
+                <tr>
+                    <th>task id</th>
+                    <th>try id</th>
+                    <th>worker id</th>
+                    <th>when ready</th>
+                    <th>when running</th>
+                    <th>when start on worker</th>
+                    <th>when end on worker</th>
+                    <th>when waiting retrieval</th>
+                    <th>when retrieved</th>
+                    <th>when done</th>
+                    <th>category</th>
+                    <th>size of input (MB)</th>
+                    <th>size of output (MB)</th>
+                    <th>input files</th>
+                    <th>output files</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Worker</h2>
+    <div class="table-container">
+        <table id="general-statistics-worker-table" class="display">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>hash</th>
+                    <th>machine</th>
+                    <th>ip</th>
+                    <th>port</th>
+                    <th>when connected</th>
+                    <th>when disconnected</th>
+                    <th>lifetime(s)</th>
+                    <th>cores</th>
+                    <th>memory (MB)</th>
+                    <th>disk (MB)</th>
+                    <th>tasks done</th>
+                    <th>tasks average runtime</th>
+                    <th>peak disk usage (MB)</th>
+                    <th>peak disk usage (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div id="vine-tooltip" class="tooltip"></div>
+
+    <div style="display: flex; align-items: center;">
+        <h1 id="execution-details-title">Execution Details</h1>
+        <div id="execution-details-tip" class="header-tip">This manager exited unexpectedly, choose the last appeared timestamp as the manager end time.</div>
+    </div>
+    
+    
+    <div id="execution-details-container" class="container-alpha" >
+        <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <div style="display: flex; align-items: center;">
+        <h1 id="dag-components-title" >DAG Components</h1>
+        <div id="dag-components-tip" class="header-tip">No Graph Data found for this execution.</div>
+    </div>
+    <div class="text-description">
+        <p>
+            A component is a subgraph of this workflow with the following properties:
+            <ul>
+                <li><b>Node</b>: Represents a regular task.</li>
+                <li><b>Edge (file -> task)</b>: The durantion from when this file is produced by the previous task to when it is consumed by this task.</li>
+                <li><b>Edge (task -> file)</b>: The durantion from when this this task starts to run to when it is finished on a worker.</li>
+                <li><b>Critical Path:</b> The longest sequence of tasks and waiting times determining the project's total duration. Optimazation may exist here.</li>
+                <li><b>Critical Input File:</b> One of the input files that took the shortest time to wait for. Optimation may exist here.</li>
+            </ul>
+        </p>
+    </div> 
+    <div class="table-container">
+        <table id="general-statistics-dag-table" class="display">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>number of tasks</th>
+                    <th>time of completion</th>
+                    <th>number of critical tasks</th>
+                    <th>critical tasks</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <div class="report-toolbox">
+        <div class="report-label-container">
+            <p>Select a DAG ID: </p>
+        </div>
+        <select id="dag-id-selector" class="report-selector"></select>
+
+        <button id="button-highlight-critical-path" class="report-button">Highlight Critical Path</button>
+
+        <input type="text" id="input-task-id-in-dag" class="report-input-box" placeholder="Enter Task ID">
+        <button id="button-analyze-task-in-dag" class="report-button">Analyze Task</button>
+    </div>
+    <div id="critical-path-info" class="info"></div>
+    <div id="task-info-container" class="info">
+        <div id="task-info"></div>
+        <div id="task-input-file-info" class="table-container">
+            <table id="task-input-file-info-table">
+                <thead>
+                    <tr>
+                        <th>filename</th>
+                        <th>size (MB)</th>
+                        <th>time from creation <button data-index="2" data-order="0">sort</button></th>
+                        <th>time from recovery <button data-index="3" data-order="0">sort</button></th>
+                        <th>producers</th>
+                        <th>consumers</th>
+                        <th>workers held (worker_id, time_stage_in, time_stage_out, lifetime)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div id="dag-components-container" class="container-alpha">
+        <div id="dag-components"></div>
+    </div>
+
+    <h1 id="worker-disk-usage-title">File</h1>
+    <div class="table-container">
+        <table id="general-statistics-file-table" class="display">
+            <thead>
+                <tr>
+                    <th>filename</th>
+                    <th>size (MB)</th>
+                    <th>producers</th>
+                    <th>consumers</th>
+                    <th>num workers held</th>
+                    <th>workers held</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <div class="report-toolbox">
+        <button id="button-display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
+        <button id="button-display-accumulated-only" class="report-button">Accumulation</button>
+        <input type="text" id="input-highlight-worker-disk-usage" class="report-input-box" placeholder="Enter Worker ID">
+        <button id="button-highlight-worker-disk-usage" class="report-button">Analyze Worker</button>
+    </div>
+
+    <div id="worker-disk-usage-container" class="container-alpha" >
+        <svg id="worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <!--
+    <h1 id="execution-summary-title" >Execution Summary</h1>
+    <div id="histogramContainer" class="container-alpha" >
+        <select id="histogramSelector">
+            <option value="mode0">default</option>
+            <option value="mode1">sort by average execution time</option>
+            <option value="mode2">sort by tasks completion</option>
+        </select>
+        <svg id="histogram" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <h1 id="cpu-usage-distribution-title">CPU Usage Distribution</h1>
+    <div id="avgCoreLoadContainer" class="violinCoreContainer" >
+        <div id="avgCoreLoadLeftContainer" class="violinCoreLeftContainer">
+            <div id="avgCoreLoadLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                <img id="overallAvgCoreLoadImg"  alt="Average Core Load"></img>
+            </div>
+        </div>
+        <div id="avgCoreLoadRightContainer" class="violinCoreRightContainer">
+            <div id="avgCoreLoadRightButton" class="violinCoreRightButton"></div>
+            <div id="avgCoreLoadRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+            </div>
+        </div>
+    </div>
+
+    <h1 id="runtime-distribution-title" >Runtime Distribution</h1>
+    <div id="violinContainer" class="violinCoreContainer" >
+        <div id="violinLeftContainer" class="violinCoreLeftContainer">
+            <div id="violinLeftSummaryContainer" class="violinCoreLeftSummaryContainer">
+                <img id="allWorkersSummaryViolinImg"  alt="All Workers Summary"></img>
+            </div>
+        </div>
+        <div id="violinRightContainer" class="violinCoreRightContainer">
+            <div id="violinRightButton" class="violinCoreRightButton"></div>
+            <div id="violinRightDetailsByWorkerContainer" class="violinCoreRightDetailsByWorkerContainer">
+            </div>
+        </div>
+    </div>
+
+    <h1 id="vine-graphs-title" >Vine Graphs</h1>
+    <div id="vineGraphsContainer" >
+        <div class="vineGraphContainer"><img id="performanceTransferImg" alt="Transfer"></div>
+        <div class="vineGraphContainer"><img id="performanceTaskImg" alt="Tasks"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersImg" alt="Workers"></div>
+        <div class="vineGraphContainer"><img id="performanceTasksAccumImg" alt="Tasks Accumulate"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersAccumImg" alt="Workers Accumulate"></div>
+        <div class="vineGraphContainer"><img id="performanceTasksCapacitiesImg" alt="Tasks Capabilities"></div>
+        <div class="vineGraphContainer"><img id="performanceTimeManagerImg" alt="Time Manager"></div>
+        <div class="vineGraphContainer"><img id="performanceTimeWorkersImg" alt="Time Workers"></div>
+        <div class="vineGraphContainer"><img id="performanceTimesStackedImg" alt="Time Stacked"></div>
+        <div class="vineGraphContainer"><img id="performanceWorkersDiskImg" alt="Workers Disk"></div>
+    </div>
+-->
+    </body>
+</html>
