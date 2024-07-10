@@ -308,7 +308,7 @@ function drawFileTable(url) {
 }
 
 function loadPage(dataName, page, perPage) {
-    var url = `http://127.0.0.1:9122/` + dataName;
+    var url = dataName;
 
     $.ajax({
         url: url,
