@@ -258,6 +258,7 @@ def parse_txn(txn):
     if manager_info['time_end'] is None:
         # if the manager did not end, set the end time to the last txn timestamp
         manager_info['time_end'] = timestamp
+        manager_info['lifetime(s)'] = round(manager_info['time_end'] - manager_info['time_start'], 2)
         manager_info['failed'] = True
 
     return task_info, task_try_count, library_info, worker_info, manager_info

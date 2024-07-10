@@ -11,7 +11,7 @@ export async function plotDAGComponentByID(dagID) {
 
         if (dag) {
             try {
-                // let rows = document.querySelectorAll('#general-statistics-dag-table tbody tr');
+                // let rows = document.querySelectorAll('#dag-table tbody tr');
                 // rows.forEach(row => {
                 //     row.style.backgroundColor = 'white';
                 // });
@@ -26,7 +26,7 @@ export async function plotDAGComponentByID(dagID) {
                     .attr('preserveAspectRatio', 'xMidYMid meet');
 
                 // highlight the selected row
-                // rows = document.querySelectorAll('#general-statistics-dag-table tbody tr');
+                // rows = document.querySelectorAll('#dag-table tbody tr');
                 // rows.forEach(row => {
                 //     if (+row.graph_id === +dagID) {
                 //         row.style.backgroundColor = '#f2f2f2';

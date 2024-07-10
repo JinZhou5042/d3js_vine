@@ -29,7 +29,7 @@ app = Flask(__name__)
 LOGS_DIR = 'logs'
 
 
-@app.route('/taskDone')
+@app.route('/tasksCompleted')
 def get_tasks():
     log_name = request.args.get('log_name')
     draw = int(request.args.get('draw', 1))
@@ -42,8 +42,8 @@ def get_tasks():
     manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_manager.csv'))
     time_manager_start = manager_info_df['time_start'][0]
 
-    task_done_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_done.csv'))
-    task_done_df = task_done_df.fillna('N/A')
+    task_done_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_done.csv')).fillna('N/A')
+
     if timestamp_type == 'startFromManager':
         time_columns = ['when_ready', 'time_commit_start', 'time_commit_end', 'when_running',
                         'time_worker_start', 'time_worker_end', 'when_waiting_retrieval',
@@ -81,6 +81,54 @@ def get_tasks():
     }
 
     return jsonify(response)
+
+@app.route('/tasksFailed')
+def get_tasks_failed():
+    log_name = request.args.get('log_name')
+    draw = int(request.args.get('draw', 1))
+    start = int(request.args.get('start', 0))
+    length = int(request.args.get('length', 50))
+    search_value = request.args.get('search[value]', '')
+    search_type = request.args.get('search[type]', '')
+    timestamp_type = request.args.get('timestamp_type')
+
+    manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_manager.csv'))
+    time_manager_start = manager_info_df['time_start'][0]
+
+    tasks_failed_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_failed_on_worker.csv')).fillna('N/A')
+
+    if timestamp_type == 'startFromManager':
+        time_columns = ['when_ready', 'when_running', 'when_next_ready']
+        for col in time_columns:
+            tasks_failed_df[col] = round(tasks_failed_df[col] - time_manager_start, 2)
+
+    if search_value:
+        if search_type == "task-id":
+            tasks_failed_df = tasks_failed_df[tasks_failed_df['task_id'] == int(search_value)]
+        elif search_type == "category":
+            tasks_failed_df = tasks_failed_df[tasks_failed_df['category'] == search_value]
+        elif search_type == "worker-id":
+            tasks_failed_df = tasks_failed_df[tasks_failed_df['worker_id'] == int(search_value)]
+    else:
+        # handle sorting request
+        order_column = request.args.get('order[0][column]', '0')
+        order_dir = request.args.get('order[0][dir]', 'asc')
+        column_name = request.args.get(f'columns[{order_column}][data]', 'worker_id')
+        if order_dir == 'asc':
+            tasks_failed_df = tasks_failed_df.sort_values(by=column_name, ascending=True)
+        else:
+            tasks_failed_df = tasks_failed_df.sort_values(by=column_name, ascending=False)
+    
+    page_data = tasks_failed_df.iloc[start:start + length].to_dict(orient='records')
+
+    response = {
+        "draw": draw,
+        "data": page_data,
+        "recordsTotal": len(tasks_failed_df),
+        "recordsFiltered": len(tasks_failed_df)
+    }
+
+    return response
 
 @app.route('/worker')
 def get_worker_summary():

@@ -87,25 +87,29 @@ def generate_general_statistics(task_df, worker_summary_df, manager_info, num_to
     manager_info['active_workers'] = num_active_workers
 
     events = pd.concat([
-        pd.DataFrame({'time': worker_summary_df['time_connected'], 'type': 'connect'}),
-        pd.DataFrame({'time': worker_summary_df['time_disconnected'], 'type': 'disconnect'})
+        pd.DataFrame({'time': worker_summary_df['time_connected'], 'type': 'connect', 'worker_id': worker_summary_df['worker_id']}),
+        pd.DataFrame({'time': worker_summary_df['time_disconnected'], 'type': 'disconnect', 'worker_id': worker_summary_df['worker_id']})
     ])
 
     events = events.sort_values('time')
-    current_workers = 0
-    max_concurrent_workers = 0
+    parallel_workers = 0
+    worker_connection_events = []
+
+    worker_connection_events.append((manager_info['time_start'], 0, 'manager_start', -1))
     for _, event in events.iterrows():
         if event['type'] == 'connect':
-            current_workers += 1
+            parallel_workers += 1
         else:
-            current_workers -= 1
-        max_concurrent_workers = max(max_concurrent_workers, current_workers)
-    manager_info['max_concurrent_workers'] = max_concurrent_workers
+            parallel_workers -= 1
+        worker_connection_events.append((event['time'], parallel_workers, event['type'], event['worker_id']))
+
+    manager_info['max_concurrent_workers'] = max([x[1] for x in worker_connection_events])
     row_task_total = general_statistics_task_df[general_statistics_task_df['category'] == 'TOTAL']
     manager_info['tasks_submitted'] = row_task_total['submitted'].iloc[0]
     manager_info['time_start_human'] = pd.to_datetime(int(manager_info['time_start']), unit='s').strftime('%Y-%m-%d %H:%M:%S')
     manager_info['time_end_human'] = pd.to_datetime(int(manager_info['time_end']), unit='s').strftime('%Y-%m-%d %H:%M:%S')
-
+    worker_connection_events_df = pd.DataFrame(worker_connection_events, columns=['time', 'parallel_workers', 'event', 'worker_id'])
+    worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_connections.csv'), index=False)
     # the max try_id in task_df
     manager_info['max_task_try_count'] = task_df['try_id'].max()
     manager_info_df = pd.DataFrame([manager_info])

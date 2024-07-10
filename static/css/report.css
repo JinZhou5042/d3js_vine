@@ -60,6 +60,10 @@ body h2 {
     height: auto;
 }
 
+.formatted-json {
+    line-height: 6rem;
+}
+
 /* Execution Details svg */
 #execution-details {
     width: 100%;
@@ -143,6 +147,36 @@ body h2 {
     min-width: 500px;
 }
 
+/* Preface Area */
+.preface {
+    width: 90%;
+    min-width: 500px;
+    max-height: 40vh;
+    font-size: 3.5rem; 
+    background-color: #f3f3f3;
+}
+
+
+#task-execution-details-legend-table {
+    width: 90%;
+    border-collapse: collapse;
+    font-size: 3.5rem;
+}
+
+#task-execution-details-legend-table tr {
+    height: 3rem;
+}
+#task-execution-details-legend-table th {
+    padding: 0;
+    width: 10%;
+    text-align: center;
+    vertical-align: middle;
+}
+#task-execution-details-legend-table td {
+    width: 80%;
+    text-align: left;
+}
+
 /* Info Area */
 .info {
     width: 90%;
@@ -156,19 +190,62 @@ body h2 {
 
 #task-info {
     flex: 0 0 50%;
-    display: block;
+    display: flex;
     overflow: auto; 
 }
 
 #task-input-file-info {
     flex: 0 0 50%;
-    display: block;
+    display: flex;
     overflow: auto;
 }
 
 #critical-path-info {
     overflow: auto; 
 }
+
+/* MANAGER info part, not hidden */
+#manager-info-container {
+    width: 90%;
+    min-width: 500px;
+    max-height: 40vh;
+    white-space: nowrap; 
+    font-size: 3.5rem; 
+    padding: 0px 0px 0px 0px;
+    display: flex;
+    position: relative;
+}
+
+#manager-description-container {
+    position: relative;
+    flex: 0 0 45%;
+    padding-right: 5%;
+    overflow: hidden; 
+}
+
+#manager-description-table {
+    width: 100%;
+    max-width: 600px;
+    margin: 20px auto;
+    border-collapse: collapse;
+}
+#manager-description-table th, 
+#manager-description-table td {
+    border-bottom: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+#manager-description-table th {
+    width: 50%;
+}
+
+#factory-description-container {
+    position: relative;
+    flex: 0 0 45%;
+    padding-left: 5%;
+    overflow: auto; 
+}
+
 
 /* DAG */
 #dag-components-container {
@@ -190,9 +267,8 @@ body h2 {
 /* Table */
 .table-container {
     max-width: 90%;
-    min-width: 500px;
+    min-width: 300px;
     height: auto;
     overflow: auto;
     display: inline-block;
-
 }
