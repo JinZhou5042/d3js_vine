@@ -168,41 +168,43 @@ body h2 {
 }
 #task-execution-details-legend-table th {
     padding: 0;
-    width: 10%;
+    width: 6%;
     text-align: center;
     vertical-align: middle;
 }
 #task-execution-details-legend-table td {
-    width: 80%;
+    width: auto;
     text-align: left;
 }
 
-/* Info Area */
-.info {
+/* Analyze Area */
+
+#critical-path-info {
+    overflow: auto; 
+    font-size: 3.5rem;
+    border: 1px solid #ccc;
     width: 90%;
-    min-width: 500px;
-    max-height: 40vh;
+    margin-bottom: 2rem;
+    display: none;
+}
+
+#analyze-task {
     white-space: nowrap; 
-    font-size: 4rem; 
+    font-size: 3.5rem; 
     padding: 10px 0px; 
     display: none;
 }
 
-#task-info {
-    flex: 0 0 50%;
-    display: flex;
+#analyze-task-display-details {
+    width: 90%;
+    display: block;
     overflow: auto; 
 }
 
-#task-input-file-info {
-    flex: 0 0 50%;
-    display: flex;
-    overflow: auto;
+#analyze-task-display-input-files {
+    width: 90%;
 }
 
-#critical-path-info {
-    overflow: auto; 
-}
 
 /* MANAGER info part, not hidden */
 #manager-info-container {
@@ -268,6 +270,7 @@ body h2 {
 .table-container {
     max-width: 90%;
     min-width: 300px;
+    max-height: 40vh;
     height: auto;
     overflow: auto;
     display: inline-block;

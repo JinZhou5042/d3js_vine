@@ -348,5 +348,3 @@ window.parent.document.addEventListener('dataLoaded', function() {
     loadPage('file', 1, 50);
 });
 
-
-

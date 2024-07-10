@@ -1,14 +1,19 @@
-import { fetchFile } from './tools.js';
+import { fetchFile, downloadSVG } from './tools.js';
 
 
-const mgrDoughnutChartContainer = document.getElementById('manager-doughnut-chart-container');
-const mgrDescriptionContainer = document.getElementById('manager-description-container');
 const factoryDescriptionContainer = document.getElementById('factory-description-container');
 
 window.parent.document.addEventListener('dataLoaded', function() {
     fillMgrDescription();
     fillFactoryDescription();
     plotWorkerConnections();
+
+    function handleDownloadClick() {
+        downloadSVG('worker-connections', 'worker_connections.svg');
+    }
+    var button = document.getElementById('button-download-worker-connections');
+    button.removeEventListener('click', handleDownloadClick); 
+    button.addEventListener('click', handleDownloadClick);
 });
 
 function fillMgrDescription() {

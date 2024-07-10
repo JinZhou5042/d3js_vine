@@ -1,3 +1,5 @@
+import { downloadSVG } from './tools.js';
+
 const colors = {
     'workers': {
         'normal': 'lightgrey',
@@ -324,6 +326,8 @@ window.parent.document.addEventListener('dataLoaded', function() {
     }
     if (window.generalStatisticsManager.failed === 'True') {
         document.getElementById('execution-details-tip').style.visibility = 'visible';
+    } else {
+        document.getElementById('execution-details-tip').style.visibility = 'hidden';
     }
 
     var legendCell = d3.select("#legend-regular-tasks");
@@ -388,7 +392,11 @@ window.parent.document.addEventListener('dataLoaded', function() {
         .attr("x", rectX)
         .attr("y", rectY)
         .attr("fill", colors['workers'].normal);
+
+    function handleDownloadClick() {
+        downloadSVG('execution-details', 'task_execution_details.svg');
+    }
+    var button = document.getElementById('button-download-task-execution-details');
+    button.removeEventListener('click', handleDownloadClick); 
+    button.addEventListener('click', handleDownloadClick);
 });
-
-
-

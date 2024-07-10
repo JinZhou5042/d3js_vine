@@ -1,4 +1,4 @@
-import { formatUnixTimestamp } from './tools.js';
+import { formatUnixTimestamp, downloadSVG } from './tools.js';
 
 export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, highlightWorkerID = null, displayAccumulationOnly = false } = {}) {
     // first remove all the elements in the svg
@@ -301,4 +301,12 @@ window.parent.document.addEventListener('dataLoaded', function() {
     buttonDisplayPercentages.classList.remove('report-button-active');
     buttonDisplayAccumulatedOnly.classList.remove('report-button-active');
     buttonHighlightWorker.classList.remove('report-button-active');
+
+    function handleDownloadClick() {
+        downloadSVG('worker-disk-usage', 'worker_disk_usage.svg');
+    }
+    var button = document.getElementById('button-download-worker-disk-usage');
+    button.removeEventListener('click', handleDownloadClick); 
+    button.addEventListener('click', handleDownloadClick);
 });
+

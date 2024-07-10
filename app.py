@@ -82,6 +82,7 @@ def get_tasks():
 
     return jsonify(response)
 
+
 @app.route('/tasksFailed')
 def get_tasks_failed():
     log_name = request.args.get('log_name')

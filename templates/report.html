@@ -16,7 +16,6 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/4.0.1/css/fixedHeader.bootstrap.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/5.0.1/css/fixedColumns.bootstrap.css">
 
-
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
@@ -30,7 +29,7 @@
 <body>
     <div id="vine-tooltip" class="tooltip"></div>
 
-    <h2>Manager</h2>
+    <h2 id="manager-summary-title">Manager Summary</h2>
     <div id="manager-preface" class="preface">
        <p>The time span of this report begins when the manager starts and ends when the manager ends. 
         If the manager was connected at Unix timestamp 1720370750.935014, we set this as 0, any other 
@@ -91,7 +90,7 @@
     </div>
 
 
-    <h2>Tasks Completed</h2>
+    <h2 id="tasks-completed-title">Tasks Completed</h2>
     <div class="report-toolbox">
         <button id="button-tasks-completed-reset-table" class="report-button">Reset</button>
         <button id="button-tasks-completed-convert-timestamp" class="report-button">Convert Timestamp</button>
@@ -128,7 +127,7 @@
         </table>
     </div>
 
-    <h2>Tasks Failed</h2>
+    <h2 id="tasks-failed-title">Tasks Failed</h2>
     <div class="report-toolbox">
         <button id="button-tasks-failed-reset-table" class="report-button">Reset</button>
         <button id="button-tasks-failed-convert-timestamp" class="report-button">Convert Timestamp</button>
@@ -159,7 +158,7 @@
 
 
     <div style="display: flex; align-items: center;">
-        <h2 id="execution-details-title">Tasks Execution Details</h2>
+        <h2 id="tasks-execution-details-title">Tasks Execution Details</h2>
         <div id="execution-details-tip" class="header-tip">This manager exited unexpectedly, choose the last appeared timestamp as the manager end time.</div>
     </div>
     <div id="task-execution-details-preface" class="preface">
@@ -169,6 +168,10 @@
             actually ends (before when the manager set it to WAITING_RETRIEVAL status) on a worker.
         </p>
     </div>
+    <div class="report-toolbox">
+        <button id="button-download-task-execution-details" class="report-button">Download SVG</button>
+    </div>
+
     <table id="task-execution-details-legend-table">
         <tr>
             <th id="legend-regular-tasks"></th>
@@ -193,7 +196,7 @@
     </div>
     
 
-    <h2>Worker Summary</h2>
+    <h2 id="worker-summary-title">Worker Summary</h2>
     <div class="table-container">
         <table id="worker-table" class="display">
             <thead>
@@ -220,11 +223,14 @@
         </table>
     </div>
 
-    <h2>Worker Connections</h2>
+    <h2 id="worker-connections-title">Worker Connections</h2>
     <div id="manager-preface" class="preface">
         <p>This plot shows the number of parallel running workers during the manager's lifetime.
         </p>
      </div>
+     <div class="report-toolbox">
+        <button id="button-download-worker-connections" class="report-button">Download SVG</button>
+    </div>
     <div id="worker-connections-container" class="container-alpha">
         <svg id="worker-connections" xmlns="http://www.w3.org/2000/svg">
         </svg>
@@ -232,7 +238,7 @@
 
     <h2 id="worker-disk-usage-title">Worker Disk Usage</h2>
     <div id="worker-disk-usage-preface" class="preface">
-        <p>This plot shows the disk usage of each worker during the manager's lifetime from the point of the manager's view.
+        <p>This plot shows the disk usage (MB) of each worker during the manager's lifetime from the point of the manager's view.
             The disk increase can be caused by any cache-update events or put events. The disk decrease can be caused by any unlink events.
             Click the <b>Accumulation</b> button to see the disk increase events only.
         </p>
@@ -242,6 +248,7 @@
         <button id="button-display-accumulated-only" class="report-button">Accumulation</button>
         <input type="text" id="input-highlight-worker-disk-usage" class="report-input-box" placeholder="Enter Worker ID">
         <button id="button-highlight-worker-disk-usage" class="report-button">Analyze Worker</button>
+        <button id="button-download-worker-disk-usage" class="report-button">Download SVG</button>
     </div>
     <div id="worker-disk-usage-container" class="container-alpha" >
         <svg id="worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
@@ -273,7 +280,7 @@
         <p style="margin: 0px;">
             A component is a subgraph of this workflow with the following properties:
             <ul style="margin: 0px;">
-                <li><b>Node</b>: Represents a regular task.</li>
+                <li><b>Node</b>: Represents a task, either regular task or recovery task.</li>
                 <li><b>Edge (file -> task)</b>: The durantion from when this file is produced by the previous task to when it is consumed by this task.</li>
                 <li><b>Edge (task -> file)</b>: The durantion from when this this task starts to run to when it is finished on a worker.</li>
                 <li><b>Critical Path:</b> The longest sequence of tasks and waiting times determining the project's total duration. Optimazation may exist here.</li>
@@ -289,20 +296,23 @@
         <button id="button-highlight-critical-path" class="report-button">Highlight Critical Path</button>
         <input type="text" id="input-task-id-in-dag" class="report-input-box" placeholder="Enter Task ID">
         <button id="button-analyze-task-in-dag" class="report-button">Analyze Task</button>
+        <button id="button-download-dag" class="report-button">Download SVG</button>
     </div>
     
-    <div id="critical-path-info" class="info"></div>
-    <div id="task-info"></div>
-    <div id="task-input-file-info" class="table-container">
-    
-    <div id="task-info-container" class="info">
-        <table id="task-input-file-info-table">
+    <div id="critical-path-info"></div>
+
+    <div id="analyze-task">
+        <p><b>task information</b></p>
+        <div id="analyze-task-display-details"></div>
+        <p><b>input files information</b></p>
+        <div id="analyze-task-display-input-files" class="table-container">
+            <table id="task-input-files-table" class="display">
                 <thead>
                     <tr>
                         <th>filename</th>
                         <th>size (MB)</th>
-                        <th>time from creation <button data-index="2" data-order="0">sort</button></th>
-                        <th>time from recovery <button data-index="3" data-order="0">sort</button></th>
+                        <th>waiting time from creation</th>
+                        <th>waiting time from recovery</th>
                         <th>producers</th>
                         <th>consumers</th>
                         <th>workers held (worker_id, time_stage_in, time_stage_out, lifetime)</th>
@@ -318,7 +328,7 @@
         <div id="dag-components"></div>
     </div>
 
-    <h2 id="file-title">File Summary</h2>
+    <h2 id="file-summary-title">File Summary</h2>
     <div class="table-container">
         <table id="file-table" class="display">
             <thead>

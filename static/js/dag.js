@@ -1,4 +1,4 @@
-import { sortTable } from './tools.js';
+import { sortTable, downloadSVG } from './tools.js';
 
 export async function plotDAGComponentByID(dagID) {
     try {
@@ -54,8 +54,7 @@ document.getElementById('dag-id-selector').addEventListener('change', async func
         buttonAnalyzeTaskInDAG.classList.toggle('report-button-active');
     }
     // hidden the info div
-    const taskInfoContainer = document.getElementById('task-info-container');
-    taskInfoContainer.style.display = 'none';
+    document.getElementById('analyze-task').style.display = 'none';
     
     const selectedDAGID = document.getElementById('dag-id-selector').value;
     await plotDAGComponentByID(selectedDAGID);
@@ -78,6 +77,14 @@ window.parent.document.addEventListener('dataLoaded', function() {
         option.text = `${dagID}`;
         selectDAG.appendChild(option);
     });
+
+    function handleDownloadClick() {
+        const selectedDAGID = document.getElementById('dag-id-selector').value;
+        downloadSVG('dag-components', 'subgraph_' + selectedDAGID + '.svg');
+    }
+    var button = document.getElementById('button-download-dag');
+    button.removeEventListener('click', handleDownloadClick); 
+    button.addEventListener('click', handleDownloadClick);
 });
 
 document.getElementById('button-analyze-task-in-dag').addEventListener('click', async function() {
@@ -96,10 +103,10 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
             return +d.task_id === +taskID;
         });
         taskData = taskData[0];
-        const infoContainer = document.getElementById('task-info-container');
-        infoContainer.style.display = 'flex';
+        document.getElementById('analyze-task').style.display = 'block';
+
         // update the left side
-        const infoDiv = document.getElementById('task-info');
+        const infoDiv = document.getElementById('analyze-task-display-details');
         infoDiv.innerHTML = `Task ID: ${taskData.task_id}<br>
             Try Count: ${taskData.try_id}<br>
             Worker ID: ${taskData.worker_id}<br>
@@ -118,65 +125,85 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
             When Retrieved: ${(taskData.when_retrieved - window.time_manager_start).toFixed(2)}s (When Waiting Retrieval + ${(taskData.when_retrieved - taskData.when_waiting_retrieval).toFixed(2)}s)<br>
             When Done: ${(taskData.when_done - window.time_manager_start).toFixed(2)}s (When Retrieved + ${(taskData.when_done - taskData.when_retrieved).toFixed(2)}s)<br>
         `;
-        // update the right side
-        const inputFileInfoDiv = document.getElementById('task-input-file-info');
-        taskData.input_files = taskData.input_files.replace(/'/g, '"');
-        const inputFilesSet = new Set(JSON.parse(taskData.input_files));
-        const tbody = d3.select('#task-input-file-info-table').select('tbody');
-        tbody.selectAll('tr').remove();
-        const rows = tbody.selectAll('tr')
-            .data(window.fileInfo.filter(file => inputFilesSet.has(file.filename)))
-            .enter()
-            .append('tr');
 
-        rows.append('td').text(d => d.filename);
-        rows.append('td').text(d => d['size(MB)']);
-        rows.append('td').text(d => {
-            let workerHolding = JSON.parse(d['worker_holding']);
-            let fileWaitingTime = taskData.time_worker_start - workerHolding[0][1];
-            return fileWaitingTime.toFixed(2);
-        });
-        rows.append('td').text(d => {
-            let producers = JSON.parse(d['producers']);
-            if (producers.length <= 1) {
-                return 0;
-            } else {
-                for (let i = producers.length - 1; i > 0; i--) { 
-                    let producerTaskID = +producers[i];
-                    let producerTaskData = window.taskDone.filter(function(d) {
-                        return +d.task_id === producerTaskID;
-                    });
-                    producerTaskData = producerTaskData[0];
-                    let producerTaskEndTime = producerTaskData.time_worker_end;
-                    if (producerTaskEndTime < taskData.time_worker_start) {
-                        return (taskData.time_worker_start - producerTaskEndTime).toFixed(2);
+        // update the right side
+        taskData.input_files = taskData.input_files.replace(/'/g, '"');
+        taskData.input_files = JSON.parse(taskData.input_files);
+        const inputFilesSet = new Set(taskData.input_files);
+        const tableData = window.fileInfo.filter(file => inputFilesSet.has(file.filename))
+            .map(file => {
+                let workerHolding = JSON.parse(file['worker_holding']);
+                let producers = JSON.parse(file['producers']);
+                let fileWaitingTime = (taskData.time_worker_start - workerHolding[0][1]).toFixed(2);
+                let dependencyTime = producers.length <= 1 ? "0" : (() => {
+                    for (let i = producers.length - 1; i >= 0; i--) {
+                        let producerTaskID = +producers[i];
+                        let producerTaskData = window.taskDone.find(d => +d.task_id === producerTaskID);
+                
+                        if (producerTaskData && producerTaskData.time_worker_end < taskData.time_worker_start) {
+                            return (taskData.time_worker_start - producerTaskData.time_worker_end).toFixed(2);
+                        }
                     }
-                }
+                    return "0"; 
+                })();                
+                let formattedWorkerHolding = workerHolding.map(tuple => {
+                    const worker_id = tuple[0];
+                    const time_stage_in = (tuple[1] - window.time_manager_start).toFixed(2);
+                    const time_stage_out = (tuple[2] - window.time_manager_start).toFixed(2);
+                    const lifetime = tuple[3].toFixed(2);
+                    return `worker${worker_id}: ${time_stage_in}s-${time_stage_out}s (${lifetime}s)`;
+                }).join(', ');
+                return {
+                    filename: file.filename,
+                    size: file['size(MB)'],
+                    fileWaitingTime: fileWaitingTime,
+                    dependencyTime: dependencyTime,
+                    producers: file.producers,
+                    consumers: file.consumers,
+                    workerHolding: formattedWorkerHolding
+                };
+            });
+
+        var table = $('#task-input-files-table');
+        if ($.fn.dataTable.isDataTable(table)) {
+            table.DataTable().destroy();
+        }
+        $('#task-input-files-table').DataTable({
+            "bPaginate": false,
+            "bLengthChange": false,
+            "bFilter": false,
+            "bInfo": false,
+            "bAutoWidth": false,
+            "searching": false,
+            "fixedColumns": {
+                leftColumns: 1
+            },
+            data: tableData,
+            columns: [
+                { data: 'filename' },
+                { data: 'size' },
+                { data: 'fileWaitingTime' },
+                { data: 'dependencyTime' },
+                { data: 'producers' },
+                { data: 'consumers' },
+                { data: 'workerHolding' }
+            ],
+            "scrollX": true,
+            "initComplete": function(settings, json) {
+                $('#task-input-files-table_wrapper *').css({
+                    'font-size': tableTextFontSize,
+                    'height': 'auto',
+                    'white-space': 'nowrap',
+                });
             }
         });
-        rows.append('td').text(d => d['producers']);
-        rows.append('td').text(d => d['consumers']);
-        rows.append('td').text(d => {
-            let workerHolding = JSON.parse(d['worker_holding']);
-            workerHolding = workerHolding.map(tuple => {
-                const worker_id = tuple[0];
-                const time_stage_in = (tuple[1] - window.time_manager_start).toFixed(2);
-                const time_stage_out = (tuple[2] - window.time_manager_start).toFixed(2);
-                const lifetime = tuple[3].toFixed(2);
 
-                return `worker${worker_id}: ${time_stage_in}s-${time_stage_out}s (${lifetime}s)`;
 
-            });
-            const resultString = workerHolding.join(', ');
-            return resultString;
-          });
 
         // highlight the critical input file
 
         const criticalInputFile = taskData.critical_input_file;
-        
         const svgElement = d3.select('#dag-components svg');
-
         svgElement.selectAll('g').each(function() {
             var title = d3.select(this).select('title').text();
             if (title === criticalInputFile) {
@@ -220,8 +247,7 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
         if (this.classList.contains('report-button-active')) {
             this.classList.toggle('report-button-active');
             // hidden all the info divs
-            const taskInfoContainer = document.getElementById('task-info-container');
-            taskInfoContainer.style.display = 'none';
+            document.getElementById('analyze-task').style.display = 'none';
 
             const svgElement = d3.select('#dag-components svg');
             svgElement.selectAll('g').each(function() {
@@ -331,8 +357,8 @@ document.getElementById('button-highlight-critical-path').addEventListener('clic
     }
 });
 
-const taskInputFileInfoTable = document.getElementById('task-input-file-info-table');
-const buttons = document.querySelectorAll('#task-input-file-info-table th button');
+const taskInputFileInfoTable = document.getElementById('task-input-files-table');
+const buttons = document.querySelectorAll('#task-input-files-table th button');
 buttons.forEach(button => {
     button.addEventListener('click', () => {
         const columnIndex = parseInt(button.getAttribute('data-index'));
@@ -346,3 +372,4 @@ buttons.forEach(button => {
         button.setAttribute('data-order', sortOrder);
     });
 });
+

@@ -140,3 +140,25 @@ export function sortTable(table, columnId, sortOrder) {
     // Reattach sorted rows
     rows.forEach(row => tbody.appendChild(row));
 }
+
+export function downloadSVG(svgElementId, filename) {
+    const svgElement = document.getElementById(svgElementId);
+    if (!svgElement) {
+        console.error('SVG element not found');
+        return;
+    }
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+
+    const blob = new Blob([svgString], {type: "image/svg+xml"});
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
