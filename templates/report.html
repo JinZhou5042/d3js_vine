@@ -25,6 +25,8 @@
     <script src="{{ url_for('static', filename='js/report.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/draw_tables.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/manager.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/execution_time_distribution.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/category_information.js') }}" type="module"></script>
 </head>
 
 <body>
@@ -92,6 +94,10 @@
 
 
     <h2 id="tasks-completed-title">Tasks Completed</h2>
+    <div id="task-execution-details-preface" class="preface">
+        <p>The execution time of a task spans from when start on worker to when end on worker.
+        </p>
+    </div>
     <div class="report-toolbox">
         <button id="button-tasks-completed-reset-table" class="report-button">Reset</button>
         <button id="button-tasks-completed-convert-timestamp" class="report-button">Convert Timestamp</button>
@@ -109,6 +115,7 @@
                     <th>task id</th>
                     <th>try id</th>
                     <th>worker id</th>
+                    <th>execution time</th>
                     <th>when ready</th>
                     <th>when running</th>
                     <th>when start on worker</th>
@@ -117,6 +124,7 @@
                     <th>when retrieved</th>
                     <th>when done</th>
                     <th>category</th>
+                    <th>graph id</th>
                     <th>size of input (MB)</th>
                     <th>size of output (MB)</th>
                     <th>input files</th>
@@ -157,10 +165,37 @@
         </table>
     </div>
 
+    <h2 id="tasks-execution-time-distribution-title">Tasks Execution Time Distribution</h2>
+    <div id="task-execution-time-distribution-preface" class="preface">
+        <p>This plot shows the execution time distribution of all tasks. The execution time is the duration from when a task starts on a worker to when it ends on a worker.
+        </p>
+    </div>
+    <div class="report-toolbox">
+        <button id="button-reset-task-execution-time-distribution" class="report-button">Reset</button>
+        <button id="button-execution-time-distribution-display-cdf" class="report-button">Display CDF</button>
+        <button id="button-download-task-execution-time-distribution" class="report-button">Download SVG</button>
+    </div>
+    <div id="task-execution-time-distribution-container" class="container-alpha" >
+        <svg id="task-execution-time-distribution-svg" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    <h2 id="tasks-category-information-title">Tasks Category Information</h2>
+    <div id="task-category-information-preface" class="preface">
+    </div>
+    <div class="report-toolbox">
+        <button id="button-reset-task-category-information" class="report-button">Reset</button>
+        <button id="button-task-category-information-sort-by-avg-time" class="report-button">Sort by Avg Execution Time</button>
+        <button id="button-download-task-category-information" class="report-button">Download SVG</button>
+    </div>
+    <div id="task-category-information-container" class="container-alpha" >
+        <svg id="task-category-information-svg" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
 
     <div style="display: flex; align-items: center;">
         <h2 id="tasks-execution-details-title">Tasks Execution Details</h2>
-        <div id="execution-details-tip" class="header-tip">This manager exited unexpectedly, choose the last appeared timestamp as the manager end time.</div>
+        <div id="execution-details-tip" class="error-tip">This manager exited unexpectedly, choose the last appeared timestamp as the manager end time.</div>
     </div>
     <div id="task-execution-details-preface" class="preface">
         <p>This plot shows the task distribution across all workers. Each rectangle represents 
@@ -170,27 +205,29 @@
         </p>
     </div>
     <div class="report-toolbox">
+        <button id="button-reset-task-execution-details" class="report-button">Reset</button>
         <button id="button-download-task-execution-details" class="report-button">Download SVG</button>
     </div>
-
-    <table id="task-execution-details-legend-table">
-        <tr>
-            <th id="legend-regular-tasks"></th>
-            <td>Regular task that are submitted by the user and successfully run to completion.</td>
-        </tr>
-        <tr>
-            <th id="legend-failed-tasks"></th>
-            <td>Failed task on a special worker, which usually means the failure of a worker.</td>
-        </tr>
-        <tr>
-            <th id="legend-recovery-tasks"></th>
-            <td>Recovery task to re-create the lost temperory files.</td>
-        </tr>
-        <tr>
-            <th id="legend-workers"></th>
-            <td>Worker lifetime starting at when it was connected and ending at when it was disconnected.</td>
-        </tr>
-    </table>
+    <div class="legend-table-container">
+        <table id="task-execution-details-legend-table" class="legend-table">
+            <tr>
+                <th id="legend-regular-tasks"></th>
+                <td>Regular task that are submitted by the user and successfully run to completion.</td>
+            </tr>
+            <tr>
+                <th id="legend-failed-tasks"></th>
+                <td>Failed task on a special worker, which usually means the failure of a worker.</td>
+            </tr>
+            <tr>
+                <th id="legend-recovery-tasks"></th>
+                <td>Recovery task to re-create the lost temperory files.</td>
+            </tr>
+            <tr>
+                <th id="legend-workers"></th>
+                <td>Worker lifetime starting at when it was connected and ending at when it was disconnected.</td>
+            </tr>
+        </table>
+    </div>
     <div id="execution-details-container" class="container-alpha" >
         <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
         </svg>
@@ -230,6 +267,7 @@
         </p>
      </div>
      <div class="report-toolbox">
+        <button id="button-reset-worker-connections" class="report-button">Reset</button>
         <button id="button-download-worker-connections" class="report-button">Download SVG</button>
     </div>
     <div id="worker-connections-container" class="container-alpha">
@@ -245,6 +283,7 @@
         </p>
     </div>
     <div class="report-toolbox">
+        <button id="button-worker-disk-usage-reset" class="report-button">Reset</button>
         <button id="button-display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
         <button id="button-display-accumulated-only" class="report-button">Accumulation</button>
         <input type="text" id="input-highlight-worker-disk-usage" class="report-input-box" placeholder="Enter Worker ID">
@@ -275,7 +314,7 @@
 
     <div style="display: flex; align-items: center;">
         <h2 id="dag-components-title" >DAG Components</h2>
-        <div id="dag-components-tip" class="header-tip">No Graph Data found for this execution.</div>
+        <div id="dag-components-tip" class="error-tip">No Graph Data found for this execution.</div>
     </div>
     <div class="preface">
         <p style="margin: 0px;">
@@ -302,9 +341,9 @@
     
     <div id="critical-path-info"></div>
 
-    <div id="analyze-task">
+    <div id="analyze-task-display-details">
         <p><b>task information</b></p>
-        <div id="analyze-task-display-details"></div>
+        <div id="analyze-task-display-task-information"></div>
         <p><b>input files information</b></p>
         <div id="analyze-task-display-input-files" class="table-container">
             <table id="task-input-files-table" class="display">

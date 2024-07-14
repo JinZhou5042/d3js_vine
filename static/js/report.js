@@ -4,10 +4,10 @@ import { plotWorkerDiskUsage } from './worker_disk_usage.js';
 import { plotDAGComponentByID } from './dag.js';
 
 
-
 window.addEventListener('load', function() {
     
     async function handleLogChange() {
+        window.logName = this.value;
         // remove all the svgs
         var svgs = d3.selectAll('svg');
         svgs.each(function() {
@@ -15,11 +15,10 @@ window.addEventListener('load', function() {
         });
 
         // hidden some divs
-        const headerTips = window.parent.document.getElementsByClassName('header-tip');
+        const headerTips = window.parent.document.getElementsByClassName('error-tip');
         for (let i = 0; i < headerTips.length; i++) {
             headerTips[i].style.display = 'none';
         }
-        window.logName = this.value;
 
         const files = [
             { name: 'generalStatisticsManager', url: `logs/${window.logName}/vine-logs/general_statistics_manager.csv` },
@@ -46,7 +45,10 @@ window.addEventListener('load', function() {
         }
         window.generalStatisticsManager = window.window.generalStatisticsManager[0];
         window.time_manager_start = window.generalStatisticsManager.time_start;
-        window.manager_time_end = window.generalStatisticsManager.time_end;
+        window.time_manager_end = window.generalStatisticsManager.time_end;
+
+        window.minTime = window.time_manager_start;
+        window.maxTime = window.time_manager_end;
 
         window.parent.document.dispatchEvent(new Event('dataLoaded'));
 

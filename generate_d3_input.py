@@ -251,8 +251,6 @@ def generate_worker_disk_usage_df(worker_info, dirname):
             # Initial checks for disk update logs
             len_in = len(disk_update['when_stage_in'])
             len_out = len(disk_update['when_stage_out'])
-            if len_in != len_out:
-                print(f"Warning: worker {worker_hash} has different number of stage-ins and stage-outs on file {filename}. stages_in: {len_in}, stages_out: {len_out}")
 
             # Preparing row data
             for time, disk_increment in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],

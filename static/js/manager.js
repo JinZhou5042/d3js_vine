@@ -1,20 +1,9 @@
 import { fetchFile, downloadSVG } from './tools.js';
 
-
+const buttonDownload = document.getElementById('button-download-worker-connections');
+const buttonReset = document.getElementById('button-reset-worker-connections');
 const factoryDescriptionContainer = document.getElementById('factory-description-container');
-
-window.parent.document.addEventListener('dataLoaded', function() {
-    fillMgrDescription();
-    fillFactoryDescription();
-    plotWorkerConnections();
-
-    function handleDownloadClick() {
-        downloadSVG('worker-connections', 'worker_connections.svg');
-    }
-    var button = document.getElementById('button-download-worker-connections');
-    button.removeEventListener('click', handleDownloadClick); 
-    button.addEventListener('click', handleDownloadClick);
-});
+const tooltip = document.getElementById('vine-tooltip');
 
 function fillMgrDescription() {
     document.getElementById('start-time').textContent = window.generalStatisticsManager.time_start_human;
@@ -144,7 +133,6 @@ async function plotWorkerConnections() {
             const pointX = xScale(closestPoint['time'] - minTime);
             const pointY = yScale(closestPoint['parallel_workers']);
 
-            const tooltip = document.getElementById('vine-tooltip');
             tooltip.innerHTML = `
                 Time: ${(closestPoint.time - minTime).toFixed(2)} s<br>
                 Parallel Workers: ${closestPoint.parallel_workers}<br>
@@ -161,3 +149,21 @@ async function plotWorkerConnections() {
     });
 
 }
+
+function handleDownloadClick() {
+    downloadSVG('worker-connections', 'worker_connections.svg');
+}
+function handleResetClick() {
+    plotWorkerConnections();
+}
+window.parent.document.addEventListener('dataLoaded', function() {
+    fillMgrDescription();
+    fillFactoryDescription();
+    plotWorkerConnections();
+
+    buttonDownload.removeEventListener('click', handleDownloadClick); 
+    buttonDownload.addEventListener('click', handleDownloadClick);
+
+    buttonReset.removeEventListener('click', handleResetClick);
+    buttonReset.addEventListener('click', handleResetClick);
+});

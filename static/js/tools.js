@@ -54,9 +54,9 @@ export function pathJoin(parts, sep) {
     return parts.join(separator).replace(replace, separator);
 }
 
-export function setupZoomAndScroll(svgSelector, containerSelector) {
-    const svgElement = document.querySelector(svgSelector); // Select the SVG element.
-    const container = document.querySelector(containerSelector); // Select the container of the SVG.
+export function setupZoomAndScroll(svgElementName, svgContainerName) {
+    const svgElement = document.querySelector(svgElementName); // Select the SVG element.
+    const svgContainer = document.querySelector(svgContainerName); // Select the container of the SVG.
 
     // Store the initial width and height of the SVG.
     let initialWidth = svgElement.getBoundingClientRect().width;
@@ -68,7 +68,7 @@ export function setupZoomAndScroll(svgSelector, containerSelector) {
     const minWidth = initialWidth * 0.95;
     const minHeight = initialHeight * 0.95;
 
-    container.addEventListener('wheel', function(event) {
+    svgContainer.addEventListener('wheel', function(event) {
         if (event.ctrlKey) { // Check if the Ctrl key is pressed during scroll.
             event.preventDefault(); // Prevent the default scroll behavior.
 
@@ -105,8 +105,8 @@ export function setupZoomAndScroll(svgSelector, containerSelector) {
             const offsetY = targetY - mouseY; 
 
             // Adjust the scroll position of the container to compensate for the scaling.
-            container.scrollLeft += offsetX;
-            container.scrollTop += offsetY;
+            svgContainer.scrollLeft += offsetX;
+            svgContainer.scrollTop += offsetY;
 
             // Update the initial dimensions for the next scaling operation.
             initialWidth = newWidth;

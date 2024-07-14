@@ -71,6 +71,7 @@ def parse_txn(txn):
                         'try_id': try_id,
                         'worker_id': -1,
                         'core_id': [],
+                        'execution_time': None,           # spans from time_worker_start to time_worker_end
 
                         # Timestamps throughout the task lifecycle
                         'when_ready': timestamp,          # ready status on the manager
@@ -105,6 +106,8 @@ def parse_txn(txn):
                         'critical_input_file': None,            # input file that took the shortest time to use
                         'critical_input_file_wait_time': None,  # wait time from when the input file was ready to when it was used
                         'is_recovery_task': False,
+
+                        'graph_id': -1,                       # will be set in dag part
 
                     }
                     if task['cores_requested'] == 0:
@@ -167,6 +170,7 @@ def parse_txn(txn):
                         task['retrieved_status'] = status
                         task['time_worker_start'] = resources_retrieved.get("time_worker_start", [None])[0]
                         task['time_worker_end'] = resources_retrieved.get("time_worker_end", [None])[0]
+                        task['execution_time'] = task['time_worker_end'] - task['time_worker_start']
                         task['size_output_mgr'] = resources_retrieved.get("size_output_mgr", [None])[0]
                     else:
                         library = library_info[task_id]
@@ -441,6 +445,8 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
     file_info = {}
     for worker_hash, worker in worker_info.items():
         for filename, worker_disk_update in worker['disk_update'].items():
+            len_stage_in = len(worker_disk_update['when_stage_in'])
+            len_stage_out = len(worker_disk_update['when_stage_out'])
             if filename not in file_info:
                 file_info[filename] = {
                     'size(MB)': round(worker_disk_update['size(MB)'], 6),
@@ -448,7 +454,7 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                     'consumers': [],
                     'worker_holding': [],
                 }
-            for i in range(len(worker_disk_update['when_stage_out'])):
+            for i in range(len_stage_out):
                 worker_holding = {
                     'worker_hash': worker_hash,
                     'time_stage_in': worker_disk_update['when_stage_in'][i],
@@ -456,12 +462,12 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                 }
                 file_info[filename]['worker_holding'].append(worker_holding)
             # in case some files are not staged out, consider the manager end time as the stage out time
-            if len(worker_disk_update['when_stage_out']) < len(worker_disk_update['when_stage_in']):
-                print(f"Warning: file {filename} stage out less than stage in for worker {worker_hash}")
-                for i in range(len(worker_disk_update['when_stage_in']) - len(worker_disk_update['when_stage_out'])):
+            if len_stage_out < len_stage_in:
+                print(f"Warning: file {filename} stage out less than stage in for worker {worker_hash}, stage_in: {len_stage_in}, stage_out: {len_stage_out}")
+                for i in range(len_stage_in - len_stage_out):
                     worker_holding = {
                         'worker_hash': worker_hash,
-                        'time_stage_in': worker_disk_update['when_stage_in'][len(worker_disk_update['when_stage_in']) - i - 1],
+                        'time_stage_in': worker_disk_update['when_stage_in'][len_stage_in - i - 1],
                         'time_stage_out': manager_info['time_end'],
                     }
 
@@ -491,32 +497,32 @@ def parse_taskgraph(taskgraph, task_info, task_try_count, file_info):
                 continue
 
             # task produces an output file
-            if left.startswith('task'):
-                try:
+            try:
+                if left.startswith('task'):
                     filename = right.split('-', 1)[1]
-                except IndexError:
-                    print(f"Warning: Unexpected format: {right}")
-                    continue
-                task_id = int(left.split('-')[1])
-                try_id = task_try_count[task_id]
-                task_info[(task_id, try_id)]['output_files'].append(filename)
-                if filename not in file_info:
-                    # if we approach the final line, the filename may be invalid because the manager hasn't finished
-                    if line_id == total_lines:
-                        print(f"Warning: file {filename} not found in file_info, this may be due to the manager not finishing")
-                        break
-                    else:
+                    task_id = int(left.split('-')[1])
+                    try_id = task_try_count[task_id]
+                    task_info[(task_id, try_id)]['output_files'].append(filename)
+                    if filename not in file_info:
+                        # if we approach the final line, the filename may be invalid because the manager hasn't finished
+                        if line_id == total_lines:
+                            print(f"Warning: file {filename} not found in file_info, this may be due to the manager not finishing")
+                            break
+                        else:
+                            raise ValueError(f"file {filename} not found in file_info")
+                    file_info[filename]['producers'].append(task_id)
+                # task consumes an input file
+                elif right.startswith('task'):
+                    filename = left.split('-', 1)[1]
+                    task_id = int(right.split('-')[1])
+                    try_id = task_try_count[task_id]
+                    task_info[(task_id, try_id)]['input_files'].append(filename)
+                    if filename not in file_info:
                         raise ValueError(f"file {filename} not found in file_info")
-                file_info[filename]['producers'].append(task_id)
-            # task consumes an input file
-            elif right.startswith('task'):
-                filename = left.split('-', 1)[1]
-                task_id = int(right.split('-')[1])
-                try_id = task_try_count[task_id]
-                task_info[(task_id, try_id)]['input_files'].append(filename)
-                if filename not in file_info:
-                    raise ValueError(f"file {filename} not found in file_info")
-                file_info[filename]['consumers'].append(task_id)
+                    file_info[filename]['consumers'].append(task_id)
+            except IndexError:
+                    print(f"Warning: Unexpected format: {line}")
+                    continue
         pbar.close()
 
         # we only consider files produced by another task as input files

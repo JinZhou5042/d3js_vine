@@ -261,6 +261,10 @@ for i, component in enumerate(graph.components):
     pbar.update(1)
     # visualize this subgraph
     graph_id = i + 1
+    for task_id in component:
+        index = task_done_df[task_done_df['task_id'] == task_id].index[0]
+        task_done_df.at[index, 'graph_id'] = graph_id
+
     graph.plot_component(component, save_to=os.path.join(dirname, f"subgraph_{graph_id}"), view=False)
     root = component[0]
     graph_info[root] = {
@@ -286,3 +290,4 @@ pbar.close()
 
 graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
 graph_info_df.to_csv(os.path.join(dirname, 'general_statistics_dag.csv'), index=False)
+task_done_df.to_csv(os.path.join(dirname, 'task_done.csv'), index=False)

@@ -1,5 +1,10 @@
 import { sortTable, downloadSVG } from './tools.js';
 
+const tableTextFontSize = '3.5rem';
+const buttonAnalyzeTaskInDAG = document.getElementById('button-analyze-task-in-dag');
+const inputAnalyzeTaskID = document.getElementById('input-task-id-in-dag');
+const analyzeTaskDisplayDetails = document.getElementById('analyze-task-display-details');
+
 export async function plotDAGComponentByID(dagID) {
     try {
         if (typeof window.generalStatisticsDAG === 'undefined') {
@@ -49,18 +54,21 @@ document.getElementById('dag-id-selector').addEventListener('change', async func
     if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
         buttonHighlightCriticalPath.classList.toggle('report-button-active');
     }
-    const buttonAnalyzeTaskInDAG = document.getElementById('button-analyze-task-in-dag');
+
     if (buttonAnalyzeTaskInDAG.classList.contains('report-button-active')) {
         buttonAnalyzeTaskInDAG.classList.toggle('report-button-active');
     }
     // hidden the info div
-    document.getElementById('analyze-task').style.display = 'none';
+    analyzeTaskDisplayDetails.style.display = 'none';
     
     const selectedDAGID = document.getElementById('dag-id-selector').value;
     await plotDAGComponentByID(selectedDAGID);
 });
 
-
+function handleDownloadClick() {
+    const selectedDAGID = document.getElementById('dag-id-selector').value;
+    downloadSVG('dag-components', 'subgraph_' + selectedDAGID + '.svg');
+}
 window.parent.document.addEventListener('dataLoaded', function() {
     if (typeof window.generalStatisticsDAG === 'undefined') {
         return;
@@ -78,17 +86,13 @@ window.parent.document.addEventListener('dataLoaded', function() {
         selectDAG.appendChild(option);
     });
 
-    function handleDownloadClick() {
-        const selectedDAGID = document.getElementById('dag-id-selector').value;
-        downloadSVG('dag-components', 'subgraph_' + selectedDAGID + '.svg');
-    }
     var button = document.getElementById('button-download-dag');
     button.removeEventListener('click', handleDownloadClick); 
     button.addEventListener('click', handleDownloadClick);
 });
 
-document.getElementById('button-analyze-task-in-dag').addEventListener('click', async function() {
-    let taskID = document.getElementById('input-task-id-in-dag').value;
+buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
+    let taskID = inputAnalyzeTaskID.value;
     const highlightTaskColor = '#f69697';
     const highlightcriticalInputFileColor = '#ffcc80';
 
@@ -103,13 +107,14 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
             return +d.task_id === +taskID;
         });
         taskData = taskData[0];
-        document.getElementById('analyze-task').style.display = 'block';
+        analyzeTaskDisplayDetails.style.display = 'block';
 
         // update the left side
-        const infoDiv = document.getElementById('analyze-task-display-details');
+        const infoDiv = document.getElementById('analyze-task-display-task-information');
         infoDiv.innerHTML = `Task ID: ${taskData.task_id}<br>
             Try Count: ${taskData.try_id}<br>
             Worker ID: ${taskData.worker_id}<br>
+            Graph ID: ${taskData.graph_id}<br>
             Input Files: ${taskData.input_files}<br>
             Size of Input Files: ${taskData['size_input_files(MB)']}MB<br>
             Output Files: ${taskData.output_files}<br>
@@ -127,8 +132,13 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
         `;
 
         // update the right side
-        taskData.input_files = taskData.input_files.replace(/'/g, '"');
-        taskData.input_files = JSON.parse(taskData.input_files);
+        if (typeof taskData.input_files === 'string') {
+            taskData.input_files = taskData.input_files.replace(/'/g, '"');
+            taskData.input_files = JSON.parse(taskData.input_files);
+        } else {
+            // already an array
+        }
+
         const inputFilesSet = new Set(taskData.input_files);
         const tableData = window.fileInfo.filter(file => inputFilesSet.has(file.filename))
             .map(file => {
@@ -175,6 +185,7 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
             "bInfo": false,
             "bAutoWidth": false,
             "searching": false,
+            "fixedHeader": false,
             "fixedColumns": {
                 leftColumns: 1
             },
@@ -189,6 +200,7 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
                 { data: 'workerHolding' }
             ],
             "scrollX": true,
+            "scrollY": "40vh",
             "initComplete": function(settings, json) {
                 $('#task-input-files-table_wrapper *').css({
                     'font-size': tableTextFontSize,
@@ -247,7 +259,7 @@ document.getElementById('button-analyze-task-in-dag').addEventListener('click', 
         if (this.classList.contains('report-button-active')) {
             this.classList.toggle('report-button-active');
             // hidden all the info divs
-            document.getElementById('analyze-task').style.display = 'none';
+            analyzeTaskDisplayDetails.style.display = 'none';
 
             const svgElement = d3.select('#dag-components svg');
             svgElement.selectAll('g').each(function() {
@@ -276,7 +288,6 @@ document.getElementById('button-highlight-critical-path').addEventListener('clic
     }
 
     // ensure that the analyze button is not active
-    const buttonAnalyzeTaskInDAG = document.getElementById('button-analyze-task-in-dag');
     if (buttonAnalyzeTaskInDAG.classList.contains('report-button-active')) {
         buttonAnalyzeTaskInDAG.classList.toggle('report-button-active');
         window.highlitedTask = undefined;
@@ -357,19 +368,9 @@ document.getElementById('button-highlight-critical-path').addEventListener('clic
     }
 });
 
-const taskInputFileInfoTable = document.getElementById('task-input-files-table');
-const buttons = document.querySelectorAll('#task-input-files-table th button');
-buttons.forEach(button => {
-    button.addEventListener('click', () => {
-        const columnIndex = parseInt(button.getAttribute('data-index'));
-        let sortOrder = parseInt(button.getAttribute('data-order'));
-        if (sortOrder === 0) {
-            sortOrder = 1;
-        } else {
-            sortOrder = -sortOrder;
-        }
-        sortTable(taskInputFileInfoTable, columnIndex, sortOrder);
-        button.setAttribute('data-order', sortOrder);
-    });
-});
 
+window.parent.document.getElementById('log-selector').addEventListener('change', () => {
+    analyzeTaskDisplayDetails.style.display = 'none';
+    buttonAnalyzeTaskInDAG.classList.remove('report-button-active');
+    inputAnalyzeTaskID.value = '';
+});

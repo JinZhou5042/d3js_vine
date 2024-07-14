@@ -1,16 +1,21 @@
 import { formatUnixTimestamp, downloadSVG } from './tools.js';
 
+const buttonReset = document.getElementById('button-worker-disk-usage-reset');
+const buttonDownload = document.getElementById('button-download-worker-disk-usage');
+const buttonDisplayPercentages = document.getElementById('button-display-worker-disk-usage-by-percentage');
+const buttonDisplayAccumulatedOnly = document.getElementById('button-display-accumulated-only');
+const buttonHighlightWorker = document.getElementById('button-highlight-worker-disk-usage');
+const buttonAnalyzeWorker = document.getElementById('button-highlight-worker-disk-usage');
+
 export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, highlightWorkerID = null, displayAccumulationOnly = false } = {}) {
     // first remove all the elements in the svg
     d3.select('#worker-disk-usage').selectAll('*').remove();
 
     const groupedworkerDiskUpdate = d3.group(window.workerDiskUpdate, d => d.worker_id);
-
-    const workerSummary = window.workerSummary;
     
     // get the minTime, maxTime and maxDiskUsage
     const minTime = window.time_manager_start;
-    const maxTime = window.manager_time_end;
+    const maxTime = window.time_manager_end;
     let columnNameMB = 'disk_usage(MB)';
     let columnNamePercentage = 'disk_usage(%)';
     if (displayAccumulationOnly) {
@@ -134,7 +139,6 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
                     time: ${xValue.toFixed(2)}<br>
                     disk usage: ${yValue.toFixed(2)}<br>
                 `;
-
                 tooltip.style.visibility = 'visible';
                 tooltip.style.top = (event.pageY + 10) + 'px';
                 tooltip.style.left = (event.pageX + 10) + 'px';
@@ -235,7 +239,6 @@ document.getElementById('button-display-worker-disk-usage-by-percentage').addEve
     d3.select('#worker-disk-usage').selectAll('*').remove();
     // get the highlight worker id
     let highlightWorkerID = null;
-    let buttonAnalyzeWorker = document.getElementById('button-highlight-worker-disk-usage');
     if (buttonAnalyzeWorker.classList.contains('report-button-active')) {
         highlightWorkerID = getHighlightWorkerID();
     }
@@ -251,11 +254,9 @@ document.getElementById('button-display-accumulated-only').addEventListener('cli
     d3.select('#worker-disk-usage').selectAll('*').remove();
     // get the highlight worker id
     let highlightWorkerID = null;
-    let buttonAnalyzeWorker = document.getElementById('button-highlight-worker-disk-usage');
     if (buttonAnalyzeWorker.classList.contains('report-button-active')) {
         highlightWorkerID = getHighlightWorkerID();
     }
-    let buttonDisplayPercentages = document.getElementById('button-display-worker-disk-usage-by-percentage');
     plotWorkerDiskUsage({displayDiskUsageByPercentage: buttonDisplayPercentages.classList.contains('report-button-active'),
         highlightWorkerID: highlightWorkerID,
         displayAccumulationOnly: this.classList.contains('report-button-active'),
@@ -284,29 +285,35 @@ document.getElementById('button-highlight-worker-disk-usage').addEventListener('
     }
 
     // get the percentage button
-    const buttonDisplayPercentages = document.getElementById('button-display-worker-disk-usage-by-percentage');
-
     plotWorkerDiskUsage({displayDiskUsageByPercentage: buttonDisplayPercentages.classList.contains('report-button-active'),
         highlightWorkerID: workerID,
         displayAccumulationOnly: document.getElementById('button-display-accumulated-only').classList.contains('report-button-active'),
     });
 });
 
+function handleDownloadClick() {
+    downloadSVG('worker-disk-usage', 'worker_disk_usage.svg');
+}
+function handleResetClick() {
+    // first clean the plot
+    d3.select('#worker-disk-usage').selectAll('*').remove();
+    // deactivating the buttons
+    buttonDisplayPercentages.classList.remove('report-button-active');
+    buttonDisplayAccumulatedOnly.classList.remove('report-button-active');
+    buttonHighlightWorker.classList.remove('report-button-active');
+    plotWorkerDiskUsage({displayDiskUsageByPercentage: false});
+}
 window.parent.document.addEventListener('dataLoaded', function() {
-    const buttonDisplayPercentages = document.getElementById('button-display-worker-disk-usage-by-percentage');
-    const buttonDisplayAccumulatedOnly = document.getElementById('button-display-accumulated-only');
-    const buttonHighlightWorker = document.getElementById('button-highlight-worker-disk-usage');
-
     // deactivating the buttons
     buttonDisplayPercentages.classList.remove('report-button-active');
     buttonDisplayAccumulatedOnly.classList.remove('report-button-active');
     buttonHighlightWorker.classList.remove('report-button-active');
 
-    function handleDownloadClick() {
-        downloadSVG('worker-disk-usage', 'worker_disk_usage.svg');
-    }
-    var button = document.getElementById('button-download-worker-disk-usage');
-    button.removeEventListener('click', handleDownloadClick); 
-    button.addEventListener('click', handleDownloadClick);
+    buttonDownload.removeEventListener('click', handleDownloadClick); 
+    buttonDownload.addEventListener('click', handleDownloadClick);
+
+    buttonReset.removeEventListener('click', handleResetClick);
+    buttonReset.addEventListener('click', handleResetClick);
 });
+
 
