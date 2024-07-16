@@ -98,7 +98,7 @@ export function plotExecutionDetails() {
                 // hide tooltip
                 tooltip.style.visibility = 'hidden';
             });
-    });    
+    });
     ////////////////////////////////////////////
 
     ////////////////////////////////////////////
@@ -326,7 +326,7 @@ function handleResetClick() {
     plotExecutionDetails();
 }
 function handleDownloadClick() {
-    downloadSVG('execution-details', 'task_execution_details.svg');
+    downloadSVG('execution-details');
 }
 
 function setLegend() {

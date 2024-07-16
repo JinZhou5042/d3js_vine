@@ -29,6 +29,7 @@ window.addEventListener('load', function() {
             { name: 'taskDone', url: `logs/${window.logName}/vine-logs/task_done.csv` },
             { name: 'taskFailedOnManager', url: `logs/${window.logName}/vine-logs/task_failed_on_manager.csv` },
             { name: 'taskFailedOnWorker', url: `logs/${window.logName}/vine-logs/task_failed_on_worker.csv` },
+            { name: 'taskConcurrency', url: `logs/${window.logName}/vine-logs/task_concurrency.csv` },
             { name: 'workerSummary', url: `logs/${window.logName}/vine-logs/worker_summary.csv` },
             { name: 'workerDiskUpdate', url: `logs/${window.logName}/vine-logs/worker_disk_usage.csv` },
             { name: 'fileInfo', url: `logs/${window.logName}/vine-logs/file_info.csv` },

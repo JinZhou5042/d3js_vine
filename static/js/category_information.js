@@ -293,7 +293,7 @@ function handleSortByAvgExecutionTimeClick() {
     plotTaskCategoryInformation({sortByAvgExecutionTime: this.classList.contains('report-button-active')});
 }
 function handleDownloadClick() {
-    downloadSVG('task-category-information-svg', 'task_category_information.svg');
+    downloadSVG('task-category-information-svg');
 }
 function handleResetClick() {
     if (buttonSortByAvgExecutionTime.classList.contains('report-button-active')) {

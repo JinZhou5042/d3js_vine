@@ -5,6 +5,8 @@ const buttonReset = document.getElementById('button-reset-worker-connections');
 const factoryDescriptionContainer = document.getElementById('factory-description-container');
 const tooltip = document.getElementById('vine-tooltip');
 
+const svgElement = d3.select('#worker-connections');
+
 function fillMgrDescription() {
     document.getElementById('start-time').textContent = window.generalStatisticsManager.time_start_human;
     document.getElementById('end-time').textContent = window.generalStatisticsManager.time_end_human;
@@ -39,9 +41,9 @@ async function plotWorkerConnections() {
     const svgHeight = container.clientHeight - margin.top - margin.bottom;
 
     // first remove the current svg
-    d3.select('#worker-connections').selectAll('*').remove();
+    svgElement.selectAll('*').remove();
     // initialize svg
-    const svg = d3.select('#worker-connections')
+    const svg = svgElement
         .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append('g')
@@ -112,7 +114,7 @@ async function plotWorkerConnections() {
         .attr("fill", "#145ca0");
 
 
-    d3.select('#worker-connections').on("mousemove", function(event) { 
+    svgElement.on("mousemove", function(event) { 
         const [mouseX, mouseY] = d3.pointer(event, this);
         const positionX = xScale.invert(mouseX - margin.left);
         const positionY = yScale.invert(mouseY - margin.top);
@@ -144,14 +146,14 @@ async function plotWorkerConnections() {
             tooltip.style.left = (pointX + margin.left + container.getBoundingClientRect().left + window.scrollX + 5) + 'px';
         }
     });
-    d3.select('#worker-connections').on("mouseout", function() {
+    svgElement.on("mouseout", function() {
         document.getElementById('vine-tooltip').style.visibility = 'hidden';
     });
 
 }
 
 function handleDownloadClick() {
-    downloadSVG('worker-connections', 'worker_connections.svg');
+    downloadSVG('worker-connections');
 }
 function handleResetClick() {
     plotWorkerConnections();

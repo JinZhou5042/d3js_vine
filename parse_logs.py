@@ -427,11 +427,6 @@ def parse_debug(debug, worker_info, task_info, task_try_count, manager_info):
                 if len(worker_when_start_stage_in) != len(worker_when_stage_in):
                     for i in range(len(worker_when_start_stage_in) - len(worker_when_stage_in)):
                         worker_when_stage_in.append(worker_when_start_stage_in[len(worker_when_start_stage_in) - i - 1])
-
-                if len(worker_when_stage_in) != len(worker_when_stage_out):
-                    print(f"Warning: file {filename} stage out not equal to stage in for worker {worker_hash}", len(worker_when_stage_in), len(worker_when_stage_out))
-                    print(f"stagein:  {worker_when_stage_in}")
-                    print(f"stageout: {worker_when_stage_out}")
                 
             elif "Submitted" in parts and "recovery" in parts and "task" in parts:
                 task_id = int(parts[parts.index("task") + 1])

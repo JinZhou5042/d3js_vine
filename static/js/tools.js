@@ -141,11 +141,18 @@ export function sortTable(table, columnId, sortOrder) {
     rows.forEach(row => tbody.appendChild(row));
 }
 
-export function downloadSVG(svgElementId, filename) {
+export function downloadSVG(svgElementId, filename = null) {
     const svgElement = document.getElementById(svgElementId);
     if (!svgElement) {
         console.error('SVG element not found');
         return;
+    }
+    if (!filename) {
+        filename = svgElementId.replace(/-/g, '_');
+        if (filename.endsWith('svg')) {
+            filename = filename.substring(0, filename.length - 4);
+        }
+        filename = filename + '.svg';
     }
 
     const serializer = new XMLSerializer();

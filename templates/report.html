@@ -27,6 +27,8 @@
     <script src="{{ url_for('static', filename='js/manager.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/execution_time_distribution.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/category_information.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/tasks_concurrency.js') }}" type="module"></script>
+
 </head>
 
 <body>
@@ -90,6 +92,59 @@
         </div>
         <div id="factory-description-container">
         </div>
+    </div>
+
+    <h2 id="worker-disk-usage-title">Worker Disk Usage</h2>
+    <div id="worker-disk-usage-preface" class="preface">
+        <p>This plot shows the disk usage (MB) of each worker during the manager's lifetime from the point of the manager's view.
+            The disk increase can be caused by any cache-update events or put events. The disk decrease can be caused by any unlink events.
+            Click the <b>Accumulation</b> button to see the disk increase events only.
+        </p>
+    </div>
+    <div class="report-toolbox">
+        <button id="button-worker-disk-usage-reset" class="report-button">Reset</button>
+        <button id="button-display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
+        <button id="button-display-accumulated-only" class="report-button">Accumulation</button>
+        <input type="text" id="input-highlight-worker-disk-usage" class="report-input-box" placeholder="Enter Worker ID">
+        <button id="button-highlight-worker-disk-usage" class="report-button">Analyze Worker</button>
+        <button id="button-download-worker-disk-usage" class="report-button">Download SVG</button>
+    </div>
+    <div id="worker-disk-usage-container" class="container-alpha" >
+        <svg id="worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+
+
+    <h2 id="worker-connections-title">Worker Connections</h2>
+    <div id="manager-preface" class="preface">
+        <p>This plot shows the number of parallel running workers during the manager's lifetime.
+        </p>
+     </div>
+     <div class="report-toolbox">
+        <button id="button-reset-worker-connections" class="report-button">Reset</button>
+        <button id="button-download-worker-connections" class="report-button">Download SVG</button>
+    </div>
+    <div id="worker-connections-container" class="container-alpha">
+        <svg id="worker-connections" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
+
+    
+
+    <h2 id="tasks-concurrency-title">Tasks Concurrency</h2>
+    <div id="tasks-concurrency-preface" class="preface">
+        <p>This plot shows the number of concurrent tasks through the manager's lifetime. Each task starts at
+            when it's running and ends at when it's waiting retrieval.
+        </p>
+    </div>
+    <div class="report-toolbox">
+        <button id="button-reset-tasks-concurrency" class="report-button">Reset</button>
+        <button id="button-download-tasks-concurrency" class="report-button">Download SVG</button>
+    </div>
+    <div id="tasks-concurrency-container" class="container-alpha" >
+        <svg id="tasks-concurrency-svg" xmlns="http://www.w3.org/2000/svg">
+        </svg>
     </div>
 
 
@@ -259,40 +314,6 @@
             <tbody>
             </tbody>
         </table>
-    </div>
-
-    <h2 id="worker-connections-title">Worker Connections</h2>
-    <div id="manager-preface" class="preface">
-        <p>This plot shows the number of parallel running workers during the manager's lifetime.
-        </p>
-     </div>
-     <div class="report-toolbox">
-        <button id="button-reset-worker-connections" class="report-button">Reset</button>
-        <button id="button-download-worker-connections" class="report-button">Download SVG</button>
-    </div>
-    <div id="worker-connections-container" class="container-alpha">
-        <svg id="worker-connections" xmlns="http://www.w3.org/2000/svg">
-        </svg>
-    </div>
-
-    <h2 id="worker-disk-usage-title">Worker Disk Usage</h2>
-    <div id="worker-disk-usage-preface" class="preface">
-        <p>This plot shows the disk usage (MB) of each worker during the manager's lifetime from the point of the manager's view.
-            The disk increase can be caused by any cache-update events or put events. The disk decrease can be caused by any unlink events.
-            Click the <b>Accumulation</b> button to see the disk increase events only.
-        </p>
-    </div>
-    <div class="report-toolbox">
-        <button id="button-worker-disk-usage-reset" class="report-button">Reset</button>
-        <button id="button-display-worker-disk-usage-by-percentage" class="report-button">Percentages</button>
-        <button id="button-display-accumulated-only" class="report-button">Accumulation</button>
-        <input type="text" id="input-highlight-worker-disk-usage" class="report-input-box" placeholder="Enter Worker ID">
-        <button id="button-highlight-worker-disk-usage" class="report-button">Analyze Worker</button>
-        <button id="button-download-worker-disk-usage" class="report-button">Download SVG</button>
-    </div>
-    <div id="worker-disk-usage-container" class="container-alpha" >
-        <svg id="worker-disk-usage" xmlns="http://www.w3.org/2000/svg">
-        </svg>
     </div>
     
     <h2 id="dag-summary-title" >DAG Summary</h2>

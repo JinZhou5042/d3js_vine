@@ -7,9 +7,12 @@ const buttonDisplayAccumulatedOnly = document.getElementById('button-display-acc
 const buttonHighlightWorker = document.getElementById('button-highlight-worker-disk-usage');
 const buttonAnalyzeWorker = document.getElementById('button-highlight-worker-disk-usage');
 
+const svgElement = d3.select('#worker-disk-usage');
+const svgContainer = document.getElementById('worker-disk-usage-container');
+
 export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, highlightWorkerID = null, displayAccumulationOnly = false } = {}) {
     // first remove all the elements in the svg
-    d3.select('#worker-disk-usage').selectAll('*').remove();
+    svgElement.selectAll('*').remove();
 
     const groupedworkerDiskUpdate = d3.group(window.workerDiskUpdate, d => d.worker_id);
     
@@ -29,13 +32,12 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
         maxDiskUsage = d3.max(window.workerDiskUpdate, function(d) { return +d[columnNameMB]; });
     }
 
-    const container = document.getElementById('worker-disk-usage-container');
     const margin = {top: 20, right: 20, bottom: 40, left: 60};
-    const svgWidth = container.clientWidth - margin.left - margin.right;
-    const svgHeight = container.clientHeight - margin.top - margin.bottom;
+    const svgWidth = svgContainer.clientWidth - margin.left - margin.right;
+    const svgHeight = svgContainer.clientHeight - margin.top - margin.bottom;
 
-    const svg = d3.select('#worker-disk-usage')
-        .attr('viewBox', `0 0 ${container.clientWidth} ${container.clientHeight}`)
+    const svg = svgElement
+        .attr('viewBox', `0 0 ${svgContainer.clientWidth} ${svgContainer.clientHeight}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .append("g")
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
@@ -188,7 +190,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
     }
 
     if (highlightedLine) {
-        d3.select('#worker-disk-usage').on("mousemove", function(event) {
+        svgElement.on("mousemove", function(event) {
             const [mouseX, mouseY] = d3.pointer(event, this);
             const positionX = xScale.invert(mouseX - margin.left);
             const positionY = yScale.invert(mouseY - margin.top);
@@ -223,20 +225,20 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
                 `;
 
                 tooltip.style.visibility = 'visible';
-                tooltip.style.top = (pointY + margin.top + container.getBoundingClientRect().top + window.scrollY + 5) + 'px';
-                tooltip.style.left = (pointX + margin.left + container.getBoundingClientRect().left + window.scrollX + 5) + 'px';
+                tooltip.style.top = (pointY + margin.top + svgContainer.getBoundingClientRect().top + window.scrollY + 5) + 'px';
+                tooltip.style.left = (pointX + margin.left + svgContainer.getBoundingClientRect().left + window.scrollX + 5) + 'px';
             }
         });
     } else {
         tooltip.style.visibility = 'hidden';
-        d3.select('#worker-disk-usage').on("mousemove", null);
+        svgElement.on("mousemove", null);
     }
 }
 
 document.getElementById('button-display-worker-disk-usage-by-percentage').addEventListener('click', async function() {
     this.classList.toggle('report-button-active');
     // first clean the plot
-    d3.select('#worker-disk-usage').selectAll('*').remove();
+    svgElement.selectAll('*').remove();
     // get the highlight worker id
     let highlightWorkerID = null;
     if (buttonAnalyzeWorker.classList.contains('report-button-active')) {
@@ -251,7 +253,7 @@ document.getElementById('button-display-worker-disk-usage-by-percentage').addEve
 document.getElementById('button-display-accumulated-only').addEventListener('click', async function() {
     this.classList.toggle('report-button-active');
     // first clean the plot
-    d3.select('#worker-disk-usage').selectAll('*').remove();
+    svgElement.selectAll('*').remove();
     // get the highlight worker id
     let highlightWorkerID = null;
     if (buttonAnalyzeWorker.classList.contains('report-button-active')) {
@@ -292,11 +294,9 @@ document.getElementById('button-highlight-worker-disk-usage').addEventListener('
 });
 
 function handleDownloadClick() {
-    downloadSVG('worker-disk-usage', 'worker_disk_usage.svg');
+    downloadSVG('worker-disk-usage');
 }
 function handleResetClick() {
-    // first clean the plot
-    d3.select('#worker-disk-usage').selectAll('*').remove();
     // deactivating the buttons
     buttonDisplayPercentages.classList.remove('report-button-active');
     buttonDisplayAccumulatedOnly.classList.remove('report-button-active');

@@ -13,7 +13,7 @@ import numpy as np
 
 task_info, task_try_count, library_info, worker_info, manager_info, file_info = {}, {}, {}, {}, {}, {}
 
-def remove_invalid_workers():
+def remove_inactive_workers():
     print(f"Removing invalid workers...")
     global worker_info, task_info, library_info
 
@@ -94,7 +94,6 @@ def generate_general_statistics(task_df, worker_summary_df, manager_info, num_to
     events = events.sort_values('time')
     parallel_workers = 0
     worker_connection_events = []
-
     worker_connection_events.append((manager_info['time_start'], 0, 'manager_start', -1))
     for _, event in events.iterrows():
         if event['type'] == 'connect':
@@ -102,14 +101,14 @@ def generate_general_statistics(task_df, worker_summary_df, manager_info, num_to
         else:
             parallel_workers -= 1
         worker_connection_events.append((event['time'], parallel_workers, event['type'], event['worker_id']))
+    worker_connection_events_df = pd.DataFrame(worker_connection_events, columns=['time', 'parallel_workers', 'event', 'worker_id'])
+    worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_connections.csv'), index=False)
 
     manager_info['max_concurrent_workers'] = max([x[1] for x in worker_connection_events])
     row_task_total = general_statistics_task_df[general_statistics_task_df['category'] == 'TOTAL']
     manager_info['tasks_submitted'] = row_task_total['submitted'].iloc[0]
     manager_info['time_start_human'] = pd.to_datetime(int(manager_info['time_start']), unit='s').strftime('%Y-%m-%d %H:%M:%S')
     manager_info['time_end_human'] = pd.to_datetime(int(manager_info['time_end']), unit='s').strftime('%Y-%m-%d %H:%M:%S')
-    worker_connection_events_df = pd.DataFrame(worker_connection_events, columns=['time', 'parallel_workers', 'event', 'worker_id'])
-    worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_connections.csv'), index=False)
     # the max try_id in task_df
     manager_info['max_task_try_count'] = task_df['try_id'].max()
     manager_info_df = pd.DataFrame([manager_info])
@@ -201,9 +200,13 @@ def handle_task_info(dirname):
         if len(cores) == 0:
             return task
         task['core_id'] = cores[0]
-        # if the when_next_ready is na, that means the manager exited before the task was ready, set it to the end time
+        # if the when_next_ready is na, that means the manager exited before the task was ready, set it to the worker end time
         if pd.isna(task['when_next_ready']):
-            task['when_next_ready'] = manager_info['time_end']
+            worker = worker_info[task['worker_committed']]
+            for i in range(len(worker['time_connected'])):
+                if worker['time_connected'][i] < task['when_running'] and worker['time_disconnected'][i] > task['when_running']:
+                    task['when_next_ready'] = worker['time_disconnected'][i]
+        
         # calculate the total size of input and output files
         task['size_input_files(MB)'] = calculate_total_size_of_files(task['input_files'])
         task['size_output_files(MB)'] = calculate_total_size_of_files(task['output_files'])
@@ -235,6 +238,29 @@ def handle_task_info(dirname):
                 task['critical_input_file_wait_time'] = shorted_waiting_time
 
         return task
+    
+    # the concurrent tasks throughout the manager's lifetime
+    # skip if when_running is na
+    task_running_df = pd.DataFrame({
+        'time': task_df['when_running'].dropna(),
+        'task_id': task_df['task_id'],
+        'worker_id': task_df['worker_id'],
+        'category': task_df['category'],
+        'type': 1
+    })
+    # skip if when_waiting_retrieval is na, use when_next_ready instead
+    task_waiting_retrieval_df = pd.DataFrame({
+        'time': task_df.apply(lambda row: row['when_waiting_retrieval'] if pd.notna(row['when_waiting_retrieval']) else row['when_next_ready'], axis=1).dropna(),
+        'task_id': task_df['task_id'],
+        'worker_id': task_df['worker_id'],
+        'category': task_df['category'],
+        'type': -1
+    })
+    events_df = pd.concat([task_running_df, task_waiting_retrieval_df]).sort_values('time')
+
+    events_df = events_df.sort_values('time')
+    events_df['concurrent_tasks'] = events_df['type'].cumsum()
+    events_df.to_csv(os.path.join(dirname, 'task_concurrency.csv'), index=False)
 
     task_df[is_done].apply(handle_each_task, axis=1).to_csv(os.path.join(dirname, 'task_done.csv'), index=False)
     task_df[is_failed_manager].apply(handle_each_task, axis=1).to_csv(os.path.join(dirname, 'task_failed_on_manager.csv'), index=False)
@@ -328,11 +354,12 @@ def generate_data(log_dir):
     debug = os.path.join(dirname, 'debug')
     taskgraph = os.path.join(dirname, 'taskgraph')
 
+    
     task_info, task_try_count, library_info, worker_info, manager_info = parse_txn(txn)
     worker_info, file_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info)
-    task_info = parse_taskgraph(taskgraph, task_info, task_try_count, file_info)
+    num_total_workers, num_active_workers = remove_inactive_workers()
 
-    num_total_workers, num_active_workers = remove_invalid_workers()
+    task_info = parse_taskgraph(taskgraph, task_info, task_try_count, file_info)
 
     handle_file_info(dirname)
 

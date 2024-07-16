@@ -19,7 +19,7 @@ const buttonDownload = document.getElementById('button-download-task-execution-t
 const svgContainer = document.getElementById('task-execution-time-distribution-container');
 const svgElement = d3.select('#task-execution-time-distribution-svg');
 
-var pointRadius = 3;
+var dotRadius = 3;
 const defaultColor = "#145ca0";
 const dotColor = "#8c1a11";
 const highlightColor = "orange";
@@ -47,11 +47,11 @@ export function plotTaskExecutionTimeDistribution({displayCDF = false} = {}) {
         d.task_id = +d.task_id;
         d.execution_time = +d.execution_time;
     });
-    // update pointRadius based on the number of tasks
+    // update dotRadius based on the number of tasks
     if (taskDone.length > 500 && taskDone.length <= 1000) {
-        pointRadius = 2;
+        dotRadius = 2;
     } else if (taskDone.length > 1000) {
-        pointRadius = 1;
+        dotRadius = 1;
     }
 
     if (displayCDF) {
@@ -118,16 +118,15 @@ function cdfplot(svg) {
     // points
     svg.selectAll(".dot")
         .data(cdfData)
-        .enter()
-        .append("circle")
+        .enter().append("circle")
         .attr("class", "dot")
         .attr("cx", d => xScale(d.execution_time))
         .attr("cy", d => yScale(d.probability))
-        .attr("r", pointRadius)
+        .attr("r", dotRadius)
         .attr("fill", "red")
         .on("mouseover", function(event, d) {
             d3.select(this)
-                .attr('r', pointRadius * 2)
+                .attr('r', dotRadius * 2)
                 .attr('fill', highlightColor);
             tooltip.innerHTML = `
                 Execution Time: ${d.execution_time.toFixed(2)}s<br>
@@ -139,7 +138,7 @@ function cdfplot(svg) {
         })
         .on("mouseout", function() {
             d3.select(this)
-                .attr('r', pointRadius)
+                .attr('r', dotRadius)
                 .attr('fill', dotColor);
             tooltip.style.visibility = 'hidden';
         });
@@ -191,7 +190,7 @@ function scatterplot(svg) {
         .classed("point", true)
         .attr("cx", d => xScale(d.task_id))
         .attr("cy", d => yScale(d.execution_time))
-        .attr("r", pointRadius)
+        .attr("r", dotRadius)
         .style("fill", defaultColor);
 
     points.on("mouseover", function(event, d) {
@@ -208,14 +207,14 @@ function scatterplot(svg) {
     })
     .on("mouseout", function(d) {
         d3.select(this)
-            .attr('r', pointRadius)
+            .attr('r', dotRadius)
             .style("fill", defaultColor);
         tooltip.style.visibility = 'hidden';
     });
 }
 
 function handleDownloadClick() {
-    downloadSVG('task-execution-time-distribution-svg', 'task_execution_time_distribution.svg');
+    downloadSVG('task-execution-time-distribution-svg');
 }
 function handleResetClick() {
     document.querySelector('#task-execution-time-distribution-svg').style.width = '100%';
