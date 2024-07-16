@@ -1,4 +1,5 @@
-import { sortTable, downloadSVG } from './tools.js';
+import { downloadSVG } from './tools.js';
+import { createTable } from './draw_tables.js';
 
 const tableTextFontSize = '3.5rem';
 const buttonAnalyzeTaskInDAG = document.getElementById('button-analyze-task-in-dag');
@@ -178,42 +179,23 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
         if ($.fn.dataTable.isDataTable(table)) {
             table.DataTable().destroy();
         }
-        $('#task-input-files-table').DataTable({
-            "bPaginate": false,
-            "bLengthChange": false,
-            "bFilter": false,
-            "bInfo": false,
-            "bAutoWidth": false,
-            "searching": false,
-            "fixedHeader": false,
-            "fixedColumns": {
-                leftColumns: 1
-            },
-            data: tableData,
-            columns: [
-                { data: 'filename' },
-                { data: 'size' },
-                { data: 'fileWaitingTime' },
-                { data: 'dependencyTime' },
-                { data: 'producers' },
-                { data: 'consumers' },
-                { data: 'workerHolding' }
+        var specificSettings = {
+            "processing": false,
+            "serverSide": false,
+            "data": tableData,
+            "columns": [
+                { "data": 'filename' },
+                { "data": 'size' },
+                { "data": 'fileWaitingTime' },
+                { "data": 'dependencyTime' },
+                { "data": 'producers' },
+                { "data": 'consumers' },
+                { "data": 'workerHolding' }
             ],
-            "scrollX": true,
-            "scrollY": "40vh",
-            "initComplete": function(settings, json) {
-                $('#task-input-files-table_wrapper *').css({
-                    'font-size': tableTextFontSize,
-                    'height': 'auto',
-                    'white-space': 'nowrap',
-                });
-            }
-        });
-
-
+        }
+        var table = createTable('#task-input-files-table', specificSettings);
 
         // highlight the critical input file
-
         const criticalInputFile = taskData.critical_input_file;
         const svgElement = d3.select('#dag-components svg');
         svgElement.selectAll('g').each(function() {

@@ -13,13 +13,13 @@
     <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/fixedheader/4.0.1/js/dataTables.fixedHeader.js"></script>
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.1/js/dataTables.fixedColumns.js"></script>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/4.0.1/css/fixedHeader.bootstrap.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/5.0.1/css/fixedColumns.bootstrap.css">
-
+    
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <!-- import css files -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedheader/4.0.1/css/fixedHeader.bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/5.0.1/css/fixedColumns.bootstrap.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}?v=1.0">
     <!-- import js files-->
     <script src="{{ url_for('static', filename='js/report.js') }}" type="module"></script>
@@ -163,33 +163,32 @@
         <input type="text" id="input-tasks-completed-filename" class="report-input-box" placeholder="Search by Filename">
         <button id="button-tasks-completed-search-by-filename" class="report-button">Search</button>
     </div>
-    <div class="table-container">
-        <table id="tasks-completed-table" class="display">
-            <thead>
-                <tr>
-                    <th>task id</th>
-                    <th>try id</th>
-                    <th>worker id</th>
-                    <th>execution time</th>
-                    <th>when ready</th>
-                    <th>when running</th>
-                    <th>when start on worker</th>
-                    <th>when end on worker</th>
-                    <th>when waiting retrieval</th>
-                    <th>when retrieved</th>
-                    <th>when done</th>
-                    <th>category</th>
-                    <th>graph id</th>
-                    <th>size of input (MB)</th>
-                    <th>size of output (MB)</th>
-                    <th>input files</th>
-                    <th>output files</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
+
+    <table id="tasks-completed-table" class="display">
+        <thead>
+            <tr>
+                <th>task id</th>
+                <th>try id</th>
+                <th>worker id</th>
+                <th>execution time</th>
+                <th>when ready</th>
+                <th>when running</th>
+                <th>when start on worker</th>
+                <th>when end on worker</th>
+                <th>when waiting retrieval</th>
+                <th>when retrieved</th>
+                <th>when done</th>
+                <th>category</th>
+                <th>graph id</th>
+                <th>size of input (MB)</th>
+                <th>size of output (MB)</th>
+                <th>input files</th>
+                <th>output files</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 
     <h2 id="tasks-failed-title">Tasks Failed</h2>
     <div class="report-toolbox">
@@ -202,23 +201,22 @@
         <input type="text" id="input-tasks-failed-worker-id" class="report-input-box" placeholder="Search by Worker">
         <button id="button-tasks-failed-search-by-worker-id" class="report-button">Search</button>
     </div>
-    <div class="table-container">
-        <table id="tasks-failed-table" class="display">
-            <thead>
-                <tr>
-                    <th>task id</th>
-                    <th>try id</th>
-                    <th>worker id</th>
-                    <th>when ready</th>
-                    <th>when running</th>
-                    <th>when next ready</th>
-                    <th>category</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
+
+    <table id="tasks-failed-table" class="display">
+        <thead>
+            <tr>
+                <th>task id</th>
+                <th>try id</th>
+                <th>worker id</th>
+                <th>when ready</th>
+                <th>when running</th>
+                <th>when next ready</th>
+                <th>category</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 
     <h2 id="tasks-execution-time-distribution-title">Tasks Execution Time Distribution</h2>
     <div id="task-execution-time-distribution-preface" class="preface">
@@ -263,26 +261,26 @@
         <button id="button-reset-task-execution-details" class="report-button">Reset</button>
         <button id="button-download-task-execution-details" class="report-button">Download SVG</button>
     </div>
-    <div class="legend-table-container">
-        <table id="task-execution-details-legend-table" class="legend-table">
-            <tr>
-                <th id="legend-regular-tasks"></th>
-                <td>Regular task that are submitted by the user and successfully run to completion.</td>
-            </tr>
-            <tr>
-                <th id="legend-failed-tasks"></th>
-                <td>Failed task on a special worker, which usually means the failure of a worker.</td>
-            </tr>
-            <tr>
-                <th id="legend-recovery-tasks"></th>
-                <td>Recovery task to re-create the lost temperory files.</td>
-            </tr>
-            <tr>
-                <th id="legend-workers"></th>
-                <td>Worker lifetime starting at when it was connected and ending at when it was disconnected.</td>
-            </tr>
-        </table>
-    </div>
+
+    <table id="task-execution-details-legend-table" class="legend-table">
+        <tr>
+            <th id="legend-regular-tasks"></th>
+            <td>Regular task that are submitted by the user and successfully run to completion.</td>
+        </tr>
+        <tr>
+            <th id="legend-failed-tasks"></th>
+            <td>Failed task on a special worker, which usually means the failure of a worker.</td>
+        </tr>
+        <tr>
+            <th id="legend-recovery-tasks"></th>
+            <td>Recovery task to re-create the lost temperory files.</td>
+        </tr>
+        <tr>
+            <th id="legend-workers"></th>
+            <td>Worker lifetime starting at when it was connected and ending at when it was disconnected.</td>
+        </tr>
+    </table>
+
     <div id="execution-details-container" class="container-alpha" >
         <svg id="execution-details" xmlns="http://www.w3.org/2000/svg">
         </svg>
@@ -290,48 +288,46 @@
     
 
     <h2 id="worker-summary-title">Worker Summary</h2>
-    <div class="table-container">
-        <table id="worker-table" class="display">
-            <thead>
-                <tr>
-                    <th>id</th>
-                    <th>hash</th>
-                    <th>machine</th>
-                    <th>ip</th>
-                    <th>port</th>
-                    <th>when connected</th>
-                    <th>when disconnected</th>
-                    <th>lifetime(s)</th>
-                    <th>cores</th>
-                    <th>memory (MB)</th>
-                    <th>disk (MB)</th>
-                    <th>tasks done</th>
-                    <th>tasks average runtime</th>
-                    <th>peak disk usage (MB)</th>
-                    <th>peak disk usage (%)</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
+
+    <table id="worker-table" class="display">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>hash</th>
+                <th>machine</th>
+                <th>ip</th>
+                <th>port</th>
+                <th>when connected</th>
+                <th>when disconnected</th>
+                <th>lifetime(s)</th>
+                <th>cores</th>
+                <th>memory (MB)</th>
+                <th>disk (MB)</th>
+                <th>tasks done</th>
+                <th>tasks average runtime</th>
+                <th>peak disk usage (MB)</th>
+                <th>peak disk usage (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
     
     <h2 id="dag-summary-title" >DAG Summary</h2>
-    <div class="table-container">
-        <table id="dag-table" class="display">
-            <thead>
-                <tr>
-                    <th>id</th>
-                    <th>number of tasks</th>
-                    <th>time of completion</th>
-                    <th>number of critical tasks</th>
-                    <th>critical tasks</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
+
+    <table id="dag-table" class="display">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>number of tasks</th>
+                <th>time of completion</th>
+                <th>number of critical tasks</th>
+                <th>critical tasks</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 
     <div style="display: flex; align-items: center;">
         <h2 id="dag-components-title" >DAG Components</h2>
@@ -366,7 +362,7 @@
         <p><b>task information</b></p>
         <div id="analyze-task-display-task-information"></div>
         <p><b>input files information</b></p>
-        <div id="analyze-task-display-input-files" class="table-container">
+        <div id="analyze-task-display-input-files">
             <table id="task-input-files-table" class="display">
                 <thead>
                     <tr>
@@ -390,24 +386,27 @@
     </div>
 
     <h2 id="file-summary-title">File Summary</h2>
-    <div class="table-container">
-        <table id="file-table" class="display">
-            <thead>
-                <tr>
-                    <th>filename</th>
-                    <th>size (MB)</th>
-                    <th>producers</th>
-                    <th>consumers</th>
-                    <th>num workers held</th>
-                    <th>workers held</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
+
+    <table id="file-table" class="display">
+        <thead>
+            <tr>
+                <th>filename</th>
+                <th>size (MB)</th>
+                <th>producers</th>
+                <th>consumers</th>
+                <th>num workers held</th>
+                <th>workers held</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <div class="footnote">
+        <p>
+            TaskVine Report v1.0, available on <a href="https://github.com/JinZhou5042/d3js_vine" target="_blank">Github</a>.
+        </p>
     </div>
-
-
 
     </body>
 </html>

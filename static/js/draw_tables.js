@@ -1,17 +1,31 @@
 const tableTextFontSize = '3.5rem';
 
+var dataTableSettings = {
+    "processing": true,
+    "serverSide": true,
+    "paging": true,
+    "pageLength": 50,
+    "destroy": true,
+    "searching": false,
+    "fixedHeader": false,
+    "scrollX": true,
+    "scrollY": "500px",
+    "fixedColumns": {
+        leftColumns: 1
+    },
+};
+
+export function createTable(tableID, specificSettings) {
+    var tableSettings = $.extend(true, {}, dataTableSettings, specificSettings);
+    return $(tableID).DataTable(tableSettings);
+}
+
 function drawTaskCompletedTable(url) {
     var searchType = 'task-id';
     var searchValue = '';
     var timestampType = 'original';
 
-    var table = $('#tasks-completed-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "paging": true,
-        "pageLength": 50,
-        "destroy": true,
-        "searching": false,
+    var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
@@ -49,20 +63,9 @@ function drawTaskCompletedTable(url) {
             { "data": "input_files" },
             { "data": "output_files" },
         ],
-        "fixedHeader": false,
-        "fixedColumns": {
-            leftColumns: 1
-        },
-        "scrollX": true,
-        "scrollY": "500px",
-        "initComplete": function(settings, json) {
-            $('#tasks-completed-table_wrapper *').css({
-                'font-size': tableTextFontSize,
-                'height': 'auto',
-                'white-space': 'nowrap',
-            });
-        }
-    });
+    };
+    var table = createTable('#tasks-completed-table', specificSettings);
+
     $('#button-tasks-completed-reset-table').off('click').on('click', function() {
         if (document.getElementById('button-tasks-completed-convert-timestamp').classList.contains('report-button-active')) {
             document.getElementById('button-tasks-completed-convert-timestamp').classList.toggle('report-button-active');
@@ -102,13 +105,7 @@ function drawTaskFailedTable(url) {
     var searchValue = '';
     var timestampType = 'original';
 
-    var table = $('#tasks-failed-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "paging": true,
-        "pageLength": 50,
-        "destroy": true,
-        "searching": false,
+    var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
@@ -136,20 +133,9 @@ function drawTaskFailedTable(url) {
             { "data": "when_next_ready" },
             { "data": "category" },
         ],
-        "fixedHeader": false,
-        "fixedColumns": {
-            leftColumns: 1
-        },
-        "scrollX": true,
-        "scrollY": "500px",
-        "initComplete": function(settings, json) {
-            $('#tasks-failed-table_wrapper *').css({
-                'font-size': tableTextFontSize,
-                'height': 'auto',
-                'white-space': 'nowrap',
-            });
-        }
-    });
+    };
+    var table = createTable('#tasks-failed-table', specificSettings);
+
     $('#button-tasks-failed-reset-table').off('click').on('click', function() {
         if (document.getElementById('button-tasks-failed-convert-timestamp').classList.contains('report-button-active')) {
             document.getElementById('button-tasks-failed-convert-timestamp').classList.toggle('report-button-active');
@@ -185,13 +171,7 @@ function drawTaskFailedTable(url) {
 }
 
 function drawWorkerTable(url) {
-    var table = $('#worker-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "paging": true,
-        "pageLength": 50,
-        "destroy": true,
-        "searching": false,
+    var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
@@ -216,30 +196,13 @@ function drawWorkerTable(url) {
             { "data": "peak_disk_usage(MB)" },
             { "data": "peak_disk_usage(%)" },
         ],
-        "fixedHeader": false,
-        "fixedColumns": {
-            leftColumns: 1
-        },
-        "scrollX": true,
-        "scrollY": "500px",
-        "initComplete": function(settings, json) {
-            $('#worker-table_wrapper *').css({
-                'font-size': tableTextFontSize,
-                'height': 'auto',
-                'white-space': 'nowrap',
-            });
-        }
-    });
+    };
+
+    var table = createTable('#worker-table', specificSettings)
 }
 
 function drawDAGTable(url) {
-    var table = $('#dag-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "paging": true,
-        "pageLength": 50,
-        "destroy": true,
-        "searching": false,
+    var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
@@ -254,30 +217,13 @@ function drawDAGTable(url) {
             { "data": "num_critical_tasks" },
             { "data": "critical_tasks" },
         ],
-        "fixedHeader": false,
-        "fixedColumns": {
-            leftColumns: 1
-        },
-        "scrollX": true,
-        "scrollY": "500px",
-        "initComplete": function(settings, json) {
-            $('#dag-table_wrapper *').css({
-                'font-size': tableTextFontSize,
-                'height': 'auto',
-                'white-space': 'nowrap',
-            });
-        }
-    });
+    };
+
+    var table = createTable('#dag-table', specificSettings);
 }
 
 function drawFileTable(url) {
-    var table = $('#file-table').DataTable({
-        "processing": true,
-        "serverSide": true,
-        "paging": true,
-        "pageLength": 50,
-        "destroy": true,
-        "searching": false,
+    var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
@@ -293,20 +239,8 @@ function drawFileTable(url) {
             { "data": "num_workers_holding" },
             { "data": "worker_holding" },
         ],
-        "fixedHeader": false,
-        "fixedColumns": {
-            leftColumns: 1
-        },
-        "scrollX": true,
-        "scrollY": "500px",
-        "initComplete": function(settings, json) {
-            $('#file-table_wrapper *').css({
-                'font-size': tableTextFontSize,
-                'height': 'auto',
-                'white-space': 'nowrap',
-            });
-        }
-    });
+    };
+    var table = createTable('#file-table', specificSettings);
 }
 
 function loadPage(dataName, page, perPage) {

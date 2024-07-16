@@ -115,32 +115,6 @@ export function setupZoomAndScroll(svgElementName, svgContainerName) {
     });
 }
 
-export function sortTable(table, columnId, sortOrder) {
-    const tbody = table.getElementsByTagName("tbody")[0];
-    const rows = Array.from(tbody.getElementsByTagName("tr"));
-
-    rows.sort((a, b) => {
-        const aValue = a.cells[columnId].textContent.trim();
-        const bValue = b.cells[columnId].textContent.trim();
-
-        // Convert to numbers if possible, otherwise compare as strings
-        const aNum = parseFloat(aValue);
-        const bNum = parseFloat(bValue);
-
-        if (!isNaN(aNum) && !isNaN(bNum)) {
-            return sortOrder * (aNum - bNum);
-        } else {
-            return sortOrder * aValue.localeCompare(bValue);
-        }
-    });
-
-    // Toggle the sort order
-    sortOrder *= -1;
-
-    // Reattach sorted rows
-    rows.forEach(row => tbody.appendChild(row));
-}
-
 export function downloadSVG(svgElementId, filename = null) {
     const svgElement = document.getElementById(svgElementId);
     if (!svgElement) {
