@@ -36,7 +36,7 @@ app = Flask(__name__)
 LOGS_DIR = 'logs'
 
 
-@app.route('/tasksCompleted')
+@app.route('/tasks_completed')
 def get_tasks():
     log_name = request.args.get('log_name')
     draw = int(request.args.get('draw', 1))
@@ -50,6 +50,8 @@ def get_tasks():
     time_manager_start = manager_info_df['time_start'][0]
 
     task_done_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_done.csv')).fillna('N/A')
+    task_done_df['input_files'] = task_done_df['input_files'].apply(safe_literal_eval)
+    task_done_df['output_files'] = task_done_df['output_files'].apply(safe_literal_eval)
 
     if timestamp_type == 'startFromManager':
         time_columns = ['when_ready', 'time_commit_start', 'time_commit_end', 'when_running',
@@ -65,7 +67,7 @@ def get_tasks():
         if search_type == "task-id":
             task_done_df = task_done_df[task_done_df['task_id'] == int(search_value)]
         elif search_type == "category":
-            task_done_df = task_done_df[task_done_df['category'] == search_value]
+            task_done_df = task_done_df[task_done_df['category'].apply(lambda x: search_value in x)]
         elif search_type == "filename":
             task_done_df = task_done_df[task_done_df['input_files'].apply(lambda x: search_value in x) | task_done_df['output_files'].apply(lambda x: search_value in x)]
     else:

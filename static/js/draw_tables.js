@@ -285,7 +285,7 @@ function loadPage(dataName, page, perPage) {
             per_page: perPage
         },
         success: function() {
-            if (dataName === 'tasksCompleted') {
+            if (dataName === 'tasks_completed') {
                 drawTaskCompletedTable(url); 
             } else if (dataName == 'tasksFailed') {
                 drawTaskFailedTable(url);
@@ -306,7 +306,7 @@ function loadPage(dataName, page, perPage) {
 }
 
 window.parent.document.addEventListener('dataLoaded', function() {
-    loadPage('tasksCompleted', 1, 50);
+    loadPage('tasks_completed', 1, 50);
     document.getElementById('button-tasks-completed-reset-table').click();
     loadPage('tasksFailed', 1, 50);
     loadPage('worker', 1, 50);

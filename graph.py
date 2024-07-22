@@ -2,10 +2,11 @@ import pandas as pd
 import os
 import tqdm
 import ast
-import sys
 import graphviz
 import argparse
 from collections import deque
+from multiprocessing import Pool, cpu_count, set_start_method
+
 
 
 def safe_literal_eval(val):
@@ -204,61 +205,70 @@ class OrthogonalListGraph:
         dot.render(save_to, format='svg', view=view)
 
 
+def process_component(args):
+    graph, component, graph_id = args
+    task_done_df.loc[task_done_df['task_id'].isin(component), 'graph_id'] = graph_id
+
+    graph.plot_component(component, save_to=os.path.join(dirname, f"subgraph_{graph_id}"), view=False)
+    root = component[0]
+    graph_info = {
+        'graph_id': graph_id,
+        'num_tasks': len(component),
+        'num_critical_tasks': 0,
+        'critical_tasks': 0,
+        'time_critical_nodes': [],
+        'time_critical_edges': [],
+        'time_critical_path': 0,
+        'tasks': component,
+    }
+    graph_info['critical_tasks'] = graph.find_critical_path_in_component(component)
+    graph_info['num_critical_tasks'] = len(graph_info['critical_tasks'])
+    for i, task_id in enumerate(graph_info['critical_tasks']):
+        graph_info['time_critical_nodes'].append(graph.vertices[task_id].task_life_time)
+        if i < len(graph_info['critical_tasks']) - 1:
+            graph_info['time_critical_edges'].append(graph.edges[(task_id, graph_info['critical_tasks'][i+1])].weight)
+
+    graph_info['time_critical_path'] = sum(graph_info['time_critical_nodes']) + sum(graph_info['time_critical_edges'])
+
+    return root, graph_info
+
+
 def generate_graph():
-    # add vertices and edges to the graph
+    print("Generating graph...")
     graph = OrthogonalListGraph()
     input_to_tasks = {}
-    for index, row in task_done_df.iterrows():
-        execution_time = round(float(row[task_finish_timestamp]) - float(row[task_start_timestamp]), 4)
-        graph.add_vertex(row['task_id'], execution_time)
-        input_files = row['input_files']
-        for file in input_files:
-            if file not in input_to_tasks:
-                input_to_tasks[file] = []
-            input_to_tasks[file].append(row['task_id'])
-    for index, row in task_done_df.iterrows():
-        output_files = row['output_files']
-        for file in output_files:
+
+    task_done_list = task_done_df.to_dict('records')
+
+    for task in task_done_list:
+        execution_time = round(float(task[task_finish_timestamp]) - float(task[task_start_timestamp]), 4)
+        graph.add_vertex(task['task_id'], execution_time)
+        for file in task['input_files']:
+            input_to_tasks.setdefault(file, []).append(task['task_id'])
+
+    for task in task_done_list:
+        for file in task['output_files']:
             if file in input_to_tasks:
+                tail_task = task
                 for target_task_id in input_to_tasks[file]:
-                    tail_task = task_done_df[task_done_df['task_id'] == row['task_id']].iloc[0]
                     head_task = task_done_df[task_done_df['task_id'] == target_task_id].iloc[0]
                     weight = round(float(head_task[task_start_timestamp]) - float(tail_task[task_finish_timestamp]), 4)
-                    graph.add_edge(row['task_id'], target_task_id, weight=weight)
+                    graph.add_edge(task['task_id'], target_task_id, weight=weight)
 
     graph.update_components()
+
+    return graph
+
+def generate_sub_graphs(graph):
+    print(f"Processing components with {cpu_count()} cores...")
     graph_info = {}
 
     pbar = tqdm.tqdm(total=len(graph.components))
-    for i, component in enumerate(graph.components):
-        pbar.update(1)
-        # visualize this subgraph
-        graph_id = i + 1
-        for task_id in component:
-            index = task_done_df[task_done_df['task_id'] == task_id].index[0]
-            task_done_df.at[index, 'graph_id'] = graph_id
-
-        graph.plot_component(component, save_to=os.path.join(dirname, f"subgraph_{graph_id}"), view=False)
-        root = component[0]
-        graph_info[root] = {
-            'graph_id': graph_id,
-            'num_tasks': len(component),
-            'num_critical_tasks': 0,
-            'critical_tasks': 0,
-            'time_critical_nodes': [],
-            'time_critical_edges': [],
-            'time_critical_path': 0,
-            'tasks': component,
-        }
-        graph_info[root]['critical_tasks'] = graph.find_critical_path_in_component(component)
-        graph_info[root]['num_critical_tasks'] = len(graph_info[root]['critical_tasks'])
-        for i, task_id in enumerate(graph_info[root]['critical_tasks']):
-            graph_info[root]['time_critical_nodes'].append(graph.vertices[task_id].task_life_time)
-            if i < len(graph_info[root]['critical_tasks']) - 1:
-                graph_info[root]['time_critical_edges'].append(graph.edges[(task_id, graph_info[root]['critical_tasks'][i+1])].weight)
-
-        graph_info[root]['time_critical_path'] = sum(graph_info[root]['time_critical_nodes']) + sum(graph_info[root]['time_critical_edges'])
-
+    with Pool(cpu_count()) as pool:
+        results = pool.imap_unordered(process_component, [(graph, component, i + 1) for i, component in enumerate(graph.components)])
+        for root, info in results:
+            graph_info[root] = info
+            pbar.update(1)    
     pbar.close()
 
     graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
@@ -267,6 +277,8 @@ def generate_graph():
 
 
 if __name__ == '__main__':
+    set_start_method('fork')
+
     parser = argparse.ArgumentParser()
     parser.add_argument('log_dir', type=str, help='the target log directory')
     parser.add_argument('--no-files', action='store_true')
@@ -286,8 +298,6 @@ if __name__ == '__main__':
     general_statistics_file_df = pd.read_csv(os.path.join(dirname, 'general_statistics_file.csv'))
     general_statistics_file_df['producers'] = general_statistics_file_df['producers'].apply(safe_literal_eval)
     general_statistics_file_df['consumers'] = general_statistics_file_df['consumers'].apply(safe_literal_eval)
-    filtered_df = general_statistics_file_df[
-        (general_statistics_file_df['producers'].apply(len) > 0)
-    ]
     
-    generate_graph()
+    graph = generate_graph()
+    generate_sub_graphs(graph)
