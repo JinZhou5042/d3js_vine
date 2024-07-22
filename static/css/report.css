@@ -166,13 +166,11 @@ body h2 {
     overflow: auto;
     margin-bottom: 2rem;
 }
-
 .legend-table {
     width: 90%;
     border-collapse: collapse;
     font-size: 3.5rem;
 }
-
 .legend-table tr {
     height: 3rem;
 }
@@ -276,7 +274,14 @@ body h2 {
     overflow: auto;
 }
 
-/* Table */
+/* DataTables */
+table.dataTable td{
+    max-width: 400px !important;
+    overflow: auto !important;
+}
+table.dataTable thead th {
+    text-align: left !important;
+}
 .dt-container {
     width: auto !important;
     max-width: 90% !important;

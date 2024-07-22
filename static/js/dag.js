@@ -1,19 +1,27 @@
 import { downloadSVG } from './tools.js';
 import { createTable } from './draw_tables.js';
 
+const errorTip = document.getElementById('dag-components-error-tip');
+const dagSelector = document.getElementById('dag-id-selector');
+
 const tableTextFontSize = '3.5rem';
 const buttonAnalyzeTaskInDAG = document.getElementById('button-analyze-task-in-dag');
+const buttonHighlightCriticalPath = document.getElementById('button-highlight-critical-path');
+const buttonDownload = document.getElementById('button-download-dag');
 const inputAnalyzeTaskID = document.getElementById('input-task-id-in-dag');
 const analyzeTaskDisplayDetails = document.getElementById('analyze-task-display-details');
+const criticalPathInfoDiv = document.getElementById('critical-path-info');
+
+const highlightTaskColor = '#f69697';
+const highlightcriticalInputFileColor = '#f69697';
 
 export async function plotDAGComponentByID(dagID) {
     try {
-        if (typeof window.generalStatisticsDAG === 'undefined') {
-            document.getElementById('dag-components-tip').style.visibility = 'visible';
+        if (typeof window.graphInfo === 'undefined') {
             return;
         }
-        const generalStatisticsDAG = window.generalStatisticsDAG;
-        const dag = generalStatisticsDAG.find(d => d.graph_id === dagID.toString());
+        const graphInfo = window.graphInfo;
+        const dag = graphInfo.find(d => d.graph_id === dagID.toString());
 
         if (dag) {
             try {
@@ -31,14 +39,6 @@ export async function plotDAGComponentByID(dagID) {
                 insertedSVG
                     .attr('preserveAspectRatio', 'xMidYMid meet');
 
-                // highlight the selected row
-                // rows = document.querySelectorAll('#dag-table tbody tr');
-                // rows.forEach(row => {
-                //     if (+row.graph_id === +dagID) {
-                //         row.style.backgroundColor = '#f2f2f2';
-                //     }
-                // });
-
             } catch (error) {
                 console.error(error);
             }
@@ -50,7 +50,7 @@ export async function plotDAGComponentByID(dagID) {
     }
 }
 
-document.getElementById('dag-id-selector').addEventListener('change', async function() {
+dagSelector.addEventListener('change', async function() {
     const buttonHighlightCriticalPath = document.getElementById('button-highlight-critical-path');
     if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
         buttonHighlightCriticalPath.classList.toggle('report-button-active');
@@ -61,41 +61,45 @@ document.getElementById('dag-id-selector').addEventListener('change', async func
     }
     // hidden the info div
     analyzeTaskDisplayDetails.style.display = 'none';
+    criticalPathInfoDiv.style.display = 'none';
     
-    const selectedDAGID = document.getElementById('dag-id-selector').value;
+    const selectedDAGID = dagSelector.value;
     await plotDAGComponentByID(selectedDAGID);
 });
 
 function handleDownloadClick() {
-    const selectedDAGID = document.getElementById('dag-id-selector').value;
+    const selectedDAGID = dagSelector.value;
     downloadSVG('dag-components', 'subgraph_' + selectedDAGID + '.svg');
 }
 window.parent.document.addEventListener('dataLoaded', function() {
-    if (typeof window.generalStatisticsDAG === 'undefined') {
+    if (typeof window.graphInfo === 'undefined') {
+        errorTip.style.visibility = 'visible';
         return;
     }
-    const selectDAG = document.getElementById('dag-id-selector');
+    errorTip.style.visibility = 'hidden';
+
     // first remove the previous options
-    selectDAG.innerHTML = '';
-    
+    dagSelector.innerHTML = '';
     // update the options
-    const dagIDs = window.generalStatisticsDAG.map(dag => dag.graph_id);
+    const dagIDs = window.graphInfo.map(dag => dag.graph_id);
     dagIDs.forEach(dagID => {
         const option = document.createElement('option');
         option.value = dagID;
         option.text = `${dagID}`;
-        selectDAG.appendChild(option);
+        dagSelector.appendChild(option);
     });
 
-    var button = document.getElementById('button-download-dag');
-    button.removeEventListener('click', handleDownloadClick); 
-    button.addEventListener('click', handleDownloadClick);
+    if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
+        buttonHighlightCriticalPath.classList.toggle('report-button-active');
+        criticalPathInfoDiv.style.display = 'none';
+    }
+
+    buttonDownload.removeEventListener('click', handleDownloadClick); 
+    buttonDownload.addEventListener('click', handleDownloadClick);
 });
 
 buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
     let taskID = inputAnalyzeTaskID.value;
-    const highlightTaskColor = '#f69697';
-    const highlightcriticalInputFileColor = '#ffcc80';
 
     // a valid task id
     if (taskID && +taskID !== window.highlitedTask && window.taskDone.some(d => +d.task_id === +taskID)) {
@@ -112,7 +116,7 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
 
         // update the left side
         const infoDiv = document.getElementById('analyze-task-display-task-information');
-        infoDiv.innerHTML = `Task ID: ${taskData.task_id}<br>
+        let htmlContent = `Task ID: ${taskData.task_id}<br>
             Try Count: ${taskData.try_id}<br>
             Worker ID: ${taskData.worker_id}<br>
             Graph ID: ${taskData.graph_id}<br>
@@ -131,6 +135,11 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
             When Retrieved: ${(taskData.when_retrieved - window.time_manager_start).toFixed(2)}s (When Waiting Retrieval + ${(taskData.when_retrieved - taskData.when_waiting_retrieval).toFixed(2)}s)<br>
             When Done: ${(taskData.when_done - window.time_manager_start).toFixed(2)}s (When Retrieved + ${(taskData.when_done - taskData.when_retrieved).toFixed(2)}s)<br>
         `;
+        if ('when_submitted_by_daskvine' in taskData && taskData.when_submitted_by_daskvine > 0) {
+            htmlContent += `When DaskVine Submitted: ${taskData.when_submitted_by_daskvine - window.time_manager_start}s<br>
+                            When DaskVine Received: ${taskData.when_received_by_daskvine - window.time_manager_start}s<br>`;
+        }
+        infoDiv.innerHTML = htmlContent;
 
         // update the right side
         if (typeof taskData.input_files === 'string') {
@@ -198,14 +207,21 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
         // highlight the critical input file
         const criticalInputFile = taskData.critical_input_file;
         const svgElement = d3.select('#dag-components svg');
+
+        // don't highlight the critical input file at the moment
+        const highlightCriticalFile = false;
+
         svgElement.selectAll('g').each(function() {
             var title = d3.select(this).select('title').text();
-            if (title === criticalInputFile) {
-                window.highlitedInputFile = criticalInputFile;
-                window.previousFileColor = d3.select(this).select('polygon').style('fill');
-                d3.select(this).select('polygon').style('fill', highlightcriticalInputFileColor);
+            // highlight the critical input file
+            if (highlightCriticalFile) {
+                if (title === criticalInputFile) {
+                    window.highlitedInputFile = criticalInputFile;
+                    window.previousFileColor = d3.select(this).select('polygon').style('fill');
+                    d3.select(this).select('polygon').style('fill', highlightcriticalInputFileColor);
+                }
             }
-            // we want to highlight the task
+            // highlight the task
             if (+title === taskID) {
                 // there is no task highlighted
                 if (typeof window.highlitedTask === 'undefined') {
@@ -217,10 +233,12 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
                     // there is a task highlighted, first remove the previous one
                     svgElement.selectAll('g').each(function() {
                         var title = d3.select(this).select('title').text();
-                        if (title === window.highlitedInputFile) {
-                            d3.select(this).select('polygon').style('fill', window.previousFileColor);
-                            window.previousFileColor = 'white';
-                            window.highlitedInputFile = undefined;
+                        if (highlightCriticalFile) {
+                            if (title === window.highlitedInputFile) {
+                                d3.select(this).select('polygon').style('fill', window.previousFileColor);
+                                window.previousFileColor = 'white';
+                                window.highlitedInputFile = undefined;
+                            }
                         }
                         if (+title === window.highlitedTask) {
                             d3.select(this).select('ellipse').style('fill', window.previousTaskColor);
@@ -265,7 +283,7 @@ buttonAnalyzeTaskInDAG.addEventListener('click', async function() {
 
 document.getElementById('button-highlight-critical-path').addEventListener('click', async function() {
 
-    if (typeof window.generalStatisticsDAG === 'undefined') {
+    if (typeof window.graphInfo === 'undefined') {
         return;
     }
 
@@ -276,11 +294,9 @@ document.getElementById('button-highlight-critical-path').addEventListener('clic
     }
 
     this.classList.toggle('report-button-active');
-    const thisButton = this;
-    
-    const dagID = +(document.getElementById('dag-id-selector').value);
+    const dagID = +(dagSelector.value);
 
-    const dagInfoArray = window.generalStatisticsDAG.filter(function(d) {
+    const dagInfoArray = window.graphInfo.filter(function(d) {
         return +d.graph_id === dagID;
     });
 
@@ -305,44 +321,65 @@ document.getElementById('button-highlight-critical-path').addEventListener('clic
         var titleText = d3.select(this).select('title').text();
         // find one of the critical tasks
         var ids = titleText.split("->").map(s => s.trim());
-        // ensure we only parse edges with 2 elements
+
+        // ensure that we only parse edges with 2 elements
         if (ids.length === 2) {
             var sourceNode = nodeMap[ids[0]];
             var targetNode = nodeMap[ids[1]];
             // if +ids[0] is integer, then it is a task
-            if (Number.isInteger(+ids[0])) {
-                sourceNode.select('ellipse').style('fill', 'white');
-            }
-            
-            // task -> file
-            if (criticalTasks.includes(+ids[0])) {
-                if (thisButton.classList.contains('report-button-active')) {
-                    // highlight all the nodes
-                    sourceNode.select('ellipse').style('fill', 'orange');
-                    targetNode.select('polygon').style('fill', 'orange');
-                    criticalPath.push(`${ids[0]}--->${ids[1]}`);
-                } else {
-                    sourceNode.select('ellipse').style('fill', 'white');
-                    targetNode.select('polygon').style('fill', 'white');
+            if (Number.isInteger(+ids[0]) && !Number.isInteger(+ids[1])) {
+                var sourceTaskID = +ids[0];
+                var targetFileID = ids[1];
+                if (criticalTasks.includes(sourceTaskID)) {
+                    if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
+                        // highlight all the nodes
+                        sourceNode.select('ellipse').style('fill', 'orange');
+                        targetNode.select('polygon').style('fill', 'orange');
+                        criticalPath.push(`${sourceTaskID}--->${targetFileID}`);
+                    } else {
+                        sourceNode.select('ellipse').style('fill', 'white');
+                        targetNode.select('polygon').style('fill', 'white');
+                    }
                 }
+            } else if (Number.isInteger(+ids[0]) && Number.isInteger(+ids[1])) {
+                var sourceTaskID = +ids[0];
+                var targetTaskID = +ids[1];
+                if (criticalTasks.includes(sourceTaskID) && criticalTasks.includes(targetTaskID)) {
+                    if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
+                        sourceNode.select('ellipse').style('fill', 'orange');
+                        targetNode.select('ellipse').style('fill', 'orange');
+                        criticalPath.push(`${sourceTaskID}--->${targetTaskID}`);
+                    } else {
+                        sourceNode.select('ellipse').style('fill', 'white');
+                        targetNode.select('ellipse').style('fill', 'white');
+                    }
+                }
+            
             }
         }
     });
-    
-    if (thisButton.classList.contains('report-button-active')) {
+
+    if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
         var sortedCriticalPath = [];
-        // sort the critical path 
-        criticalTasks.forEach(taskId => {
-            var taskRegex = new RegExp(`^${taskId}(--->|$)`);
-            criticalPath.forEach(path => {
-                if (taskRegex.test(path)) {
-                    sortedCriticalPath.push(path);
-                }
+        // sort the critical path
+        const format1 = /^\d+--->[a-zA-Z-]+$/;   // task -> file -> task -> file
+        const format2 = /^\d+--->\d+$/;          // task -> task -> task
+        if (format1.test(criticalPath[0])) {
+            criticalTasks.forEach(taskId => {
+                var taskRegex = new RegExp(`^${taskId}(--->|$)`);
+                criticalPath.forEach(edge => {
+                    if (taskRegex.test(edge)) {
+                        sortedCriticalPath.push(edge);
+                    }
+                });
             });
-        });
-        var criticalPathString = sortedCriticalPath.join('--->');
+            var criticalPathString = sortedCriticalPath.join('--->');
+        } else if (format2.test(criticalPath[0])) {
+            var criticalPathString = criticalTasks.join('--->');
+        } else {
+            console.error('unrecognized format');
+        }
         // show the critical path if the button is active
-        var criticalPathInfoDiv = document.getElementById('critical-path-info');
         criticalPathInfoDiv.style.display = 'block';
         criticalPathInfoDiv.innerHTML = `Critical Path: ${criticalPathString}`;
     } else {

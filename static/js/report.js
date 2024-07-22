@@ -25,7 +25,7 @@ window.addEventListener('load', function() {
             { name: 'generalStatisticsTask', url: `logs/${window.logName}/vine-logs/general_statistics_task.csv` },
             { name: 'generalStatisticsWorker', url: `logs/${window.logName}/vine-logs/general_statistics_worker.csv` },
             { name: 'generalStatisticsFile', url: `logs/${window.logName}/vine-logs/general_statistics_file.csv` },
-            { name: 'generalStatisticsDAG', url: `logs/${window.logName}/vine-logs/general_statistics_dag.csv` },
+            { name: 'graphInfo', url: `logs/${window.logName}/vine-logs/graph_info.csv` },
             { name: 'taskDone', url: `logs/${window.logName}/vine-logs/task_done.csv` },
             { name: 'taskFailedOnManager', url: `logs/${window.logName}/vine-logs/task_failed_on_manager.csv` },
             { name: 'taskFailedOnWorker', url: `logs/${window.logName}/vine-logs/task_failed_on_worker.csv` },

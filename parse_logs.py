@@ -529,3 +529,36 @@ def parse_taskgraph(taskgraph, task_info, task_try_count, file_info):
             task['input_files'] = cleaned_input_files
 
     return task_info
+
+
+def parse_daskvine_log(daskvine_log, task_info, task_try_count, manager_info):
+    # check if the daskvine exists
+    try:
+        with open(daskvine_log, 'r') as file:
+            pass
+    except FileNotFoundError:
+        return task_info
+    
+    total_lines = 0
+    with open(daskvine_log, 'r') as file:
+        for line in file:
+            total_lines += 1
+
+    with open(daskvine_log, 'r') as file:
+        pbar = tqdm(total=total_lines, desc="parsing daskvine log")
+        for line in file:
+            pbar.update(1)
+            parts = line.strip().split(" ")
+
+            event, timestamp, task_id = parts[0], int(parts[1]), int(parts[2])
+            try_count = task_try_count[task_id]
+            if event == "submitted":
+                for try_id in range(1, try_count + 1):
+                    task_info[(task_id, try_id)]['when_submitted_by_daskvine'] = timestamp
+            if event == 'received':
+                for try_id in range(1, try_count + 1):
+                    task_info[(task_id, try_id)]['when_received_by_daskvine'] = timestamp
+
+        pbar.close()
+    
+    return task_info

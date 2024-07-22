@@ -158,7 +158,14 @@ class OrthogonalListGraph:
             else:
                 dot.node(str(task_id), str(task_id), shape='ellipse')
 
-            if args.plot_file:
+            if args.no_files:
+                # plot edges from this task to its successors
+                edge = self.vertices[task_id].first_out
+                while edge:
+                    label = f"{edge.weight}s" if not args.no_weight else None
+                    dot.edge(str(task_id), str(edge.head), label=label)
+                    edge = edge.tail_link
+            else:
                 # plot edges from input files to this task
                 for input_file in task_done_df[task_done_df['task_id'] == task_id]['input_files'].values[0]:
                     file = general_statistics_file_df[general_statistics_file_df['filename'] == input_file].iloc[0]
@@ -173,40 +180,25 @@ class OrthogonalListGraph:
                     if actual_producer_task is None:
                         print(f"Warning: Task {task_id} has no producer task for input file {input_file}.")
                     time_period = round(float(this_task[task_start_timestamp]) - float(actual_producer_task[task_finish_timestamp]), 4)
+                    label = f"{time_period}s" if not args.no_weight else None
                     if time_period < 0:
-                        # it means that this input file is lost after this task is done
-                        # and it is used as another task's input file                        
+                        # it means that this input file is lost after this task is done and it is used as another task's input file                        
                         print(f"Warning: Task {task_id} is started before its producer task {actual_producer_task_id} is finished.")
                         continue
                     dot.node(input_file, input_file, shape='box')
                     if this_task['is_recovery_task'] or actual_producer_task['is_recovery_task']:
-                        if args.plot_weight:
-                            dot.edge(input_file, str(task_id), label=f"{time_period}s", color='#ea67a9', style='dashed')
-                        else:
-                            dot.edge(input_file, str(task_id), color='#ea67a9', style='dashed')
+                        dot.edge(input_file, str(task_id), color='#ea67a9', style='dashed', label=label)
+                    else:
+                        dot.edge(input_file, str(task_id), label=label)
                 # plot edges from this task to output files
                 for output_file in task_done_df[task_done_df['task_id'] == task_id]['output_files'].values[0]:
                     time_period = round(float(this_task[task_finish_timestamp]) - float(this_task[task_start_timestamp]), 4)
+                    label = f"{time_period}s" if not args.no_weight else None
                     dot.node(output_file, output_file, shape='box')
                     if this_task['is_recovery_task']:
-                        if args.plot_weight:
-                            dot.edge(str(task_id), output_file, label=f"{time_period}s", color='#ea67a9', style='dashed')
-                        else:
-                            dot.edge(str(task_id), output_file, color='#ea67a9', style='dashed')
+                        dot.edge(str(task_id), output_file, label=label, color='#ea67a9', style='dashed')
                     else:
-                        if args.plot_weight:
-                            dot.edge(str(task_id), output_file, label=f"{time_period}s")
-                        else:
-                            dot.edge(str(task_id), output_file)
-            else:
-                # plot edges from this task to its successors
-                edge = self.vertices[task_id].first_out
-                while edge:
-                    if args.plot_weight:
-                        dot.edge(str(task_id), str(edge.head), label=f"{edge.weight}s")
-                    else:
-                        dot.edge(str(task_id), str(edge.head))
-                    edge = edge.tail_link
+                        dot.edge(str(task_id), output_file, label=label)
 
         dot.attr(rankdir='TB')
         dot.render(save_to, format='svg', view=view)
@@ -270,15 +262,15 @@ def generate_graph():
     pbar.close()
 
     graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
-    graph_info_df.to_csv(os.path.join(dirname, 'general_statistics_dag.csv'), index=False)
+    graph_info_df.to_csv(os.path.join(dirname, 'graph_info.csv'), index=False)
     task_done_df.to_csv(os.path.join(dirname, 'task_done.csv'), index=False)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('log_dir', type=str, help='the target log directory')
-    parser.add_argument('--plot-file', action='store_true')
-    parser.add_argument('--plot-weight', action='store_true')
+    parser.add_argument('--no-files', action='store_true')
+    parser.add_argument('--no-weight', action='store_true')
     args = parser.parse_args()
 
     task_start_timestamp = 'time_worker_start'

@@ -156,11 +156,11 @@
     <div class="report-toolbox">
         <button id="button-tasks-completed-reset-table" class="report-button">Reset</button>
         <button id="button-tasks-completed-convert-timestamp" class="report-button">Convert Timestamp</button>
-        <input type="text" id="input-tasks-completed-task-id" class="report-input-box" placeholder="Search by ID">
+        <input type="text" id="input-tasks-completed-task-id" class="report-input-box" placeholder="Input Task ID">
         <button id="button-tasks-completed-search-by-id" class="report-button">Search</button>
-        <input type="text" id="input-tasks-completed-category" class="report-input-box" placeholder="Search by Category">
+        <input type="text" id="input-tasks-completed-category" class="report-input-box" placeholder="Input Category">
         <button id="button-tasks-completed-search-by-category" class="report-button">Search</button>
-        <input type="text" id="input-tasks-completed-filename" class="report-input-box" placeholder="Search by Filename">
+        <input type="text" id="input-tasks-completed-filename" class="report-input-box" placeholder="Input Filename">
         <button id="button-tasks-completed-search-by-filename" class="report-button">Search</button>
     </div>
 
@@ -331,7 +331,7 @@
 
     <div style="display: flex; align-items: center;">
         <h2 id="dag-components-title" >DAG Components</h2>
-        <div id="dag-components-tip" class="error-tip">No Graph Data found for this execution.</div>
+        <div id="dag-components-error-tip" class="error-tip">No Graph Data found for this execution.</div>
     </div>
     <div class="preface">
         <p style="margin: 0px;">
@@ -386,8 +386,17 @@
     </div>
 
     <h2 id="file-summary-title">File Summary</h2>
-
-    <table id="file-table" class="display">
+    <div id="file-summary-preface" class="preface">
+        <p>The file summary table shows the information of all files that are used in this execution. 
+        </p>
+    </div>
+    <div class="report-toolbox">
+        <button id="button-file-summary-reset-table" class="report-button">Reset</button>
+        <button id="button-file-summary-has-producer" class="report-button">Has Producer</button>
+        <input type="text" id="input-file-summary-search-filename" class="report-input-box" placeholder="Input Filename">
+        <button id="button-file-summary-search-filename" class="report-button">Search Filename</button>
+    </div>
+    <table id="file-summary-table" class="display">
         <thead>
             <tr>
                 <th>filename</th>

@@ -3,7 +3,7 @@ import argparse
 import os
 import copy
 import json
-from parse_logs import parse_txn, parse_taskgraph, parse_debug
+from parse_logs import parse_txn, parse_taskgraph, parse_debug, parse_daskvine_log
 import pandas as pd
 from datetime import datetime
 import re
@@ -14,7 +14,7 @@ import numpy as np
 task_info, task_try_count, library_info, worker_info, manager_info, file_info = {}, {}, {}, {}, {}, {}
 
 def remove_inactive_workers():
-    print(f"Removing invalid workers...")
+    print(f"Removing inactive workers...")
     global worker_info, task_info, library_info
 
     num_total_workers = len(worker_info)
@@ -204,8 +204,12 @@ def handle_task_info(dirname):
         if pd.isna(task['when_next_ready']):
             worker = worker_info[task['worker_committed']]
             for i in range(len(worker['time_connected'])):
-                if worker['time_connected'][i] < task['when_running'] and worker['time_disconnected'][i] > task['when_running']:
-                    task['when_next_ready'] = worker['time_disconnected'][i]
+                if len(worker['time_disconnected']) != len(worker['time_connected']):
+                    # worker is still connected
+                    worker['time_disconnected'].append(manager_info['time_end'])
+                else:
+                    if worker['time_connected'][i] < task['when_running'] and worker['time_disconnected'][i] > task['when_running']:
+                        task['when_next_ready'] = worker['time_disconnected'][i]
         
         # calculate the total size of input and output files
         task['size_input_files(MB)'] = calculate_total_size_of_files(task['input_files'])
@@ -353,10 +357,11 @@ def generate_data(log_dir):
     txn = os.path.join(dirname, 'transactions')
     debug = os.path.join(dirname, 'debug')
     taskgraph = os.path.join(dirname, 'taskgraph')
+    daskvine_log = os.path.join(dirname, 'daskvine.log')
 
-    
     task_info, task_try_count, library_info, worker_info, manager_info = parse_txn(txn)
     worker_info, file_info = parse_debug(debug, worker_info, task_info, task_try_count, manager_info)
+    task_info = parse_daskvine_log(daskvine_log, task_info, task_try_count, manager_info)
     num_total_workers, num_active_workers = remove_inactive_workers()
 
     task_info = parse_taskgraph(taskgraph, task_info, task_try_count, file_info)

@@ -2,9 +2,16 @@ from flask import Flask, render_template, jsonify, Response, request, send_from_
 from generate_d3_input import generate_data
 import os
 import argparse
+import ast
 import pandas as pd
 import sys
 import subprocess
+
+def safe_literal_eval(val):
+    try:
+        return ast.literal_eval(val)
+    except (ValueError, SyntaxError):
+        return []
 
 def kill_process_on_port(port):
     try:
@@ -61,7 +68,6 @@ def get_tasks():
             task_done_df = task_done_df[task_done_df['category'] == search_value]
         elif search_type == "filename":
             task_done_df = task_done_df[task_done_df['input_files'].apply(lambda x: search_value in x) | task_done_df['output_files'].apply(lambda x: search_value in x)]
-
     else:
         # handle sorting request
         order_column = request.args.get('order[0][column]', '0')
@@ -177,7 +183,7 @@ def get_dag():
     search_type = request.args.get('search[type]', '')
     timestamp_type = request.args.get('timestamp_type')
 
-    dag_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_dag.csv'))
+    dag_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'graph_info.csv'))
     columns_to_return = ['graph_id', 'num_tasks', 'time_critical_path', 'num_critical_tasks', 'critical_tasks']
     dag_df = dag_df[columns_to_return]
 
@@ -212,12 +218,19 @@ def get_file():
     length = int(request.args.get('length', 50))
     search_value = request.args.get('search[value]', '')
     search_type = request.args.get('search[type]', '')
-    timestamp_type = request.args.get('timestamp_type')
 
     file_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'file_info.csv'))
+    file_info_df['producers'] = file_info_df['producers'].apply(safe_literal_eval)
+    file_info_df['consumers'] = file_info_df['consumers'].apply(safe_literal_eval)
+    file_info_df['worker_holding'] = file_info_df['worker_holding'].apply(safe_literal_eval)
 
-    if search_value:
-        pass
+    print(f"type = {search_type}")
+    if search_type:
+        if search_type == 'filename':
+            search_value = search_value.strip()
+            file_info_df = file_info_df[file_info_df['filename'].apply(lambda x: search_value in x)]
+        elif search_type == 'has-producer':
+            file_info_df = file_info_df[file_info_df['producers'].apply(lambda x: len(x) > 0)]
     else:
         # handle sorting request
         order_column = request.args.get('order[0][column]', '0')

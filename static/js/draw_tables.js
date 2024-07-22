@@ -8,7 +8,9 @@ var dataTableSettings = {
     "destroy": true,
     "searching": false,
     "fixedHeader": false,
+    "autoWidth": true,
     "scrollX": true,
+    "sScrollXInner": "100%",
     "scrollY": "500px",
     "fixedColumns": {
         leftColumns: 1
@@ -223,12 +225,16 @@ function drawDAGTable(url) {
 }
 
 function drawFileTable(url) {
+    var searchType = '';
+    var searchValue = '';
     var specificSettings = {
         "ajax": {
             "url": url,
             "type": "GET",
             "data": function(d) {
                 d.log_name = window.logName;
+                d.search.type = searchType;
+                d.search.value = searchValue;
             },
         },
         "columns": [
@@ -240,7 +246,31 @@ function drawFileTable(url) {
             { "data": "worker_holding" },
         ],
     };
-    var table = createTable('#file-table', specificSettings);
+    var table = createTable('#file-summary-table', specificSettings);
+
+    const buttonReset = document.getElementById('button-file-summary-reset-table');
+    const buttonSearchFilename = document.getElementById('button-file-summary-search-filename');
+    const buttonHasProducer = document.getElementById('button-file-summary-has-producer');
+
+    $('#' + buttonSearchFilename.id).off('click').on('click', function() {
+        buttonHasProducer.classList.remove('report-button-active');
+        searchType = 'filename';
+        searchValue = $('#input-file-summary-search-filename').val();
+        table.ajax.reload();
+    });
+    $('#' + buttonHasProducer.id).off('click').on('click', function() {
+        buttonHasProducer.classList.toggle('report-button-active');
+        searchType = 'has-producer';
+        searchValue = '';
+        table.ajax.reload();
+    });
+    $('#' + buttonReset.id).off('click').on('click', function() {
+        buttonSearchFilename.classList.remove('report-button-active');
+        buttonHasProducer.classList.remove('report-button-active');
+        searchType = '';
+        searchValue = '';
+        table.ajax.reload();
+    });
 }
 
 function loadPage(dataName, page, perPage) {
