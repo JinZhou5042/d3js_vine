@@ -240,8 +240,8 @@ def process_subgraph(args):
 
 def generate_subgraphs(graph):
     print(f"Processing subgraphs with {cpu_count()} cores...")
-    graph_info = {}
 
+    graph_info = {}
     pbar = tqdm.tqdm(total=len(graph.subgraphs))
     with Pool(cpu_count()) as pool:
         results = pool.imap_unordered(process_subgraph, [(graph, subgraph, i + 1) for i, subgraph in enumerate(graph.subgraphs)])
@@ -306,7 +306,14 @@ if __name__ == '__main__':
     graph = generate_graph()
     graph_info = generate_subgraphs(graph)
 
+    # update graph_id for each task
+    for i, subgraph in enumerate(graph.subgraphs):
+        for task_id in subgraph:
+            task_info[task_id]['graph_id'] = i + 1
+
     graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
     graph_info_df.to_csv(os.path.join(dirname, 'graph_info.csv'), index=False)
     task_done_df = pd.DataFrame.from_dict(task_info, orient='index')
-    task_done_df.to_csv(os.path.join(dirname, 'task_done.csv'), index=False)
+
+    task_done_df.index.name = 'task_id'
+    task_done_df.to_csv(os.path.join(dirname, 'task_done.csv'), index=True)

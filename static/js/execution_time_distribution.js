@@ -20,7 +20,7 @@ const svgContainer = document.getElementById('task-execution-time-distribution-c
 const svgElement = d3.select('#task-execution-time-distribution-svg');
 
 var dotRadius = 3;
-const defaultColor = "#145ca0";
+const lineColor = "#145ca0";
 const dotColor = "#8c1a11";
 const highlightColor = "orange";
 const tooltip = document.getElementById('vine-tooltip');
@@ -111,7 +111,7 @@ function cdfplot(svg) {
     svg.append("path")
         .datum(cdfData)
         .attr("fill", "none")
-        .attr("stroke", defaultColor)
+        .attr("stroke", lineColor)
         .attr("stroke-width", 2)
         .attr("d", lineGenerator);
 
@@ -123,7 +123,7 @@ function cdfplot(svg) {
         .attr("cx", d => xScale(d.execution_time))
         .attr("cy", d => yScale(d.probability))
         .attr("r", dotRadius)
-        .attr("fill", "red")
+        .attr("fill", dotColor)
         .on("mouseover", function(event, d) {
             d3.select(this)
                 .attr('r', dotRadius * 2)
@@ -191,7 +191,7 @@ function scatterplot(svg) {
         .attr("cx", d => xScale(d.task_id))
         .attr("cy", d => yScale(d.execution_time))
         .attr("r", dotRadius)
-        .style("fill", defaultColor);
+        .style("fill", lineColor);
 
     points.on("mouseover", function(event, d) {
         d3.select(this)
@@ -205,12 +205,12 @@ function scatterplot(svg) {
         tooltip.style.top = (event.pageY + 10) + 'px';
         tooltip.style.left = (event.pageX + 10) + 'px';
     })
-    .on("mouseout", function(d) {
-        d3.select(this)
-            .attr('r', dotRadius)
-            .style("fill", defaultColor);
-        tooltip.style.visibility = 'hidden';
-    });
+        .on("mouseout", function(d) {
+            d3.select(this)
+                .attr('r', dotRadius)
+                .style("fill", dotColor);
+            tooltip.style.visibility = 'hidden';
+        });
 }
 
 function handleDownloadClick() {
