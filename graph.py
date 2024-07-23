@@ -173,7 +173,7 @@ class OrthogonalListGraph:
             else:
                 # plot edges from input files to this task
                 for input_file in task_info[task_id]['input_files']:
-                    file = general_statistics_file_df[general_statistics_file_df['filename'] == input_file].iloc[0]
+                    file = file_info_df[file_info_df['filename'] == input_file].iloc[0]
                     actual_producer_task_id = 0
                     actual_producer_task = None
                     for producer_task_id in file['producers']:
@@ -299,9 +299,9 @@ if __name__ == '__main__':
     task_done_df['output_files'] = task_done_df['output_files'].apply(safe_literal_eval)
     task_info = task_done_df.set_index('task_id', inplace=False).to_dict('index') 
 
-    general_statistics_file_df = pd.read_csv(os.path.join(dirname, 'general_statistics_file.csv'))
-    general_statistics_file_df['producers'] = general_statistics_file_df['producers'].apply(safe_literal_eval)
-    general_statistics_file_df['consumers'] = general_statistics_file_df['consumers'].apply(safe_literal_eval)
+    file_info_df = pd.read_csv(os.path.join(dirname, 'file_info.csv'))
+    file_info_df['producers'] = file_info_df['producers'].apply(safe_literal_eval)
+    file_info_df['consumers'] = file_info_df['consumers'].apply(safe_literal_eval)
     
     graph = generate_graph()
     graph_info = generate_subgraphs(graph)

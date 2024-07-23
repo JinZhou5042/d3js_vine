@@ -17,6 +17,8 @@ import numpy as np
 
 # initialize the global variables
 task_info, task_try_count, library_info, worker_info, manager_info, file_info = {}, {}, {}, {}, {}, {}
+task_start_timestamp = 'time_worker_start'
+task_finish_timestamp = 'time_worker_end'
 
 ############################################################################################################
 # Helper functions
@@ -35,6 +37,7 @@ def timestamp_to_datestring(unix_timestamp):
     return datestring
 
 def get_worker_ip_port_by_hash(worker_address_hash_map, worker_hash):
+    # worker_address_hash_map: {(ip, port): hash}
     workers_by_ip_port = []
     for k, v in worker_address_hash_map.items():
         if v == worker_hash:
@@ -201,7 +204,9 @@ def parse_txn():
                         task['when_done'] = timestamp
                         task['done_status'] = done_info[0] if len(done_info) > 0 else None
                         task['done_code'] = done_info[1] if len(done_info) > 1 else None
-                        worker_info[worker_hash]['tasks_completed'].add(task_id)
+                        if task_id in worker_info[worker_hash]['tasks_completed']:
+                            print(f"Warning: task {task_id} is completed twice on worker {worker_hash}")
+                        worker_info[worker_hash]['tasks_completed'].append(task_id)
             if category == 'WORKER':
                 if not obj_id.startswith('worker'):
                     continue
@@ -214,7 +219,7 @@ def parse_txn():
                             'worker_machine_name': None,
                             'worker_ip': None,
                             'worker_port': None,
-                            'tasks_completed': set(),
+                            'tasks_completed': [],
                             'cores': None,
                             'memory(MB)': None,
                             'disk(MB)': None,
@@ -243,7 +248,6 @@ def parse_txn():
                     elif status == 'CACHE_UPDATE':
                         # will handle in debug parsing
                         pass
-    
 
             if category == 'LIBRARY':
                 if status == 'SENT':
@@ -563,9 +567,8 @@ def parse_taskgraph():
     
     # calculate the size of input and output files
     print(f"Generating file_info.csv...")
-    data = []
     for filename, info in file_info.items():
-        cleaned_records = []
+        active_worker_holding = []
         for record in info['worker_holding']:
             # an inactive worker, skip
             if record['worker_hash'] not in worker_info:
@@ -574,28 +577,19 @@ def parse_taskgraph():
             time_stage_in = round(record['time_stage_in'], 2)
             time_stage_out = round(record['time_stage_out'], 2)
             life_time = round(time_stage_out - time_stage_in, 2)
-            cleaned_records.append([worker_id, time_stage_in, time_stage_out, life_time])
-        cleaned_records.sort(key=lambda x: x[1])
+            active_worker_holding.append([worker_id, time_stage_in, time_stage_out, life_time])
+        active_worker_holding.sort(key=lambda x: x[1])
         info['num_workers_holding'] = len(info['worker_holding'])
         del info['worker_holding']
-        info['worker_holding'] = cleaned_records
+        info['worker_holding'] = active_worker_holding
         # remove files that are not produced by any task
         if not info['producers']:
             continue
-        data.append({
-            'filename': filename,
-            'size(MB)': info['size(MB)'],
-            'num_worker_holding': len(info['worker_holding']),
-            'producers': info['producers'],
-            'consumers': info['consumers']
-        })
+
     # save the file_info into a csv file, should use filename as key
     file_info_df = pd.DataFrame.from_dict(file_info, orient='index')
     file_info_df.index.name = 'filename'
     file_info_df.to_csv(os.path.join(dirname, 'file_info.csv'))
-
-    file_info_df = pd.DataFrame(data)
-    file_info_df.to_csv(os.path.join(dirname, 'general_statistics_file.csv'), index=False)
 
 
 def parse_daskvine_log():
@@ -630,7 +624,7 @@ def parse_daskvine_log():
 ############################################################################################################
 
 
-def generate_worker_summary(task_df, worker_disk_usage_df):
+def generate_worker_summary(worker_disk_usage_df):
     print(f"Generating worker_summary.csv...")
 
     rows = []
@@ -653,14 +647,17 @@ def generate_worker_summary(task_df, worker_disk_usage_df):
             'peak_disk_usage(%)': 0,
         }
         # calculate the number of tasks done by this worker
-        row['num_tasks_completed'] = len(len(worker_info[worker_hash]['tasks_completed']))
+        row['num_tasks_completed'] = len(worker_info[worker_hash]['tasks_completed'])
         # check if this worker has any disk updates
         if not worker_disk_usage_df.empty and worker_disk_usage_df['worker_hash'].isin([worker_hash]).any():
             row['peak_disk_usage(MB)'] = worker_disk_usage_df[worker_disk_usage_df['worker_hash'] == worker_hash]['disk_usage(MB)'].max()
             row['peak_disk_usage(%)'] = worker_disk_usage_df[worker_disk_usage_df['worker_hash'] == worker_hash]['disk_usage(%)'].max()
         # the worker may not complete any tasks
         if row['num_tasks_completed'] > 0:
-            row['avg_task_runtime(s)'] = task_df[task_df['worker_committed'] == worker_hash]['time_worker_end'].mean() - task_df[task_df['worker_committed'] == worker_hash]['time_worker_start'].mean()
+            total_execution_time = 0
+            for task_id in worker_info[worker_hash]['tasks_completed']:
+                total_execution_time += task_info[(task_id, task_try_count[task_id])][task_finish_timestamp] - task_info[(task_id, task_try_count[task_id])][task_start_timestamp]
+            row['avg_task_runtime(s)'] = total_execution_time / row['num_tasks_completed']
         if len(info['time_connected']) != len(info['time_disconnected']):
             info['time_disconnected'].append(manager_info['time_end'])
             # raise ValueError("time_connected and time_disconnected have different lengths.")
@@ -677,61 +674,28 @@ def generate_worker_summary(task_df, worker_disk_usage_df):
 
     return worker_summary_df
 
-def generate_general_statistics(task_df, worker_summary_df):
+def generate_other_statistics(task_df, worker_summary_df):
     #####################################################
     # General Statistics
-    print("Generating general_statistics.csv...")
-    general_statistics_task_df = task_df.groupby('category').agg({
-        'task_id': 'nunique',
-        'when_ready': lambda x: (x > 0).sum(),
-        'when_running': lambda x: (x > 0).sum(),
-        'when_waiting_retrieval': lambda x: (x > 0).sum(),
-        'when_retrieved': lambda x: (x > 0).sum(),
-        'when_done': lambda x: (x > 0).sum(),
-        'worker_id': 'nunique',
-    }).rename(columns={
-        'task_id': 'submitted',
-        'when_ready': 'ready',
-        'when_running': 'running',
-        'when_waiting_retrieval': 'waiting_retrieval',
-        'when_retrieved': 'retrieved',
-        'when_done': 'done',
-        'worker_id': 'workers',
-    }).reset_index()
-    total_df = pd.DataFrame(columns=general_statistics_task_df.columns)
-    total_df.loc[0, 'category'] = 'TOTAL'
-    for col in ['submitted', 'ready', 'running', 'waiting_retrieval', 'retrieved', 'done']:
-        total_df.loc[0, col] = general_statistics_task_df[col].sum()
-    total_df.loc[0, 'workers'] = task_df['worker_id'].nunique()
-    general_statistics_task_df = pd.concat([general_statistics_task_df, total_df], ignore_index=True)
-    general_statistics_task_df = general_statistics_task_df.sort_values('submitted', ascending=False)
-    general_statistics_task_df.to_csv(os.path.join(dirname, 'general_statistics_task.csv'), index=False)
+    print("Generating other statistics...")
+    # calculate the number of tasks submitted, ready, running, waiting_retrieval, retrieved, done
 
-    general_statistics_worker_df = pd.DataFrame(worker_summary_df)
-    # convert time_connected and time_disconnected to datetime
-    general_statistics_worker_df['time_connected'] = general_statistics_worker_df['time_connected'].apply(int)
-    general_statistics_worker_df['time_disconnected'] = general_statistics_worker_df['time_disconnected'].apply(int)
-    general_statistics_worker_df['time_connected'] = pd.to_datetime(general_statistics_worker_df['time_connected'], unit='s')
-    general_statistics_worker_df['time_disconnected'] = pd.to_datetime(general_statistics_worker_df['time_disconnected'], unit='s')
-    # round the values
-    general_statistics_worker_df[['avg_task_runtime(s)', 'peak_disk_usage(MB)', 'peak_disk_usage(%)', 'lifetime(s)']] = general_statistics_worker_df[['avg_task_runtime(s)', 'peak_disk_usage(MB)', 'peak_disk_usage(%)', 'lifetime(s)']].round(2)
-    general_statistics_worker_df.to_csv(os.path.join(dirname, 'general_statistics_worker.csv'), index=False)
     #####################################################
 
     #####################################################
     # Add info into manager_info
-    print("Generating general_statistics_manager.csv...")
+    print("Generating manager_info.csv...")
 
-    events = pd.concat([
+    worker_connection_events_df = pd.concat([
         pd.DataFrame({'time': worker_summary_df['time_connected'], 'type': 'connect', 'worker_id': worker_summary_df['worker_id']}),
         pd.DataFrame({'time': worker_summary_df['time_disconnected'], 'type': 'disconnect', 'worker_id': worker_summary_df['worker_id']})
     ])
+    worker_connection_events_df = worker_connection_events_df.sort_values('time')
 
-    events = events.sort_values('time')
     parallel_workers = 0
     worker_connection_events = []
     worker_connection_events.append((manager_info['time_start'], 0, 'manager_start', -1))
-    for _, event in events.iterrows():
+    for _, event in worker_connection_events_df.iterrows():
         if event['type'] == 'connect':
             parallel_workers += 1
         else:
@@ -741,14 +705,14 @@ def generate_general_statistics(task_df, worker_summary_df):
     worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_connections.csv'), index=False)
 
     manager_info['max_concurrent_workers'] = max([x[1] for x in worker_connection_events])
-    row_task_total = general_statistics_task_df[general_statistics_task_df['category'] == 'TOTAL']
-    manager_info['tasks_submitted'] = row_task_total['submitted'].iloc[0]
+    # a task may be submitted multiple times
+    manager_info['tasks_submitted'] = len(task_info)
     manager_info['time_start_human'] = timestamp_to_datestring(manager_info['time_start'])
     manager_info['time_end_human'] = timestamp_to_datestring(manager_info['time_end'])
     # the max try_id in task_df
     manager_info['max_task_try_count'] = task_df['try_id'].max()
     manager_info_df = pd.DataFrame([manager_info])
-    manager_info_df.to_csv(os.path.join(dirname, 'general_statistics_manager.csv'), index=False)
+    manager_info_df.to_csv(os.path.join(dirname, 'manager_info.csv'), index=False)
     #####################################################
 
 def generate_library_summary():
@@ -756,7 +720,7 @@ def generate_library_summary():
     library_df.to_csv(os.path.join(dirname, 'library_summary.csv'), index=False)
 
 
-def handle_task_info():
+def generate_task_df():
     print("Generating task.csv...")
 
     task_df = pd.DataFrame.from_dict(task_info, orient='index')
@@ -813,13 +777,10 @@ def handle_task_info():
             # if task['is_recovery_task']:
             #    continue
             parent_task = task_info[(p, task_try_count[p])]
-            task_start_timestamp = 'time_worker_start'
-            task_finish_timestamp = 'time_worker_end'
             time_period = task[task_start_timestamp] - parent_task[task_finish_timestamp]
 
             if time_period < 0:
-                # it means that this input file is lost after this task is done
-                # and it is used as another task's input file
+                # it means that this input file is lost after this task is done and it is used as another task's input file
                 continue
             if time_period < shorted_waiting_time:
                 shorted_waiting_time = task[task_start_timestamp] - parent_task[task_finish_timestamp]
@@ -897,61 +858,6 @@ def generate_worker_disk_usage():
 
     return worker_disk_usage_df
 
-def handle_file_info():
-    print(f"Generating file_info.csv...")
-    data = []
-    for filename, info in file_info.items():
-        cleaned_records = []
-        for record in info['worker_holding']:
-            # an inactive worker, skip
-            if record['worker_hash'] not in worker_info:
-                continue
-            worker_id = worker_info[record['worker_hash']]['worker_id']
-            time_stage_in = round(record['time_stage_in'], 2)
-            time_stage_out = round(record['time_stage_out'], 2)
-            life_time = round(time_stage_out - time_stage_in, 2)
-            cleaned_records.append([worker_id, time_stage_in, time_stage_out, life_time])
-        cleaned_records.sort(key=lambda x: x[1])
-        info['num_workers_holding'] = len(info['worker_holding'])
-        del info['worker_holding']
-        info['worker_holding'] = cleaned_records
-        # remove files that are not produced by any task
-        if not info['producers']:
-            continue
-        data.append({
-            'filename': filename,
-            'size(MB)': info['size(MB)'],
-            'num_worker_holding': len(info['worker_holding']),
-            'producers': info['producers'],
-            'consumers': info['consumers']
-        })
-    # save the file_info into a csv file, should use filename as key
-    file_info_df = pd.DataFrame.from_dict(file_info, orient='index')
-    file_info_df.index.name = 'filename'
-    file_info_df.to_csv(os.path.join(dirname, 'file_info.csv'))
-
-    file_info_df = pd.DataFrame(data)
-    file_info_df.to_csv(os.path.join(dirname, 'general_statistics_file.csv'), index=False)
-    return file_info_df
-
-def generate_data():
-
-    parse_txn()
-
-    if not args.execution_details_only:
-        parse_debug()
-        parse_taskgraph()
-
-    parse_daskvine_log()
-    task_df = handle_task_info()
-    worker_disk_usage_df  = generate_worker_disk_usage()
-    worker_summary_df = generate_worker_summary(task_df, worker_disk_usage_df)
-    
-    generate_general_statistics(task_df, worker_summary_df)
-
-    # for function calls
-    generate_library_summary()
-
 
 if __name__ == '__main__':
 
@@ -966,7 +872,18 @@ if __name__ == '__main__':
     taskgraph = os.path.join(dirname, 'taskgraph')
     daskvine_log = os.path.join(dirname, 'daskvine.log')
 
-    # task_id -> max try_count
-    task_try_count = {}
+    parse_txn()
 
-    generate_data()
+    if not args.execution_details_only:
+        parse_debug()
+        parse_taskgraph()
+
+    parse_daskvine_log()
+
+    task_df = generate_task_df()
+    worker_disk_usage_df  = generate_worker_disk_usage()
+    worker_summary_df = generate_worker_summary(worker_disk_usage_df)
+    generate_other_statistics(task_df, worker_summary_df)
+
+    # for function calls
+    generate_library_summary()

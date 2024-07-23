@@ -22,9 +22,7 @@ window.addEventListener('load', function() {
 
         const files = [
             { name: 'generalStatisticsManager', url: `logs/${window.logName}/vine-logs/general_statistics_manager.csv` },
-            { name: 'generalStatisticsTask', url: `logs/${window.logName}/vine-logs/general_statistics_task.csv` },
-            { name: 'generalStatisticsWorker', url: `logs/${window.logName}/vine-logs/general_statistics_worker.csv` },
-            { name: 'generalStatisticsFile', url: `logs/${window.logName}/vine-logs/general_statistics_file.csv` },
+            { name: 'categoryInfo', url: `logs/${window.logName}/vine-logs/category_info.csv` },
             { name: 'graphInfo', url: `logs/${window.logName}/vine-logs/graph_info.csv` },
             { name: 'taskDone', url: `logs/${window.logName}/vine-logs/task_done.csv` },
             { name: 'taskFailedOnManager', url: `logs/${window.logName}/vine-logs/task_failed_on_manager.csv` },
