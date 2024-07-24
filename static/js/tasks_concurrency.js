@@ -70,7 +70,8 @@ function plotTasksConcurrency() {
 
     const line = d3.line()
         .x(d => xScale(d.time - window.minTime))
-        .y(d => yScale(d.concurrent_tasks));
+        .y(d => yScale(d.concurrent_tasks))
+        .curve(d3.curveStepAfter);
     svg.append("path")
         .datum(taskConcurrency)
         .attr("fill", "none")
@@ -114,7 +115,6 @@ function handleResetClick() {
 }
 
 window.parent.document.addEventListener('dataLoaded', function() {
-
     plotTasksConcurrency();
 
     buttonDownload.removeEventListener('click', handleDownloadClick);

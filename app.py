@@ -1,5 +1,4 @@
 from flask import Flask, render_template, jsonify, Response, request, send_from_directory
-from generate_d3_input import generate_data
 import os
 import argparse
 import ast
@@ -46,7 +45,7 @@ def get_tasks():
     search_type = request.args.get('search[type]', '')
     timestamp_type = request.args.get('timestamp_type')
 
-    manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_manager.csv'))
+    manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'manager_info.csv'))
     time_manager_start = manager_info_df['time_start'][0]
 
     task_done_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_done.csv')).fillna('N/A')
@@ -102,7 +101,7 @@ def get_tasks_failed():
     search_type = request.args.get('search[type]', '')
     timestamp_type = request.args.get('timestamp_type')
 
-    manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_manager.csv'))
+    manager_info_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'manager_info.csv'))
     time_manager_start = manager_info_df['time_start'][0]
 
     tasks_failed_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_failed_on_worker.csv')).fillna('N/A')
@@ -309,26 +308,11 @@ def serve_file(filename):
     return Response(generate(), mimetype='text/plain')
 
 
-def process_logs():
-    with os.scandir(LOGS_DIR) as entries:
-        for entry in sorted(entries, key=lambda e: e.name):
-            log_dir = os.path.join(LOGS_DIR, entry.name)
-            if os.path.isdir(log_dir):
-                # if the folder does not contain vine-logs, or it is empty, skip
-                if not os.path.exists(os.path.join(log_dir, 'vine-logs')) or not os.listdir(os.path.join(log_dir, 'vine-logs')):
-                    continue
-                
-                print(f"Processing Log: {log_dir} ...")
-                generate_data(log_dir)
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--generate-data', default=False)
     args = parser.parse_args()
 
     kill_process_on_port(9122)
-    if args.generate_data:
-        process_logs()
         
     app.run(host='0.0.0.0', port=9122, debug=True)

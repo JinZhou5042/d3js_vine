@@ -298,9 +298,7 @@ function loadPage(dataName, page, perPage) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error status:', status);
-            console.error('Error details:', error);
-            console.error('Server response:', xhr.responseText);
+            console.error('Error loading page:', error);
         }
     });
 }
@@ -308,9 +306,9 @@ function loadPage(dataName, page, perPage) {
 window.parent.document.addEventListener('dataLoaded', function() {
     loadPage('tasks_completed', 1, 50);
     document.getElementById('button-tasks-completed-reset-table').click();
-    loadPage('tasksFailed', 1, 50);
+    /*loadPage('tasksFailed', 1, 50);
     loadPage('worker', 1, 50);
     loadPage('dag', 1, 50);
-    loadPage('file', 1, 50);
+    loadPage('file', 1, 50);*/
 });
 

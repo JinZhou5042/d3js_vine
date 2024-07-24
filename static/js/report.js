@@ -1,7 +1,7 @@
 import { setupZoomAndScroll, fetchFile } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotWorkerDiskUsage } from './worker_disk_usage.js';
-import { plotDAGComponentByID } from './dag.js';
+import { plotDAGComponentByID } from './graph.js';
 
 
 window.addEventListener('load', function() {
@@ -21,7 +21,7 @@ window.addEventListener('load', function() {
         }
 
         const files = [
-            { name: 'generalStatisticsManager', url: `logs/${window.logName}/vine-logs/general_statistics_manager.csv` },
+            { name: 'generalStatisticsManager', url: `logs/${window.logName}/vine-logs/manager_info.csv` },
             { name: 'categoryInfo', url: `logs/${window.logName}/vine-logs/category_info.csv` },
             { name: 'graphInfo', url: `logs/${window.logName}/vine-logs/graph_info.csv` },
             { name: 'taskDone', url: `logs/${window.logName}/vine-logs/task_done.csv` },
@@ -31,7 +31,7 @@ window.addEventListener('load', function() {
             { name: 'workerSummary', url: `logs/${window.logName}/vine-logs/worker_summary.csv` },
             { name: 'workerDiskUpdate', url: `logs/${window.logName}/vine-logs/worker_disk_usage.csv` },
             { name: 'fileInfo', url: `logs/${window.logName}/vine-logs/file_info.csv` },
-            { name: 'workerConnections', url: `logs/${window.logName}/vine-logs/worker_connections.csv` },
+            { name: 'workerConcurrency', url: `logs/${window.logName}/vine-logs/worker_concurrency.csv` },
         ];
         for (const file of files) {
             try {

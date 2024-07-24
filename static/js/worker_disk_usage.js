@@ -16,9 +16,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
 
     const groupedworkerDiskUpdate = d3.group(window.workerDiskUpdate, d => d.worker_id);
     
-    // get the minTime, maxTime and maxDiskUsage
-    const minTime = window.time_manager_start;
-    const maxTime = window.time_manager_end;
+    // get the window.minTime, window.maxTime and maxDiskUsage
     let columnNameMB = 'disk_usage(MB)';
     let columnNamePercentage = 'disk_usage(%)';
     if (displayAccumulationOnly) {
@@ -44,7 +42,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
 
     // Setup scales
     const xScale = d3.scaleLinear()
-        .domain([0, maxTime - minTime])
+        .domain([0, window.maxTime - window.minTime])
         .range([0, svgWidth]);
     const yScale = d3.scaleLinear()
         .domain([0, maxDiskUsage])
@@ -80,13 +78,13 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
     // Create line generator
     const line = d3.line()
         .x(d => {
-            if (d.time - minTime < 0) {
-                console.log('d.time - minTime < 0, d.time = ', d.time, 'minTime = ', minTime);
+            if (d.time - window.minTime < 0) {
+                console.log('d.time - window.minTime < 0, d.time = ', d.time, 'window.minTime = ', window.minTime);
             }
-            if (isNaN(d.time - minTime)) {
-                console.log('d.time - minTime is NaN', d);
+            if (isNaN(d.time - window.minTime)) {
+                console.log('d.time - window.minTime is NaN', d);
             }
-            return xScale(d.time - minTime);
+            return xScale(d.time - window.minTime);
         })
         .y(d => {
             const diskUsage = displayDiskUsageByPercentage 
@@ -96,7 +94,8 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
                 console.log('diskUsage is NaN', d);
             }
             return yScale(diskUsage);
-        });
+        })
+        .curve(d3.curveStepAfter);
 
     // Draw accumulated disk usage
     const tooltip = document.getElementById('vine-tooltip');
@@ -110,13 +109,13 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
         } else if (highlightWorkerID !== null) {
             lineColor = 'lightgray';
         } else {
-            lineColor = d3.schemeCategory10[key % 10];
+            lineColor = d3.schemeCategory10[key % 10];   // Assign color using a categorical scheme
         }
         const path = svg.append("path")
             .datum(value)
             .attr("class", "line")
             .attr("fill", "none")
-            .attr("stroke", lineColor)  // Assign color using a categorical scheme
+            .attr("stroke", lineColor)
             .attr("original-color", lineColor)
             .attr("stroke-width", strokeWidth)
             .attr("original-stroke-width", strokeWidth)
@@ -201,7 +200,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
             const lineData = highlightedLine.datum();
 
             lineData.forEach(point => {
-                const pointX = point['time'] - minTime;
+                const pointX = point['time'] - window.minTime;
                 const pointY = point['disk_usage(MB)'];
     
                 const distance = Math.sqrt(Math.pow(positionX - pointX, 2) + Math.pow(positionY - pointY, 2));
@@ -213,12 +212,12 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
             });
     
             if (closestPoint) {
-                const pointX = xScale(closestPoint['time'] - minTime);
+                const pointX = xScale(closestPoint['time'] - window.minTime);
                 const pointY = yScale(closestPoint[displayDiskUsageByPercentage ? columnNamePercentage : columnNameMB]);
                 tooltip.innerHTML = `
                     worker id: ${closestPoint.worker_id}<br>
                     filename: ${closestPoint.filename}<br>
-                    time from start: ${(+closestPoint.time - minTime).toFixed(2)}s<br>
+                    time from start: ${(+closestPoint.time - window.minTime).toFixed(2)}s<br>
                     time in human: ${formatUnixTimestamp(+closestPoint.time)}<br>
                     disk contribute: ${(+closestPoint['size(MB)']).toFixed(4)}MB<br>
                     disk usage: ${(+closestPoint[displayDiskUsageByPercentage ? columnNamePercentage : columnNameMB]).toFixed(2)}${displayDiskUsageByPercentage ? '%' : 'MB'}<br>

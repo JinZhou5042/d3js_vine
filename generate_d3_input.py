@@ -16,7 +16,7 @@ import numpy as np
 
 
 # initialize the global variables
-task_info, task_try_count, library_info, worker_info, manager_info, file_info = {}, {}, {}, {}, {}, {}
+task_info, task_try_count, library_info, worker_info, manager_info, file_info, category_info = {}, {}, {}, {}, {}, {}, {}
 task_start_timestamp = 'time_worker_start'
 task_finish_timestamp = 'time_worker_end'
 
@@ -63,16 +63,16 @@ def parse_txn():
             if line.startswith("#"):
                 continue
 
-            timestamp, _, category, obj_id, status, *info = line.split(maxsplit=5)
+            timestamp, _, event_type, obj_id, status, *info = line.split(maxsplit=5)
 
             try:
-                timestamp = float(timestamp) / 1000000
+                timestamp = float(timestamp) / 1e6
             except ValueError:
                 continue
 
             info = info[0] if info else "{}"
 
-            if category == 'TASK':
+            if event_type == 'TASK':
                 task_id = int(obj_id)
                 if status == 'READY':
                     if task_id not in task_try_count:
@@ -207,7 +207,18 @@ def parse_txn():
                         if task_id in worker_info[worker_hash]['tasks_completed']:
                             print(f"Warning: task {task_id} is completed twice on worker {worker_hash}")
                         worker_info[worker_hash]['tasks_completed'].append(task_id)
-            if category == 'WORKER':
+                        # update category_info
+                        task_category = task['category']
+                        execution_time = round(task[task_finish_timestamp] - task[task_start_timestamp], 4)
+                        if task_category not in category_info:
+                            category_info[task_category] = {
+                                'id': len(category_info) + 1,  # starts from 1
+                                'tasks': [],
+                                'tasks_execution_time(s)': [],
+                            }
+                        category_info[task_category]['tasks'].append(task_id)
+                        category_info[task_category]['tasks_execution_time(s)'].append(execution_time)
+            if event_type == 'WORKER':
                 if not obj_id.startswith('worker'):
                     continue
                 if status == 'CONNECTION':
@@ -249,7 +260,7 @@ def parse_txn():
                         # will handle in debug parsing
                         pass
 
-            if category == 'LIBRARY':
+            if event_type == 'LIBRARY':
                 if status == 'SENT':
                     for library in library_info.values():
                         if library['task_id'] == obj_id:
@@ -258,7 +269,7 @@ def parse_txn():
                     for library in library_info.values():
                         if library['task_id'] == obj_id:
                             library['when_started'] = timestamp
-            if category == 'MANAGER':
+            if event_type == 'MANAGER':
                 if status == 'START':
                     manager_info['time_start'] = timestamp
                     manager_info['time_end'] = None
@@ -320,19 +331,20 @@ def parse_debug():
                     continue
                 putting_file = False
                 file_id = parts.index("file")
+                worker_ip, worker_port = parts[file_id - 1][1:-2].split(':')
+                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
                 filename = parts[file_id + 1]
                 size_in_mb = int(parts[file_id + 2]) / 2**20
                 start_time = float(parts[file_id + 4])
                 if start_time < manager_info['time_start']:
                     if abs(start_time - manager_info['time_start']) < 1:
-                        start_time = manager_info['time_start']
+                        # manager_info['time_start'] is more accurate
+                        start_time = worker_info[worker_hash]['time_connected'][0]
                     elif start_time == 0:
                         # we have a special file with start time 0
-                        start_time = manager_info['time_start']
+                        start_time = worker_info[worker_hash]['time_connected'][0]
                     else:
                         print(f"Warning: put start time {start_time} of file {filename} on worker {worker_hash} is before manager start time {manager_info['time_start']}")
-                worker_ip, worker_port = parts[file_id - 1][1:-2].split(':')
-                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
                 # this is the first time the file is cached on this worker
                 # assume the start time is the same as the stage in time if put by the manager
                 if filename not in worker_info[worker_hash]['disk_update']:
@@ -677,9 +689,17 @@ def generate_worker_summary(worker_disk_usage_df):
 def generate_other_statistics(task_df, worker_summary_df):
     #####################################################
     # General Statistics
-    print("Generating other statistics...")
+    print("Generating category statistics...")
     # calculate the number of tasks submitted, ready, running, waiting_retrieval, retrieved, done
-
+    for category, info in category_info.items():
+        info['num_tasks'] = len(info['tasks'])
+        info['total_task_execution_time(s)'] = round(sum(info['tasks_execution_time(s)']), 4)
+        info['avg_task_execution_time(s)'] = round(info['total_task_execution_time(s)'] / info['num_tasks'], 4)
+        info['max_task_execution_time(s)'] = max(info['tasks_execution_time(s)'])
+        info['min_task_execution_time(s)'] = min(info['tasks_execution_time(s)'])
+    category_info_df = pd.DataFrame.from_dict(category_info, orient='index')
+    category_info_df.index.name = 'category'
+    category_info_df.to_csv(os.path.join(dirname, 'category_info.csv'), index=True)
     #####################################################
 
     #####################################################
@@ -692,17 +712,18 @@ def generate_other_statistics(task_df, worker_summary_df):
     ])
     worker_connection_events_df = worker_connection_events_df.sort_values('time')
 
-    parallel_workers = 0
+    current_concurrent_workers = 0
+    concurrent_workers_list = []
     worker_connection_events = []
     worker_connection_events.append((manager_info['time_start'], 0, 'manager_start', -1))
     for _, event in worker_connection_events_df.iterrows():
         if event['type'] == 'connect':
-            parallel_workers += 1
+            current_concurrent_workers += 1
         else:
-            parallel_workers -= 1
-        worker_connection_events.append((event['time'], parallel_workers, event['type'], event['worker_id']))
-    worker_connection_events_df = pd.DataFrame(worker_connection_events, columns=['time', 'parallel_workers', 'event', 'worker_id'])
-    worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_connections.csv'), index=False)
+            current_concurrent_workers -= 1
+        concurrent_workers_list.append(current_concurrent_workers)
+    worker_connection_events_df['concurrent_workers'] = concurrent_workers_list
+    worker_connection_events_df.to_csv(os.path.join(dirname, 'worker_concurrency.csv'), index=False)
 
     manager_info['max_concurrent_workers'] = max([x[1] for x in worker_connection_events])
     # a task may be submitted multiple times

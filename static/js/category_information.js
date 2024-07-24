@@ -13,7 +13,7 @@
 </div>
 */
 
-import { downloadSVG, setupZoomAndScroll } from './tools.js';
+import { downloadSVG } from './tools.js';
 
 const buttonReset = document.getElementById('button-reset-task-category-information');
 const buttonDownload = document.getElementById('button-download-task-category-information');
@@ -46,6 +46,8 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
         d.task_id = +d.task_id;
         d.execution_time = +d.execution_time;
     });
+
+    const categoryInfo = window.categoryInfo;
 
     const categories = d3.group(taskDone, d => d.category);
     let categoryToId = new Map();
