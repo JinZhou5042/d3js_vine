@@ -37,13 +37,13 @@ function drawTaskCompletedTable(url) {
                 d.search.value = searchValue;
                 d.timestamp_type = timestampType;
             },
-            "dataSrc": function(json) {
-                json.data.forEach(function(task) {
+            "dataSrc": function(response) {
+                response.data.forEach(function(task) {
                     task.task_id = parseInt(task.task_id, 10);
                     task.try_id = parseInt(task.try_id, 10);
                     task.worker_id = parseInt(task.worker_id, 10);
                 });
-                return json.data;
+                return response.data;
             }
         },
         "columns": [
@@ -193,7 +193,8 @@ function drawWorkerTable(url) {
             { "data": "cores" },
             { "data": "memory(MB)" },
             { "data": "disk(MB)" },
-            { "data": "tasks_done" },
+            { "data": "num_tasks_completed" },
+            { "data": "num_tasks_failed" },
             { "data": "avg_task_runtime(s)" },
             { "data": "peak_disk_usage(MB)" },
             { "data": "peak_disk_usage(%)" },
@@ -215,7 +216,7 @@ function drawDAGTable(url) {
         "columns": [
             { "data": "graph_id" },
             { "data": "num_tasks" },
-            { "data": "time_critical_path" },
+            { "data": "time_completion" },
             { "data": "num_critical_tasks" },
             { "data": "critical_tasks" },
         ],
@@ -297,8 +298,8 @@ function loadPage(dataName, page, perPage) {
                 drawFileTable(url);
             }
         },
-        error: function(xhr, status, error) {
-            console.error('Error loading page:', error);
+        error: function() {
+            console.error('Error loading dataName:', dataName);
         }
     });
 }
@@ -306,9 +307,9 @@ function loadPage(dataName, page, perPage) {
 window.parent.document.addEventListener('dataLoaded', function() {
     loadPage('tasks_completed', 1, 50);
     document.getElementById('button-tasks-completed-reset-table').click();
-    /*loadPage('tasksFailed', 1, 50);
+    loadPage('tasksFailed', 1, 50);
     loadPage('worker', 1, 50);
     loadPage('dag', 1, 50);
-    loadPage('file', 1, 50);*/
+    loadPage('file', 1, 50);
 });
 

@@ -1,9 +1,11 @@
-import { downloadSVG } from './tools.js';
+import { downloadSVG, getTaskInnerHTML } from './tools.js';
 
 const buttonReset = document.getElementById('button-reset-task-execution-details');
 const buttonDownload = document.getElementById('button-download-task-execution-details');
 const svgContainer = document.getElementById('execution-details-container');
 const svgElement = d3.select('#execution-details');
+
+const tooltip = document.getElementById('vine-tooltip');
 
 const colors = {
     'workers': {
@@ -55,7 +57,6 @@ export function plotExecutionDetails() {
 
     ////////////////////////////////////////////
     // create rectanges for each worker
-    const tooltip = document.getElementById('vine-tooltip');
     const workerEntries = window.workerSummary.map(d => ({
         worker: d.worker_hash,
         Info: {
@@ -126,7 +127,7 @@ export function plotExecutionDetails() {
                 .attr('height', yScale.bandwidth())
                 .attr('fill', function(d) {
                     return d.is_recovery_task === "True" ? colors['recovery-tasks'].normal : colors['regular-tasks'].normal;
-                });            
+                });
             if (false) {
                 g.append('rect')
                 .attr('class', 'waiting-retrieval-on-worker')
@@ -149,20 +150,7 @@ export function plotExecutionDetails() {
             });
 
             // show tooltip
-            tooltip.innerHTML = `
-                task id: ${d.task_id}<br>
-                worker: ${d.worker_id} (core ${d.core_id})<br>
-                category: ${d.category.replace(/^<|>$/g, '')}<br>
-                execution time: ${(d.time_worker_end - d.time_worker_start).toFixed(2)}s<br>
-                input size: ${(d.size_input_mgr - 0).toFixed(4)}MB<br>
-                output size: ${(d.size_output_mgr - 0).toFixed(4)}MB<br>
-                when ready: ${(d.when_ready - window.minTime).toFixed(2)}s<br>
-                when running: ${(d.when_running - window.minTime).toFixed(2)}s<br>
-                when actually running: ${(d.time_worker_start - window.minTime).toFixed(2)}s<br>
-                when actually done: ${(d.time_worker_end - window.minTime).toFixed(2)}s<br>
-                when waiting retrieval: ${(d.when_waiting_retrieval - window.minTime).toFixed(2)}s<br>
-                when retrieved: ${(d.when_retrieved - window.minTime).toFixed(2)}s<br>
-                when done: ${(d.when_done - window.minTime).toFixed(2)}s<br>`;
+            tooltip.innerHTML = getTaskInnerHTML(d);
             tooltip.style.visibility = 'visible';
             tooltip.style.top = (event.pageY + 10) + 'px';
             tooltip.style.left = (event.pageX + 10) + 'px';
@@ -353,7 +341,7 @@ function setLegend() {
         .attr("x", rectX)
         .attr("y", rectY)
         .attr("fill", colors['regular-tasks'].normal);
-    
+
     legendCell = d3.select("#legend-failed-tasks");
     legendCell.selectAll('*').remove();
     var svg = legendCell

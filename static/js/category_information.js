@@ -41,78 +41,49 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
         .append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
-    var taskDone = window.taskDone;
-    taskDone.forEach(function(d) {
-        d.task_id = +d.task_id;
-        d.execution_time = +d.execution_time;
-    });
-
     const categoryInfo = window.categoryInfo;
+    categoryInfo.forEach(function(d) {
+        d.id = +d.id;
+        d.num_tasks = +d.num_tasks;
+        d['total_task_execution_time(s)'] = +d['total_task_execution_time(s)'];
+        d['avg_task_execution_time(s)'] = +d['avg_task_execution_time(s)'];
+        d['max_task_execution_time(s)'] = +d['max_task_execution_time(s)'];
+        d['min_task_execution_time(s)'] = +d['min_task_execution_time(s)'];
+    });
+    const maxExecutionTime = d3.max(categoryInfo, d => d['max_task_execution_time(s)']);
+    const maxAvgExecutionTime = d3.max(categoryInfo, d => d['avg_task_execution_time(s)']);
+    const maxNumTasks = d3.max(categoryInfo, d => d.num_tasks);
 
-    const categories = d3.group(taskDone, d => d.category);
-    let categoryToId = new Map();
-    let categoryId = 1;
-    taskDone = Array.from(categories, ([categoryName, tasks]) => {
-        if (!categoryToId.has(categoryName)) {
-            categoryToId.set(categoryName, categoryId++);
-        }
-        return { categoryId: categoryToId.get(categoryName), tasks: tasks, categoryName: categoryName, taskCount: tasks.length };
-    });
-    
-    taskDone.forEach(category => {
-        const avgExecutionTime = d3.mean(category.tasks, d => d.execution_time);
-        const maxExecutionTime = d3.max(category.tasks, d => d.execution_time);
-        const minExecutionTime = d3.min(category.tasks, d => d.execution_time);
-        category.avgExecutionTime = avgExecutionTime;
-        category.maxExecutionTime = maxExecutionTime;
-        category.minExecutionTime = minExecutionTime;
-    });
-    
     if (sortByAvgExecutionTime) {
-        // Sort taskDone by avgExecutionTime in descending order
-        taskDone.sort((a, b) => a.avgExecutionTime - b.avgExecutionTime);
+        categoryInfo.sort((a, b) => a['avg_task_execution_time(s)'] - b['avg_task_execution_time(s)']);
     } else {
-        // Sort taskDone by taskCount in descending order
-        taskDone.sort((a, b) => a.taskCount - b.taskCount);
+        categoryInfo.sort((a, b) => a.num_tasks - b.num_tasks);
     }
-    
     // Reassign category IDs based on sorted order
-    categoryId = 1;
-    taskDone.forEach(category => {
-        categoryToId.set(category.categoryName, categoryId);
-        category.categoryId = categoryId;
-        categoryId++;
-    });
-    const maxExecutionTime = d3.max(taskDone, d => d.maxExecutionTime);
-    taskDone.forEach(category => {
-        const avgExecutionTime = d3.mean(category.tasks, d => d.execution_time);
-        category.avgExecutionTime = avgExecutionTime;
-    });
-    const maxAvgExecutionTime = d3.max(taskDone, d => d.avgExecutionTime);
-    const maxTaskCount = d3.max(taskDone, d => d.taskCount);
+    categoryInfo.forEach((d, i) => d.sortID = i + 1);
     
     // Setup scaleBand and xAxis with dynamic tick values
-    const categoryIds = taskDone.map(d => d.categoryId);
+    const sortIDs = categoryInfo.map(d => d.sortID);
     let tickValues = [];
-    if (categoryIds.length >= 4) {
+    if (sortIDs.length >= 4) {
         tickValues = [
-            categoryIds[0],  // First element
-            categoryIds[Math.floor((categoryIds.length - 1) / 3)],  // One-third
-            categoryIds[Math.floor((categoryIds.length - 1) * 2 / 3)],  // Two-thirds
-            categoryIds[categoryIds.length - 1]  // Last element
+            sortIDs[0],  // First element
+            sortIDs[Math.floor((sortIDs.length - 1) / 3)],  // One-third
+            sortIDs[Math.floor((sortIDs.length - 1) * 2 / 3)],  // Two-thirds
+            sortIDs[sortIDs.length - 1]  // Last element
         ];
     } else {
-        tickValues = categoryIds;
+        tickValues = sortIDs;
     }
     const xScale = d3.scaleBand()
-        .domain(categoryIds)
+        .domain(sortIDs)
         .range([0, svgWidth])
         .padding(0.2);
 
     const xAxis = d3.axisBottom(xScale)
         .tickSizeOuter(0)
         .tickValues(tickValues)
-        .tickFormat(d => taskDone.find(e => e.categoryId === d).categoryId);
+        .tickFormat(d => categoryInfo.find(e => e.sortID === d).sortID);
 
     // Append and transform the x-axis on the SVG
     svg.append("g")
@@ -123,7 +94,7 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
 
     // Setup yScale and yAxis
     const yScaleLeft = d3.scaleLinear()
-        .domain([0, maxTaskCount])
+        .domain([0, maxNumTasks])
         .range([svgHeight, 0]);
     const yAxisLeft = d3.axisLeft(yScaleLeft)
         .tickSizeOuter(0)
@@ -224,11 +195,11 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
     ////////////////////////////////////////////////////////////
     /*
     svg.selectAll(".bar")
-        .data(taskDone)
+        .data(categoryInfo)
         .enter()
         .append("rect")
         .classed("bar", true)
-        .attr("x", d => xScale(d.categoryId) + (xScale.bandwidth() - Math.min(xScale.bandwidth(), maxBarWidth)) / 2)
+        .attr("x", d => xScale(d.sortID) + (xScale.bandwidth() - Math.min(xScale.bandwidth(), maxBarWidth)) / 2)
         .attr("y", d => yScaleLeft(d.taskCount))
         .attr("width", d => Math.min(xScale.bandwidth(), maxBarWidth)) 
         .attr("height", d => svgHeight - yScaleLeft(d.taskCount))
@@ -237,7 +208,7 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
             d3.select(this)
                 .attr('fill', highlightColor);
             tooltip.innerHTML = `
-                Category ID: ${d.categoryId}<br/>
+                Category ID: ${d.sortID}<br/>
                 Category Name: ${d.categoryName}<br/>
                 Number of tasks: ${d.taskCount}<br/>
                 Avg Execution Time: ${d.avgExecutionTime.toFixed(2)}<br/>
@@ -260,30 +231,30 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
     */
 
     var lineGenerator = d3.line()
-        .x(d => xScale(d.categoryId) + xScale.bandwidth() / 2)
-        .y(d => yScaleRight(d.avgExecutionTime));
+        .x(d => xScale(d.sortID) + xScale.bandwidth() / 2)
+        .y(d => yScaleRight(d['avg_task_execution_time(s)']));
     svg.append("path")
-        .datum(taskDone)
+        .datum(categoryInfo)
         .attr("fill", "none")
         .attr("stroke", lineAvgExecutionTimeColor)
         .attr("stroke-width", lineStrokeWidth)
         .attr("d", lineGenerator);
 
     lineGenerator = d3.line()
-        .x(d => xScale(d.categoryId) + xScale.bandwidth() / 2)
-        .y(d => yScaleRight(d.maxExecutionTime));
+        .x(d => xScale(d.sortID) + xScale.bandwidth() / 2)
+        .y(d => yScaleRight(d['max_task_execution_time(s)']));
     svg.append("path")
-        .datum(taskDone)
+        .datum(categoryInfo)
         .attr("fill", "none")
         .attr("stroke", lineMaxExecutionTimeColor)
         .attr("stroke-width", lineStrokeWidth)
         .attr("d", lineGenerator);
 
     lineGenerator = d3.line()
-        .x(d => xScale(d.categoryId) + xScale.bandwidth() / 2)
-        .y(d => yScaleLeft(d.taskCount));
+        .x(d => xScale(d.sortID) + xScale.bandwidth() / 2)
+        .y(d => yScaleLeft(d.num_tasks));
     svg.append("path")
-        .datum(taskDone)
+        .datum(categoryInfo)
         .attr("fill", "none")
         .attr("stroke", barColor)
         .attr("stroke-width", lineStrokeWidth)

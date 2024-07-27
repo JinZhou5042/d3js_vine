@@ -35,6 +35,21 @@ export function formatUnixTimestamp(unixTimestamp, format = 'YYYY-MM-DD HH:mm:ss
     }
 }
 
+export async function fetchCSVData(csvFilename) {
+    try {
+        const response = await axios.get(`get_csv_data`, {
+            params: {
+                log_name: logName,
+                csv_filename: csvFilename
+            }
+        });
+        return response.data;
+
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
 export async function fetchFile(filePath) {
     try {
         const response = await fetch(filePath);
@@ -142,4 +157,23 @@ export function downloadSVG(svgElementId, filename = null) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+
+export function getTaskInnerHTML(taskData) {
+    return `
+        task id: ${taskData.task_id}<br>
+        worker: ${taskData.worker_id} (core ${taskData.core_id})<br>
+        category: ${taskData.category.replace(/^<|>$/g, '')}<br>
+        execution time: ${(taskData.time_worker_end - taskData.time_worker_start).toFixed(2)}s<br>
+        input size: ${(taskData.size_input_mgr - 0).toFixed(4)}MB<br>
+        output size: ${(taskData.size_output_mgr - 0).toFixed(4)}MB<br>
+        when ready: ${(taskData.when_ready - window.minTime).toFixed(2)}s<br>
+        when running: ${(taskData.when_running - window.minTime).toFixed(2)}s<br>
+        when actually running: ${(taskData.time_worker_start - window.minTime).toFixed(2)}s<br>
+        when actually done: ${(taskData.time_worker_end - window.minTime).toFixed(2)}s<br>
+        when waiting retrieval: ${(taskData.when_waiting_retrieval - window.minTime).toFixed(2)}s<br>
+        when retrieved: ${(taskData.when_retrieved - window.minTime).toFixed(2)}s<br>
+        when done: ${(taskData.when_done - window.minTime).toFixed(2)}s<br>
+    `;
 }

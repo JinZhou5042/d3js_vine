@@ -1,4 +1,4 @@
-import { setupZoomAndScroll, fetchFile } from './tools.js';
+import { setupZoomAndScroll, fetchFile, fetchCSVData } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotWorkerDiskUsage } from './worker_disk_usage.js';
 import { plotDAGComponentByID } from './graph.js';
@@ -20,28 +20,18 @@ window.addEventListener('load', function() {
             headerTips[i].style.display = 'none';
         }
 
-        const files = [
-            { name: 'generalStatisticsManager', url: `logs/${window.logName}/vine-logs/manager_info.csv` },
-            { name: 'categoryInfo', url: `logs/${window.logName}/vine-logs/category_info.csv` },
-            { name: 'graphInfo', url: `logs/${window.logName}/vine-logs/graph_info.csv` },
-            { name: 'taskDone', url: `logs/${window.logName}/vine-logs/task_done.csv` },
-            { name: 'taskFailedOnManager', url: `logs/${window.logName}/vine-logs/task_failed_on_manager.csv` },
-            { name: 'taskFailedOnWorker', url: `logs/${window.logName}/vine-logs/task_failed_on_worker.csv` },
-            { name: 'taskConcurrency', url: `logs/${window.logName}/vine-logs/task_concurrency.csv` },
-            { name: 'workerSummary', url: `logs/${window.logName}/vine-logs/worker_summary.csv` },
-            { name: 'workerDiskUpdate', url: `logs/${window.logName}/vine-logs/worker_disk_usage.csv` },
-            { name: 'fileInfo', url: `logs/${window.logName}/vine-logs/file_info.csv` },
-            { name: 'workerConcurrency', url: `logs/${window.logName}/vine-logs/worker_concurrency.csv` },
-        ];
-        for (const file of files) {
-            try {
-                const response = await fetchFile(file.url);
-                window[`${file.name}CSV`] = response;
-                window[file.name] = d3.csvParse(response);
-            } catch (error) {
-                console.error(`Error fetching or parsing ${file.name} file:`, error);
-            }
-        }
+        window.generalStatisticsManager = await fetchCSVData("manager_info.csv");
+        window.taskDone = await fetchCSVData("task_done.csv");
+        window.taskConcurrency = await fetchCSVData("task_concurrency.csv");
+        window.taskFailedOnManager = await fetchCSVData("task_failed_on_manager.csv");
+        window.taskFailedOnWorker = await fetchCSVData("task_failed_on_worker.csv");
+        window.workerDiskUpdate = await fetchCSVData("worker_disk_usage.csv");
+        window.workerConcurrency = await fetchCSVData("worker_concurrency.csv");
+        window.workerSummary = await fetchCSVData("worker_summary.csv");
+        window.fileInfo = await fetchCSVData("file_info.csv");
+        window.categoryInfo = await fetchCSVData("category_info.csv");
+        window.graphInfo = await fetchCSVData("graph_info.csv");
+
         window.generalStatisticsManager = window.window.generalStatisticsManager[0];
         window.time_manager_start = window.generalStatisticsManager.time_start;
         window.time_manager_end = window.generalStatisticsManager.time_end;

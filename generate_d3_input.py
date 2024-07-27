@@ -83,6 +83,7 @@ def parse_txn():
                         # reset the coremap for the new try
                         for i in task['core_id']:
                             worker_coremap[task['worker_committed']][i] = 0
+                        worker_info[task['worker_committed']]['tasks_failed'].append(task_id)
                         task_try_count[task_id] += 1
                     task_category = info.split()[0]
                     try_id = task_try_count[task_id]
@@ -118,6 +119,7 @@ def parse_txn():
                         'done_status': None,
                         'done_code': None,
                         'category': task_category,
+                        'category_id': None,
 
                         'input_files': [],
                         'output_files': [],
@@ -212,12 +214,13 @@ def parse_txn():
                         execution_time = round(task[task_finish_timestamp] - task[task_start_timestamp], 4)
                         if task_category not in category_info:
                             category_info[task_category] = {
-                                'id': len(category_info) + 1,  # starts from 1
+                                'category_id': int(len(category_info) + 1),  # starts from 1
                                 'tasks': [],
                                 'tasks_execution_time(s)': [],
                             }
                         category_info[task_category]['tasks'].append(task_id)
                         category_info[task_category]['tasks_execution_time(s)'].append(execution_time)
+                        task['category_id'] = category_info[task_category]['category_id']
             if event_type == 'WORKER':
                 if not obj_id.startswith('worker'):
                     continue
@@ -231,6 +234,9 @@ def parse_txn():
                             'worker_ip': None,
                             'worker_port': None,
                             'tasks_completed': [],
+                            'tasks_failed': [],
+                            'num_tasks_completed': 0,
+                            'num_tasks_failed': 0,
                             'cores': None,
                             'memory(MB)': None,
                             'disk(MB)': None,
@@ -469,6 +475,10 @@ def parse_debug():
         for filename, worker_disk_update in worker['disk_update'].items():
             len_stage_in = len(worker_disk_update['when_stage_in'])
             len_stage_out = len(worker_disk_update['when_stage_out'])
+            if len_stage_in < len_stage_out:
+                print(f"Warning: file {filename} stage out more than stage in for worker {worker_hash}, stage_in: {len_stage_in}, stage_out: {len_stage_out}")
+                worker_disk_update['when_stage_out'] = worker_disk_update['when_stage_out'][:len_stage_in]
+                len_stage_out = len_stage_in
             if filename not in file_info:
                 file_info[filename] = {
                     'size(MB)': round(worker_disk_update['size(MB)'], 6),
@@ -476,6 +486,7 @@ def parse_debug():
                     'consumers': [],
                     'worker_holding': [],
                 }
+            # add the worker holding information
             for i in range(len_stage_out):
                 worker_holding = {
                     'worker_hash': worker_hash,
@@ -492,6 +503,7 @@ def parse_debug():
                         'time_stage_in': worker_disk_update['when_stage_in'][len_stage_in - i - 1],
                         'time_stage_out': manager_info['time_end'],
                     }
+                    file_info[filename]['worker_holding'].append(worker_holding)
 
     # filter out the workers that are not active
     manager_info['total_workers'] = len(worker_info)
@@ -653,13 +665,17 @@ def generate_worker_summary(worker_disk_usage_df):
             'cores': info['cores'],
             'memory(MB)': info['memory(MB)'],
             'disk(MB)': info['disk(MB)'],
+            'tasks_completed': info['tasks_completed'],
+            'tasks_failed': info['tasks_failed'],
             'num_tasks_completed': 0,
+            'num_tasks_failed': 0,
             'avg_task_runtime(s)': 0,
             'peak_disk_usage(MB)': 0,
             'peak_disk_usage(%)': 0,
         }
         # calculate the number of tasks done by this worker
         row['num_tasks_completed'] = len(worker_info[worker_hash]['tasks_completed'])
+        row['num_tasks_failed'] = len(worker_info[worker_hash]['tasks_failed'])
         # check if this worker has any disk updates
         if not worker_disk_usage_df.empty and worker_disk_usage_df['worker_hash'].isin([worker_hash]).any():
             row['peak_disk_usage(MB)'] = worker_disk_usage_df[worker_disk_usage_df['worker_hash'] == worker_hash]['disk_usage(MB)'].max()
@@ -771,6 +787,7 @@ def generate_task_df():
         if len(cores) == 0:
             return task
         task['core_id'] = cores[0]
+
         # if the when_next_ready is na, that means the manager exited before the task was ready, set it to the worker end time
         if pd.isna(task['when_next_ready']):
             worker = worker_info[task['worker_committed']]

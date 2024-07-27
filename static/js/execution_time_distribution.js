@@ -21,14 +21,14 @@ const svgElement = d3.select('#task-execution-time-distribution-svg');
 
 var dotRadius = 3;
 const lineColor = "#145ca0";
-const dotColor = "#8c1a11";
+const dotColor = "red";
 const highlightColor = "orange";
 const tooltip = document.getElementById('vine-tooltip');
 
 const margin = {top: 40, right: 50, bottom: 40, left: 50};
 var svgWidth = svgContainer.clientWidth - margin.left - margin.right;
 var svgHeight = svgContainer.clientHeight - margin.top - margin.bottom;
-var taskDone = window.taskDone;
+var taskDone = '';
 
 export function plotTaskExecutionTimeDistribution({displayCDF = false} = {}) {
     svgElement.selectAll('*').remove();
@@ -43,10 +43,7 @@ export function plotTaskExecutionTimeDistribution({displayCDF = false} = {}) {
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
 
     taskDone = window.taskDone;
-    taskDone.forEach(function(d) {
-        d.task_id = +d.task_id;
-        d.execution_time = +d.execution_time;
-    });
+
     // update dotRadius based on the number of tasks
     if (taskDone.length > 500 && taskDone.length <= 1000) {
         dotRadius = 2;

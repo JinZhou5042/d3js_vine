@@ -153,8 +153,8 @@ class OrthogonalListGraph:
         for task_id in subgraph:
             if args.task_node_label == 'task-id':
                 task_node_label = str(task_id)
-            elif args.task_node_label == 'graph-id':
-                task_node_label = str(task_id) + f"{task_info[task_id]['graph_id']}"
+            elif args.task_node_label == 'category-id':
+                task_node_label = str(int(task_info[task_id]['category_id'])).split('.')[0]
             dot.node(str(task_id), task_node_label, shape='ellipse')
             this_task = task_info[task_id]
             # highlight recovery tasks
@@ -206,7 +206,10 @@ class OrthogonalListGraph:
                         dot.edge(str(task_id), output_file, label=edge_label)
 
         dot.attr(rankdir='TB')
-        dot.render(save_to, format='svg', view=view)
+        if args.save_format == 'svg':
+            dot.render(save_to, format='svg', view=view)
+        elif args.save_format == 'png':
+            dot.render(save_to, format='png', view=view)
 
 
 def process_subgraph(args):
@@ -221,20 +224,20 @@ def process_subgraph(args):
         'graph_id': graph_id,
         'num_tasks': len(subgraph),
         'num_critical_tasks': 0,
+        'time_start': 0,
+        'time_end': 0,
+        'time_completion': 0,
         'critical_tasks': 0,
-        'time_critical_nodes': [],
-        'time_critical_edges': [],
-        'time_critical_path': 0,
+        'time_completion': 0,
         'tasks': subgraph,
     }
     graph_info['critical_tasks'] = graph.find_critical_path_in_subgraph(subgraph)
     graph_info['num_critical_tasks'] = len(graph_info['critical_tasks'])
-    for i, task_id in enumerate(graph_info['critical_tasks']):
-        graph_info['time_critical_nodes'].append(graph.vertices[task_id].task_life_time)
-        if i < len(graph_info['critical_tasks']) - 1:
-            graph_info['time_critical_edges'].append(graph.edges[(task_id, graph_info['critical_tasks'][i+1])].weight)
-
-    graph_info['time_critical_path'] = sum(graph_info['time_critical_nodes']) + sum(graph_info['time_critical_edges'])
+    first_task_id = graph_info['critical_tasks'][0]
+    last_task_id = graph_info['critical_tasks'][-1]
+    graph_info['time_start'] = task_info[first_task_id]['when_ready']
+    graph_info['time_end'] = task_info[last_task_id]['when_done']
+    graph_info['time_completion'] = task_info[last_task_id]['when_done'] - task_info[first_task_id]['when_ready']
 
     return root, graph_info
 
@@ -286,6 +289,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-files', action='store_true')
     parser.add_argument('--no-weight', action='store_true')
     parser.add_argument('--task-node-label', type=str, default='task-id')
+    parser.add_argument('--save_format', type=str, default='svg')
     args = parser.parse_args()
 
     task_start_timestamp = 'time_worker_start'
@@ -312,6 +316,7 @@ if __name__ == '__main__':
             task_info[task_id]['graph_id'] = i + 1
 
     graph_info_df = pd.DataFrame.from_dict(graph_info, orient='index')
+    graph_info_df.sort_values(by='graph_id', inplace=True)
     graph_info_df.to_csv(os.path.join(dirname, 'graph_info.csv'), index=False)
     task_done_df = pd.DataFrame.from_dict(task_info, orient='index')
 

@@ -8,11 +8,13 @@
     <!-- import d3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- import jquery -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <!-- import datatables -->
     <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/fixedheader/4.0.1/js/dataTables.fixedHeader.js"></script>
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.1/js/dataTables.fixedColumns.js"></script>
+    <!-- import axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -93,6 +95,34 @@
         <div id="factory-description-container">
         </div>
     </div>
+
+
+    <h2 id="worker-summary-title">Worker Summary</h2>
+    <table id="worker-table" class="display">
+        <thead>
+            <tr>
+                <th>id</th>
+                <th>hash</th>
+                <th>machine</th>
+                <th>ip</th>
+                <th>port</th>
+                <th>when connected</th>
+                <th>when disconnected</th>
+                <th>lifetime(s)</th>
+                <th>cores</th>
+                <th>memory (MB)</th>
+                <th>disk (MB)</th>
+                <th>num tasks completed</th>
+                <th>num tasks failed</th>
+                <th>tasks average runtime</th>
+                <th>peak disk usage (MB)</th>
+                <th>peak disk usage (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
 
     <h2 id="worker-disk-usage-title">Worker Disk Usage</h2>
     <div id="worker-disk-usage-preface" class="preface">
@@ -286,35 +316,8 @@
         </svg>
     </div>
     
-
-    <h2 id="worker-summary-title">Worker Summary</h2>
-
-    <table id="worker-table" class="display">
-        <thead>
-            <tr>
-                <th>id</th>
-                <th>hash</th>
-                <th>machine</th>
-                <th>ip</th>
-                <th>port</th>
-                <th>when connected</th>
-                <th>when disconnected</th>
-                <th>lifetime(s)</th>
-                <th>cores</th>
-                <th>memory (MB)</th>
-                <th>disk (MB)</th>
-                <th>tasks done</th>
-                <th>tasks average runtime</th>
-                <th>peak disk usage (MB)</th>
-                <th>peak disk usage (%)</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
     
     <h2 id="dag-summary-title" >DAG Summary</h2>
-
     <table id="dag-table" class="display">
         <thead>
             <tr>
@@ -353,10 +356,15 @@
         <button id="button-highlight-critical-path" class="report-button">Highlight Critical Path</button>
         <input type="text" id="input-task-id-in-dag" class="report-input-box" placeholder="Enter Task ID">
         <button id="button-analyze-task-in-dag" class="report-button">Analyze Task</button>
+        <input type="text" id="input-filename-id-in-dag" class="report-input-box" placeholder="Enter Filename">
+        <button id="button-analyze-file-in-dag" class="report-button">Analyze File</button>
         <button id="button-download-dag" class="report-button">Download SVG</button>
     </div>
     
-    <div id="critical-path-info"></div>
+    <div id="critical-path-container">
+        <svg id="critical-path-svg" xmlns="http://www.w3.org/2000/svg">
+        </svg>
+    </div>
 
     <div id="analyze-task-display-details">
         <p><b>task information</b></p>

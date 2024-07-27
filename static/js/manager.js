@@ -15,13 +15,14 @@ function fillMgrDescription() {
     document.getElementById('max-concurrent-workers').textContent = window.generalStatisticsManager.max_concurrent_workers;
 }
 async function fillFactoryDescription() {
+    return;
     try {
         var factory = await fetchFile(`logs/${window.logName}/vine-logs/factory.json`);
         factory = JSON.parse(factory);
         factory = JSON.stringify(factory, null, 2);
         factoryDescriptionContainer.innerHTML = `<pre class="formatted-json"><b>factory.json</b> ${factory}</pre>`;
     } catch (error) {
-        factoryDescriptionContainer.innerHTML = 'Error fetching factory.json';
+        // pass
     }
 }
 

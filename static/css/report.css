@@ -187,9 +187,10 @@ body h2 {
 
 /* Analyze Area */
 
-#critical-path-info {
+#critical-path-container {
     overflow: auto; 
     font-size: 3.5rem;
+    max-height: 10vh;
     border: 1px solid #ccc;
     width: 90%;
     margin-bottom: 2rem;
