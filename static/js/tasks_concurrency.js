@@ -123,3 +123,5 @@ window.parent.document.addEventListener('dataLoaded', function() {
     buttonReset.removeEventListener('click', handleResetClick);
     buttonReset.addEventListener('click', handleResetClick);
 });
+
+window.addEventListener('resize', _.debounce(() => plotTasksConcurrency(), 300));

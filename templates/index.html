@@ -17,7 +17,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}?v=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/content.css') }}?v=1.0">
     <!-- import js files-->
-    <script src="{{ url_for('static', filename='js/execution_details.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/index.js') }}" type="module"></script>
 </head>
 <body>
@@ -47,8 +46,8 @@
         <button data-target="#worker-summary-title" class="report-scroll-btn">Worker Summary</button>
         <button data-target="#worker-connections-title" class="report-scroll-btn">Worker Connections</button>
         <button data-target="#worker-disk-usage-title" class="report-scroll-btn">Worker Disk Usage</button>
-        <button data-target="#dag-summary-title" class="report-scroll-btn">DAG Summary</button>
-        <button data-target="#dag-components-title" class="report-scroll-btn">DAG Components</button>
+        <button data-target="#graph-info-title" class="report-scroll-btn">DAG Summary</button>
+        <button data-target="#subgraph-info-title" class="report-scroll-btn">DAG Components</button>
         <button data-target="#file-summary-title" class="report-scroll-btn">File Summary</button>
         <!--
         <button data-target="#execution-summary-title" class="report-scroll-btn">Execution Summary</button>

@@ -1,7 +1,6 @@
 import { setupZoomAndScroll, fetchFile, fetchCSVData } from './tools.js';
 import { plotExecutionDetails } from './execution_details.js';
 import { plotWorkerDiskUsage } from './worker_disk_usage.js';
-import { plotDAGComponentByID } from './graph.js';
 
 
 window.addEventListener('load', function() {
@@ -44,8 +43,6 @@ window.addEventListener('load', function() {
         try {
             plotExecutionDetails();
             setupZoomAndScroll('#execution-details', '#execution-details-container');
-
-            plotDAGComponentByID(1);
         
             plotWorkerDiskUsage({displayDiskUsageByPercentage: false});
 
@@ -64,4 +61,3 @@ window.addEventListener('load', function() {
         logSelector.dispatchEvent(new Event('change'));
     }
 });
-

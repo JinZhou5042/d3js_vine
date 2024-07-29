@@ -79,7 +79,7 @@ function drawTaskCompletedTable(url) {
     $('#button-tasks-completed-convert-timestamp').off('click').on('click', function() {
         this.classList.toggle('report-button-active');
         if (this.classList.contains('report-button-active')) {
-            timestampType = 'startFromManager';
+            timestampType = 'relative';
         } else {
             timestampType = 'original';
         }
@@ -149,7 +149,7 @@ function drawTaskFailedTable(url) {
     $('#button-tasks-failed-convert-timestamp').off('click').on('click', function() {
         this.classList.toggle('report-button-active');
         if (this.classList.contains('report-button-active')) {
-            timestampType = 'startFromManager';
+            timestampType = 'relative';
         } else {
             timestampType = 'original';
         }
@@ -222,7 +222,7 @@ function drawDAGTable(url) {
         ],
     };
 
-    var table = createTable('#dag-table', specificSettings);
+    var table = createTable('#graph-table', specificSettings);
 }
 
 function drawFileTable(url) {

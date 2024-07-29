@@ -45,6 +45,7 @@ body h2 {
     color: #333;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
     pointer-events: none;
+    z-index: 9999;
 }
 .error-tip {
     padding-left: 5rem; 
@@ -187,14 +188,24 @@ body h2 {
 
 /* Analyze Area */
 
+#critical-path-info-div {
+    width: 100%;
+    min-width: 500px;
+    white-space: nowrap; 
+    font-size: 3.5rem; 
+    padding: 0px 0px 0px 0px;
+    display: none;
+    position: relative;
+}
+
 #critical-path-container {
-    overflow: auto; 
+    overflow: hidden; 
     font-size: 3.5rem;
-    max-height: 10vh;
+    max-height: 8vh;
     border: 1px solid #ccc;
+    margin-top: 2rem;
     width: 90%;
     margin-bottom: 2rem;
-    display: none;
 }
 
 #analyze-task-display-details {
@@ -259,7 +270,7 @@ body h2 {
 
 
 /* DAG */
-#dag-components-container {
+#graph-information-container {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -268,7 +279,7 @@ body h2 {
 }
 
 
-#dag-components {
+#graph-information-svg {
     display: inline-block;
     max-width: 100%;
     max-height: 100%;

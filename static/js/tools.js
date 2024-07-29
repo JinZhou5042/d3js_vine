@@ -161,19 +161,28 @@ export function downloadSVG(svgElementId, filename = null) {
 
 
 export function getTaskInnerHTML(taskData) {
-    return `
-        task id: ${taskData.task_id}<br>
-        worker: ${taskData.worker_id} (core ${taskData.core_id})<br>
-        category: ${taskData.category.replace(/^<|>$/g, '')}<br>
-        execution time: ${(taskData.time_worker_end - taskData.time_worker_start).toFixed(2)}s<br>
-        input size: ${(taskData.size_input_mgr - 0).toFixed(4)}MB<br>
-        output size: ${(taskData.size_output_mgr - 0).toFixed(4)}MB<br>
-        when ready: ${(taskData.when_ready - window.minTime).toFixed(2)}s<br>
-        when running: ${(taskData.when_running - window.minTime).toFixed(2)}s<br>
-        when actually running: ${(taskData.time_worker_start - window.minTime).toFixed(2)}s<br>
-        when actually done: ${(taskData.time_worker_end - window.minTime).toFixed(2)}s<br>
-        when waiting retrieval: ${(taskData.when_waiting_retrieval - window.minTime).toFixed(2)}s<br>
-        when retrieved: ${(taskData.when_retrieved - window.minTime).toFixed(2)}s<br>
-        when done: ${(taskData.when_done - window.minTime).toFixed(2)}s<br>
+    let htmlContent = `Task ID: ${taskData.task_id}<br>
+        Try Count: ${taskData.try_id}<br>
+        Worker ID: ${taskData.worker_id}<br>
+        Graph ID: ${taskData.graph_id}<br>
+        Input Files: ${taskData.input_files}<br>
+        Size of Input Files: ${taskData['size_input_files(MB)']}MB<br>
+        Output Files: ${taskData.output_files}<br>
+        Size of Output Files: ${taskData['size_output_files(MB)']}MB<br>
+        Critical Input File: ${taskData.critical_input_file}<br>
+        Wait Time for Critical Input File: ${taskData.critical_input_file_wait_time}<br>
+        Category: ${taskData.category.replace(/^<|>$/g, '')}<br>
+        When Ready: ${(taskData.when_ready - window.time_manager_start).toFixed(2)}s<br>
+        When Running: ${(taskData.when_running - window.time_manager_start).toFixed(2)}s (When Ready + ${(taskData.when_running - taskData.when_ready).toFixed(2)}s)<br>
+        When Start on Worker: ${(taskData.time_worker_start - window.time_manager_start).toFixed(2)}s (When Running + ${(taskData.time_worker_start - taskData.when_running).toFixed(2)}s)<br>
+        When End on Worker: ${(taskData.time_worker_end - window.time_manager_start).toFixed(2)}s (When Start on Worker + ${(taskData.time_worker_end - taskData.time_worker_start).toFixed(2)}s)<br>
+        When Waiting Retrieval: ${(taskData.when_waiting_retrieval - window.time_manager_start).toFixed(2)}s (When End on Worker + ${(taskData.when_waiting_retrieval - taskData.time_worker_end).toFixed(2)}s)<br>
+        When Retrieved: ${(taskData.when_retrieved - window.time_manager_start).toFixed(2)}s (When Waiting Retrieval + ${(taskData.when_retrieved - taskData.when_waiting_retrieval).toFixed(2)}s)<br>
+        When Done: ${(taskData.when_done - window.time_manager_start).toFixed(2)}s (When Retrieved + ${(taskData.when_done - taskData.when_retrieved).toFixed(2)}s)<br>
     `;
+    if ('when_submitted_by_daskvine' in taskData && taskData.when_submitted_by_daskvine > 0) {
+        htmlContent += `When DaskVine Submitted: ${taskData.when_submitted_by_daskvine - window.time_manager_start}s<br>
+                        When DaskVine Received: ${taskData.when_received_by_daskvine - window.time_manager_start}s<br>`;
+    }
+    return htmlContent;
 }

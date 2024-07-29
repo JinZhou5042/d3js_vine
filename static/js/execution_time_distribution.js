@@ -238,3 +238,7 @@ window.parent.document.addEventListener('dataLoaded', function() {
     buttonDisplayCDF.removeEventListener('click', handleDisplayCDFClick);
     buttonDisplayCDF.addEventListener('click', handleDisplayCDFClick);
 });
+
+window.addEventListener('resize', _.debounce(() => plotTaskExecutionTimeDistribution({
+    displayCDF: buttonDisplayCDF.classList.contains('report-button-active'),
+}), 300));

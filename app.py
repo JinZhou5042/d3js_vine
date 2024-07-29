@@ -52,7 +52,7 @@ def get_tasks():
     task_done_df['input_files'] = task_done_df['input_files'].apply(safe_literal_eval)
     task_done_df['output_files'] = task_done_df['output_files'].apply(safe_literal_eval)
 
-    if timestamp_type == 'startFromManager':
+    if timestamp_type == 'relative':
         time_columns = ['when_ready', 'time_commit_start', 'time_commit_end', 'when_running',
                         'time_worker_start', 'time_worker_end', 'when_waiting_retrieval',
                         'when_retrieved', 'when_done', 'when_next_ready']
@@ -69,6 +69,9 @@ def get_tasks():
             task_done_df = task_done_df[task_done_df['category'].apply(lambda x: search_value in x)]
         elif search_type == "filename":
             task_done_df = task_done_df[task_done_df['input_files'].apply(lambda x: search_value in x) | task_done_df['output_files'].apply(lambda x: search_value in x)]
+        elif search_type == "task-ids":
+            search_tasks = [int(task_id) for task_id in search_value.split(',')]
+            task_done_df = task_done_df[task_done_df['task_id'].apply(lambda x: x in search_tasks)]
     else:
         # handle sorting request
         order_column = request.args.get('order[0][column]', '0')
@@ -106,7 +109,7 @@ def get_tasks_failed():
 
     tasks_failed_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'task_failed_on_worker.csv')).fillna('N/A')
 
-    if timestamp_type == 'startFromManager':
+    if timestamp_type == 'relative':
         time_columns = ['when_ready', 'when_running', 'when_next_ready']
         for col in time_columns:
             tasks_failed_df[col] = round(tasks_failed_df[col] - time_manager_start, 2)
@@ -136,7 +139,6 @@ def get_tasks_failed():
         "recordsTotal": len(tasks_failed_df),
         "recordsFiltered": len(tasks_failed_df)
     }
-
     return response
 
 @app.route('/worker')
@@ -149,7 +151,7 @@ def get_worker_summary():
     search_type = request.args.get('search[type]', '')
     timestamp_type = request.args.get('timestamp_type')
 
-    worker_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'general_statistics_worker.csv'))
+    worker_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'worker_summary.csv'))
 
     if search_value:
         pass
@@ -185,7 +187,7 @@ def get_dag():
     timestamp_type = request.args.get('timestamp_type')
 
     dag_df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', 'graph_info.csv'))
-    columns_to_return = ['graph_id', 'num_tasks', 'time_critical_path', 'num_critical_tasks', 'critical_tasks']
+    columns_to_return = ['graph_id', 'num_tasks', 'time_completion', 'num_critical_tasks', 'critical_tasks']
     dag_df = dag_df[columns_to_return]
 
     if search_value:
@@ -225,7 +227,6 @@ def get_file():
     file_info_df['consumers'] = file_info_df['consumers'].apply(safe_literal_eval)
     file_info_df['worker_holding'] = file_info_df['worker_holding'].apply(safe_literal_eval)
 
-    print(f"type = {search_type}")
     if search_type:
         if search_type == 'filename':
             search_value = search_value.strip()
@@ -252,6 +253,18 @@ def get_file():
     }
     return response
 
+@app.route('/get_csv_data', methods=['GET'])
+def get_csv_data():
+    log_name = request.args.get('log_name')
+    csv_filename = request.args.get('csv_filename', type=str)
+    try:
+        df = pd.read_csv(os.path.join(LOGS_DIR, log_name, 'vine-logs', csv_filename)).fillna('N/A')
+        for col in ['input_files', 'output_files', 'producers', 'consumers', 'worker_holding', 'critical_tasks']:
+            if col in df.columns:
+                df[col] = df[col].apply(safe_literal_eval)
+        return df.to_dict(orient='records')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
 
 @app.route('/')
 def index():

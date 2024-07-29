@@ -15,6 +15,8 @@
     <script src="https://cdn.datatables.net/fixedcolumns/5.0.1/js/dataTables.fixedColumns.js"></script>
     <!-- import axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- import lodash -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
     
     <!-- parse csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -31,6 +33,7 @@
     <script src="{{ url_for('static', filename='js/category_information.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/tasks_concurrency.js') }}" type="module"></script>
     <script src="{{ url_for('static', filename='js/worker_concurrency.js') }}" type="module"></script>
+    <script src="{{ url_for('static', filename='js/graph.js') }}" type="module"></script>
 </head>
 
 <body>
@@ -317,8 +320,8 @@
     </div>
     
     
-    <h2 id="dag-summary-title" >DAG Summary</h2>
-    <table id="dag-table" class="display">
+    <h2 id="graph-info-title" >Graph Information</h2>
+    <table id="graph-table" class="display">
         <thead>
             <tr>
                 <th>id</th>
@@ -333,8 +336,8 @@
     </table>
 
     <div style="display: flex; align-items: center;">
-        <h2 id="dag-components-title" >DAG Components</h2>
-        <div id="dag-components-error-tip" class="error-tip">No Graph Data found for this execution.</div>
+        <h2 id="subgraph-info-title" >Subgraph Information</h2>
+        <div id="subgraph-info-error-tip" class="error-tip">No Graph Data found for this execution.</div>
     </div>
     <div class="preface">
         <p style="margin: 0px;">
@@ -360,16 +363,81 @@
         <button id="button-analyze-file-in-dag" class="report-button">Analyze File</button>
         <button id="button-download-dag" class="report-button">Download SVG</button>
     </div>
+    <div id="graph-information-container" class="container-alpha">
+        <div id="graph-information-svg"></div>
+    </div>
     
-    <div id="critical-path-container">
-        <svg id="critical-path-svg" xmlns="http://www.w3.org/2000/svg">
-        </svg>
+    <div id="critical-path-info-div">
+        <h3>Critical Tasks</h3>
+        <table id="critical-tasks-table" class="display">
+            <thead>
+                <tr>
+                    <th>task id</th>
+                    <th>try id</th>
+                    <th>worker id</th>
+                    <th>execution time</th>
+                    <th>when ready</th>
+                    <th>when running</th>
+                    <th>when start on worker</th>
+                    <th>when end on worker</th>
+                    <th>when waiting retrieval</th>
+                    <th>when retrieved</th>
+                    <th>when done</th>
+                    <th>category</th>
+                    <th>graph id</th>
+                    <th>size of input (MB)</th>
+                    <th>size of output (MB)</th>
+                    <th>input files</th>
+                    <th>output files</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <div class="preface">
+            <p style="margin: 0px;">
+                This plot shows the timeline of the critical tasks in this subgraph. The total duration represents the completion time of this subgraph.
+                <ul style="margin: 0px;">
+                    <li><b>X Axis</b>: Starts at when the first task is ready and ends at when the last task is done.</li>
+                    <li><b>Task Lifetime</b>: From when it's ready to when it's done.</li>
+                </ul>
+            </p>
+        </div>
+        <div id="critical-path-container">
+            <svg id="critical-path-svg" xmlns="http://www.w3.org/2000/svg">
+            </svg>
+        </div>
     </div>
 
     <div id="analyze-task-display-details">
-        <p><b>task information</b></p>
-        <div id="analyze-task-display-task-information"></div>
-        <p><b>input files information</b></p>
+        <h3>task information</h3>
+        <table id="analyzed-task-table" class="display">
+            <thead>
+                <tr>
+                    <th>task id</th>
+                    <th>try id</th>
+                    <th>worker id</th>
+                    <th>execution time</th>
+                    <th>when ready</th>
+                    <th>when running</th>
+                    <th>when start on worker</th>
+                    <th>when end on worker</th>
+                    <th>when waiting retrieval</th>
+                    <th>when retrieved</th>
+                    <th>when done</th>
+                    <th>category</th>
+                    <th>graph id</th>
+                    <th>size of input (MB)</th>
+                    <th>size of output (MB)</th>
+                    <th>input files</th>
+                    <th>output files</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        
+        <h3>input files information</h3>
         <div id="analyze-task-display-input-files">
             <table id="task-input-files-table" class="display">
                 <thead>
@@ -389,10 +457,6 @@
         </div>
     </div>
     
-    <div id="dag-components-container" class="container-alpha">
-        <div id="dag-components"></div>
-    </div>
-
     <h2 id="file-summary-title">File Summary</h2>
     <div id="file-summary-preface" class="preface">
         <p>The file summary table shows the information of all files that are used in this execution. 

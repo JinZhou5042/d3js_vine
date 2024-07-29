@@ -192,43 +192,6 @@ export function plotTaskCategoryInformation({ sortByAvgExecutionTime = false } =
                 .style("font-size", "14px")
                 .text(d.label);
         });
-    ////////////////////////////////////////////////////////////
-    /*
-    svg.selectAll(".bar")
-        .data(categoryInfo)
-        .enter()
-        .append("rect")
-        .classed("bar", true)
-        .attr("x", d => xScale(d.sortID) + (xScale.bandwidth() - Math.min(xScale.bandwidth(), maxBarWidth)) / 2)
-        .attr("y", d => yScaleLeft(d.taskCount))
-        .attr("width", d => Math.min(xScale.bandwidth(), maxBarWidth)) 
-        .attr("height", d => svgHeight - yScaleLeft(d.taskCount))
-        .attr("fill", barColor)
-        .on("mouseover", function(event, d) {
-            d3.select(this)
-                .attr('fill', highlightColor);
-            tooltip.innerHTML = `
-                Category ID: ${d.sortID}<br/>
-                Category Name: ${d.categoryName}<br/>
-                Number of tasks: ${d.taskCount}<br/>
-                Avg Execution Time: ${d.avgExecutionTime.toFixed(2)}<br/>
-                Max Execution Time: ${d.maxExecutionTime.toFixed(2)}<br/>
-                Min Execution Time: ${d.minExecutionTime.toFixed(2)}
-            `;
-            tooltip.style.visibility = 'visible';
-            tooltip.style.top = (event.pageY + 10) + 'px';
-            tooltip.style.left = (event.pageX + 10) + 'px';
-        })
-        .on("mousemove", function(event) {
-            tooltip.style.top = (event.pageY + 10) + 'px';
-            tooltip.style.left = (event.pageX + 10) + 'px';
-        })
-        .on("mouseout", function() {
-            d3.select(this)
-                .attr('fill', barColor);
-            tooltip.style.visibility = 'hidden';
-        });
-    */
 
     var lineGenerator = d3.line()
         .x(d => xScale(d.sortID) + xScale.bandwidth() / 2)
@@ -288,3 +251,7 @@ window.parent.document.addEventListener('dataLoaded', function() {
     buttonSortByAvgExecutionTime.removeEventListener('click', handleSortByAvgExecutionTimeClick);
     buttonSortByAvgExecutionTime.addEventListener('click', handleSortByAvgExecutionTimeClick);
 });
+
+window.addEventListener('resize', _.debounce(() => plotTaskCategoryInformation({
+    sortByAvgExecutionTime: buttonSortByAvgExecutionTime.classList.contains('report-button-active'),
+}), 300));
