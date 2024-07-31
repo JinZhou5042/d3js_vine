@@ -125,7 +125,15 @@ function removeHighlightedTask() {
         graphNodeMap[window.highlitedTask].select('ellipse').style('fill', 'orange');
     }
 
-    window.highlitedTask = undefined; 
+    window.parentTasks.forEach(function(taskID) {
+        graphNodeMap[taskID].select('ellipse').style('fill', 'white');
+    });
+    window.parentTasks = [];
+
+    window.childTasks.forEach(function(taskID) {
+        graphNodeMap[taskID].select('ellipse').style('fill', 'white');
+    });
+    window.highlitedTask = undefined;
 }
 
 function highlightTask(taskID) {
@@ -145,10 +153,7 @@ function highlightTask(taskID) {
 
 function displayAnalyzedTaskInfo(taskID) {
     // show the information div
-    var taskData = window.taskDone.filter(function(d) {
-        return +d.task_id === taskID;
-    });
-    taskData = taskData[0];
+    var taskData = window.taskDone.find(d => d.task_id === taskID);
 
     // analyzed task table
     var specificSettings = {
@@ -170,6 +175,8 @@ function displayAnalyzedTaskInfo(taskID) {
                 return response.data;
             }
         },
+        "info": false,           // Will Disabled "1 to n of n entries" Text at bottom
+        "pagingType": "simple",  // 'Previous' and 'Next' buttons only
         "columns": [
             { "data": "task_id" },
             { "data": "try_id" },
@@ -191,7 +198,6 @@ function displayAnalyzedTaskInfo(taskID) {
         ],
     };
     var table = createTable('#analyzed-task-table', specificSettings);
-
 
     // update the input files table
     const inputFilesSet = new Set(taskData.input_files);
@@ -247,6 +253,77 @@ function displayAnalyzedTaskInfo(taskID) {
     table = createTable('#task-input-files-table', specificSettings);
 }
 
+function highlightParentsAndChildren(taskID) {
+    // parents
+    window.parentTasks = [];
+    function getTaskParents(taskID) {
+        const taskData = window.taskDone.find(d => d.task_id === taskID);
+        const inputFiles = taskData.input_files;
+        if (inputFiles.length === 0) {
+            return;
+        }
+    
+        const thisParents = [];
+        inputFiles.forEach(inputFile => {
+            const producers = window.fileInfo.find(d => d.filename === inputFile).producers;
+            if (producers.length === 0) {
+                return;
+            }
+            for (let i = 0; i < producers.length; i++) {
+                // an input file should only has one producer, and the end time of the producer should be less than the start time of the task
+                const producerTaskID = +producers[i];
+                const producerTaskData = window.taskDone.find(d => +d.task_id === producerTaskID);
+                if (producerTaskData.when_output_fully_lost > taskData.time_worker_start) {
+                    thisParents.push(producerTaskID);
+                    break;
+                }
+            }
+        });
+        if (thisParents.length === 0) {
+            return;
+        }
+        parentTasks.push(...thisParents);
+        thisParents.forEach(parentTaskID => {
+            graphNodeMap[parentTaskID].select('ellipse').style('fill', 'orange');
+            getTaskParents(parentTaskID);
+        });
+    }
+    getTaskParents(taskID);
+
+    // children
+    window.childTasks = [];
+    function getTaskChildren(taskID) {
+        const taskData = window.taskDone.find(d => d.task_id === taskID);
+        const outputFiles = taskData.output_files;
+    
+        const thisChildren = [];
+        outputFiles.forEach(outputFile => {
+            const consumers = window.fileInfo.find(d => d.filename === outputFile).consumers;
+            if (consumers.length === 0) {
+                return;
+            }
+            for (let i = 0; i < consumers.length; i++) {
+                // an output file can have multiple consumers
+                const consumerTaskID = +consumers[i];
+                const consumerTaskData = window.taskDone.find(d => +d.task_id === consumerTaskID);
+                if (consumerTaskData.when_ready > taskData.when_done && taskData.when_output_fully_lost > consumerTaskData.time_worker_start) {
+                    thisChildren.push(consumerTaskID);
+                }
+            }
+        });
+        if (thisChildren.length === 0) {
+            return;
+        }
+        childTasks.push(...thisChildren);
+        thisChildren.forEach(childTaskID => {
+            graphNodeMap[childTaskID].select('ellipse').style('fill', 'orange');
+            getTaskChildren(childTaskID);
+        });
+    }
+    getTaskChildren(taskID);
+}
+
+
 function handleAnalyzeTaskClick(filename) {
     const inputValue = inputAnalyzeTask.value;
     const taskID = +inputValue;
@@ -271,6 +348,9 @@ function handleAnalyzeTaskClick(filename) {
     }
 
     displayAnalyzedTaskInfo(taskID);
+
+    // hightlight the parents and children
+    highlightParentsAndChildren(taskID);
 }
 
 buttonAnalyzeTask.addEventListener('click', handleAnalyzeTaskClick);
@@ -321,8 +401,12 @@ function displayCriticalTasksTable() {
 
 
 function displayCriticalPathInfo() {
-    criticalPathInfoDiv.style.display = 'block';
-
+    if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
+        criticalPathInfoDiv.style.display = 'block';
+    } else {
+        criticalPathInfoDiv.style.display = 'none';
+        return;
+    }
     const margin = {top: 20, right: 30, bottom: 20, left: 30};
     const svgWidth = criticalPathSvgContainer.clientWidth - margin.left - margin.right;
     const svgHeight = criticalPathSvgContainer.clientHeight - margin.top - margin.bottom;
@@ -463,8 +547,8 @@ window.parent.document.getElementById('log-selector').addEventListener('change',
     buttonAnalyzeTask.classList.remove('report-button-active');
     if (buttonHighlightCriticalPath.classList.contains('report-button-active')) {
         buttonHighlightCriticalPath.classList.remove('report-button-active');
-        hideCriticalPathInfo();
     }
+    hideCriticalPathInfo();
     inputAnalyzeTask.value = '';
 });
 

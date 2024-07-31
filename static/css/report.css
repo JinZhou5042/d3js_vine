@@ -213,7 +213,9 @@ body h2 {
     font-size: 3.5rem; 
     padding: 10px 0px; 
     display: none;
+    margin: 2rem 0rem;
 }
+
 
 #analyze-task-display-task-information {
     width: 90%;

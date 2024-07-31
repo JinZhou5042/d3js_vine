@@ -144,11 +144,31 @@ export function downloadSVG(svgElementId, filename = null) {
         filename = filename + '.svg';
     }
 
+    // apply inline styles
+    function applyInlineStyles(element) {
+        const style = element.getAttribute('style');
+        if (style) {
+            console.log(style);
+            const styleProperties = style.split(';');
+            styleProperties.forEach(property => {
+                const [key, value] = property.split(':');
+                if (key && value) {
+                    element.setAttribute(key.trim(), value.trim());
+                }
+            });
+            // 清空style属性
+            element.removeAttribute('style');
+        }
+        Array.from(element.children).forEach(applyInlineStyles);
+    }
+    applyInlineStyles(svgElement);
+
+
+    // serialize and download
     const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement);
+    let svgString = serializer.serializeToString(svgElement);
 
     const blob = new Blob([svgString], {type: "image/svg+xml"});
-
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

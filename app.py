@@ -55,7 +55,7 @@ def get_tasks():
     if timestamp_type == 'relative':
         time_columns = ['when_ready', 'time_commit_start', 'time_commit_end', 'when_running',
                         'time_worker_start', 'time_worker_end', 'when_waiting_retrieval',
-                        'when_retrieved', 'when_done', 'when_next_ready']
+                        'when_retrieved', 'when_done', 'when_next_ready', 'when_output_fully_lost']
         for col in time_columns:
             task_done_df[col] = round(task_done_df[col] - time_manager_start, 2)
     task_done_df['execution_time'] = round(task_done_df['execution_time'], 4)

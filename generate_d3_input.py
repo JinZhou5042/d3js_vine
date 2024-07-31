@@ -107,6 +107,8 @@ def parse_txn():
                         'when_done': None,                # done status on worker
                         'when_next_ready': None,          # only for on-worker failed tasks
 
+                        'when_output_fully_lost': None,
+
                         'worker_committed': None,
 
                         'size_input_mgr': None,
@@ -462,6 +464,17 @@ def parse_debug():
                 if len(worker_when_start_stage_in) != len(worker_when_stage_in):
                     for i in range(len(worker_when_start_stage_in) - len(worker_when_stage_in)):
                         worker_when_stage_in.append(worker_when_start_stage_in[len(worker_when_start_stage_in) - i - 1])
+
+                # this indicates the fully lost file, update the producer's when_output_fully_lost if any
+                if len(worker_when_stage_out) == len(worker_when_stage_in) and len(file_info[filename]['producers']) != 0:
+                    producers = file_info[filename]['producers']
+                    i = len(producers) - 1
+                    while i >= 0:
+                        producer = producers[i]
+                        if task_info[(producer, task_try_count[producer])]['time_worker_end'] < timestamp:
+                            task_info[(producer, task_try_count[producer])]['when_output_fully_lost'] = timestamp
+                            break
+                        i -= 1
                 
             elif "Submitted" in parts and "recovery" in parts and "task" in parts:
                 task_id = int(parts[parts.index("task") + 1])
@@ -480,12 +493,7 @@ def parse_debug():
                 worker_disk_update['when_stage_out'] = worker_disk_update['when_stage_out'][:len_stage_in]
                 len_stage_out = len_stage_in
             if filename not in file_info:
-                file_info[filename] = {
-                    'size(MB)': round(worker_disk_update['size(MB)'], 6),
-                    'producers': [],
-                    'consumers': [],
-                    'worker_holding': [],
-                }
+                raise ValueError(f"file {filename} not in file_info")
             # add the worker holding information
             for i in range(len_stage_out):
                 worker_holding = {
@@ -529,6 +537,8 @@ def parse_debug():
     with open(os.path.join(dirname, 'worker_info.json'), 'w') as f:
         json.dump(worker_info, f, indent=4)
 
+    store_file_info()
+
 
 def parse_taskgraph():
     total_lines = 0
@@ -552,29 +562,34 @@ def parse_taskgraph():
                 print(f"Warning: Unexpected format: {line}")
                 continue
 
-            # task produces an output file
             try:
+                # task -> file
                 if left.startswith('task'):
                     filename = right.split('-', 1)[1]
                     task_id = int(left.split('-')[1])
                     try_id = task_try_count[task_id]
                     task_info[(task_id, try_id)]['output_files'].append(filename)
                     if filename not in file_info:
-                        # if we approach the final line, the filename may be invalid because the manager hasn't finished
-                        if line_id == total_lines:
-                            print(f"Warning: file {filename} not found in file_info, this may be due to the manager not finishing")
-                            break
-                        else:
-                            raise ValueError(f"file {filename} not found in file_info")
+                        file_info[filename] = {
+                            'size(MB)': 0,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
                     file_info[filename]['producers'].append(task_id)
-                # task consumes an input file
+                # file -> task
                 elif right.startswith('task'):
                     filename = left.split('-', 1)[1]
                     task_id = int(right.split('-')[1])
                     try_id = task_try_count[task_id]
                     task_info[(task_id, try_id)]['input_files'].append(filename)
                     if filename not in file_info:
-                        raise ValueError(f"file {filename} not found in file_info")
+                        file_info[filename] = {
+                            'size(MB)': 0,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
                     file_info[filename]['consumers'].append(task_id)
             except IndexError:
                     print(f"Warning: Unexpected format: {line}")
@@ -588,7 +603,9 @@ def parse_taskgraph():
                 if file_info[input_file]['producers']:
                     cleaned_input_files.append(input_file)
             task['input_files'] = cleaned_input_files
-    
+
+
+def store_file_info():
     # calculate the size of input and output files
     print(f"Generating file_info.csv...")
     for filename, info in file_info.items():
@@ -825,27 +842,32 @@ def generate_task_df():
                 task['critical_parent'] = int(p)
                 task['critical_input_file'] = parent_task['output_files'][0]
                 task['critical_input_file_wait_time'] = shorted_waiting_time
+        
+        if not pd.isna(task['when_done']) and pd.isna(task['when_output_fully_lost']):
+            task['when_output_fully_lost'] = manager_info['time_end']
 
         return task
     
-    # the concurrent tasks throughout the manager's lifetime
-    # skip if when_running is na
-    task_running_df = pd.DataFrame({
-        'time': task_df['when_running'].dropna(),
-        'task_id': task_df['task_id'],
-        'worker_id': task_df['worker_id'],
-        'category': task_df['category'],
+    # the concurrent tasks throughout the manager's lifetime skip if when_running is na
+    scheduled_task_df = task_df.dropna(subset=['when_running'])
+    task_starting_df = pd.DataFrame({
+        'time': scheduled_task_df['when_running'],
+        'task_id': scheduled_task_df['task_id'],
+        'worker_id': scheduled_task_df['worker_id'],
+        'category': scheduled_task_df['category'],
         'type': 1
     })
+
     # skip if when_waiting_retrieval is na, use when_next_ready instead
-    task_waiting_retrieval_df = pd.DataFrame({
-        'time': task_df.apply(lambda row: row['when_waiting_retrieval'] if pd.notna(row['when_waiting_retrieval']) else row['when_next_ready'], axis=1).dropna(),
-        'task_id': task_df['task_id'],
-        'worker_id': task_df['worker_id'],
-        'category': task_df['category'],
+    task_ending_df = pd.DataFrame({
+        'time': scheduled_task_df.apply(lambda row: row['when_waiting_retrieval'] if pd.notna(row['when_waiting_retrieval']) else row['when_next_ready'], axis=1).dropna(),
+        'task_id': scheduled_task_df['task_id'],
+        'worker_id': scheduled_task_df['worker_id'],
+        'category': scheduled_task_df['category'],
         'type': -1
     })
-    events_df = pd.concat([task_running_df, task_waiting_retrieval_df]).sort_values('time')
+
+    events_df = pd.concat([task_starting_df, task_ending_df]).sort_values('time')
 
     events_df = events_df.sort_values('time')
     events_df['concurrent_tasks'] = events_df['type'].cumsum()
@@ -913,8 +935,8 @@ if __name__ == '__main__':
     parse_txn()
 
     if not args.execution_details_only:
-        parse_debug()
         parse_taskgraph()
+        parse_debug()
 
     parse_daskvine_log()
 

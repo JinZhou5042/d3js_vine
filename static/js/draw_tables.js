@@ -4,11 +4,12 @@ var dataTableSettings = {
     "processing": true,
     "serverSide": true,
     "paging": true,
-    "pageLength": 50,
+    "pageLength": 100,
     "destroy": true,
     "searching": false,
     "fixedHeader": false,
     "autoWidth": true,
+    "lengthChange": false,     // Will Disabled Record number per page
     "scrollX": true,
     "sScrollXInner": "100%",
     "scrollY": "500px",
@@ -58,6 +59,7 @@ function drawTaskCompletedTable(url) {
             { "data": "when_waiting_retrieval" },
             { "data": "when_retrieved" },
             { "data": "when_done" },
+            { "data": "when_output_fully_lost" },
             { "data": "category" },
             { "data": "graph_id" },
             { "data": "size_input_files(MB)" },
@@ -86,8 +88,14 @@ function drawTaskCompletedTable(url) {
         table.ajax.reload();
     });
     $('#button-tasks-completed-search-by-id').off('click').on('click', function() {
-        searchType = 'task-id';
-        searchValue = $('#input-tasks-completed-task-id').val();
+        var inputValue = $('#input-tasks-completed-task-id').val();
+        if (inputValue.includes(',')) {
+            searchType = 'task-ids';
+            searchValue = inputValue;
+        } else {
+            searchType = 'task-id';
+            searchValue = inputValue
+        }
         table.ajax.reload();
     });
     $('#button-tasks-completed-search-by-category').off('click').on('click', function() {
@@ -305,11 +313,11 @@ function loadPage(dataName, page, perPage) {
 }
 
 window.parent.document.addEventListener('dataLoaded', function() {
-    loadPage('tasks_completed', 1, 50);
+    loadPage('tasks_completed', 1, dataTableSettings.pageLength);
     document.getElementById('button-tasks-completed-reset-table').click();
-    loadPage('tasksFailed', 1, 50);
-    loadPage('worker', 1, 50);
-    loadPage('dag', 1, 50);
-    loadPage('file', 1, 50);
+    loadPage('tasksFailed', 1, dataTableSettings.pageLength);
+    loadPage('worker', 1, dataTableSettings.pageLength);
+    loadPage('dag', 1, dataTableSettings.pageLength);
+    loadPage('file', 1, dataTableSettings.pageLength);
 });
 

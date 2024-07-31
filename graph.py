@@ -289,7 +289,7 @@ if __name__ == '__main__':
     parser.add_argument('--no-files', action='store_true')
     parser.add_argument('--no-weight', action='store_true')
     parser.add_argument('--task-node-label', type=str, default='task-id')
-    parser.add_argument('--save_format', type=str, default='svg')
+    parser.add_argument('--save-format', type=str, default='svg')
     args = parser.parse_args()
 
     task_start_timestamp = 'time_worker_start'

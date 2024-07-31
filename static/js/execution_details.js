@@ -126,7 +126,7 @@ export function plotExecutionDetails() {
                 .attr('width', d => xScale(+d.time_worker_end) - xScale(+d.time_worker_start))
                 .attr('height', yScale.bandwidth())
                 .attr('fill', function(d) {
-                    return d.is_recovery_task === "True" ? colors['recovery-tasks'].normal : colors['regular-tasks'].normal;
+                    return d.is_recovery_task === true ? colors['recovery-tasks'].normal : colors['regular-tasks'].normal;
                 });
             if (false) {
                 g.append('rect')
