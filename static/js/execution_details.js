@@ -366,10 +366,10 @@ function setLegend() {
 
 
 window.parent.document.addEventListener('dataLoaded', function() {
-    if (!window.generalStatisticsManager) {
+    if (!window.managerInfo) {
         return;
     }
-    if (window.generalStatisticsManager.failed === 'True') {
+    if (window.managerInfo.failed === 'True') {
         document.getElementById('execution-details-tip').style.visibility = 'visible';
     } else {
         document.getElementById('execution-details-tip').style.visibility = 'hidden';

@@ -10,7 +10,7 @@ import json
 from bitarray import bitarray # type: ignore
 from tqdm import tqdm
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pytz
 import numpy as np
 
@@ -24,35 +24,31 @@ task_finish_timestamp = 'time_worker_end'
 ############################################################################################################
 # Helper functions
 def datestring_to_timestamp(datestring):
-    if manager_info['time_zone'] is None:
-        print("Warning: time_zone is not set")
+    if manager_info['time_zone_offset_hours'] is None:
+        print("Warning: time_zone_offset_hours is not set")
         exit(1)
-    eastern = pytz.timezone(manager_info['time_zone'])
-    date_obj = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f")
-    localized_date = eastern.localize(date_obj)
-    unix_timestamp = localized_date.timestamp()
+    tz_custom = timezone(timedelta(hours=manager_info['time_zone_offset_hours']))
+    datestring_custom = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f").replace(tzinfo=tz_custom)
+    unix_timestamp = int(datestring_custom.timestamp())
     return unix_timestamp
 
 def timestamp_to_datestring(unix_timestamp):
-    if manager_info['time_zone'] is None:
-        print("Warning: time_zone is not set")
+    if manager_info['time_zone_offset_hours'] is None:
+        print("Warning: time_zone_offset_hours is not set")
         exit(1)
-    eastern = pytz.timezone(manager_info['time_zone'])
-    date_utc = datetime.fromtimestamp(unix_timestamp, tz=timezone.utc)
-    date_eastern = date_utc.astimezone(eastern)
-    datestring = date_eastern.strftime("%Y/%m/%d %H:%M:%S.%f")
-    return datestring
+    tz_custom = timezone(timedelta(hours=manager_info['time_zone_offset_hours']))
+    datestring_custom = datetime.fromtimestamp(unix_timestamp, tz=tz_custom).strftime("%Y/%m/%d %H:%M:%S.%f")
+    return datestring_custom
 
 def set_time_zone(datestring):
     mgr_start_datesting = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
     formatted_timestamp = int(manager_info['time_start'])
     utc_datestring = datetime.fromtimestamp(formatted_timestamp, timezone.utc)
-
     for tz in pytz.all_timezones:
         tz_datestring = utc_datestring.replace(tzinfo=pytz.utc).astimezone(pytz.timezone(tz)).strftime('%Y-%m-%d %H:%M:%S')
         if mgr_start_datesting == tz_datestring:
-            manager_info['time_zone'] = tz
-            break
+            manager_info['time_zone_offset_hours'] = int(pytz.timezone(tz).utcoffset(datetime.now()).total_seconds() / 3600)
+            
 
 def get_worker_ip_port_by_hash(worker_address_hash_map, worker_hash):
     # worker_address_hash_map: {(ip, port): hash}
@@ -316,7 +312,7 @@ def parse_txn():
                     manager_info['total_workers'] = 0
                     manager_info['max_concurrent_workers'] = 0
                     manager_info['failed'] = 0
-                    manager_info['time_zone'] = None
+                    manager_info['time_zone_offset_hours'] = None
 
                 if status == 'END':
                     manager_info['time_end'] = timestamp
@@ -798,8 +794,8 @@ def generate_other_statistics(task_df, worker_summary_df):
     manager_info['max_concurrent_workers'] = max([x[1] for x in worker_connection_events])
     # a task may be submitted multiple times
     manager_info['tasks_submitted'] = len(task_info)
-    manager_info['time_start_human'] = timestamp_to_datestring(manager_info['time_start'])
-    manager_info['time_end_human'] = timestamp_to_datestring(manager_info['time_end'])
+    manager_info['time_start_human'] = timestamp_to_datestring(manager_info['time_start'])[:22]
+    manager_info['time_end_human'] = timestamp_to_datestring(manager_info['time_end'])[:22]
     # the max try_id in task_df
     manager_info['max_task_try_count'] = task_df['try_id'].max()
     manager_info_df = pd.DataFrame([manager_info])

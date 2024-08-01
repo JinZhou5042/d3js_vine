@@ -242,8 +242,6 @@ body h2 {
 
 #manager-description-container {
     position: relative;
-    flex: 0 0 45%;
-    padding-right: 5%;
     overflow: hidden; 
 }
 
@@ -261,13 +259,6 @@ body h2 {
 }
 #manager-description-table th {
     width: 50%;
-}
-
-#factory-description-container {
-    position: relative;
-    flex: 0 0 45%;
-    padding-left: 5%;
-    overflow: auto; 
 }
 
 

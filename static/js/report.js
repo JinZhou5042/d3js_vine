@@ -19,7 +19,7 @@ window.addEventListener('load', function() {
             headerTips[i].style.display = 'none';
         }
 
-        window.generalStatisticsManager = await fetchCSVData("manager_info.csv");
+        window.managerInfo = await fetchCSVData("manager_info.csv");
         window.taskDone = await fetchCSVData("task_done.csv");
         window.taskConcurrency = await fetchCSVData("task_concurrency.csv");
         window.taskFailedOnManager = await fetchCSVData("task_failed_on_manager.csv");
@@ -31,9 +31,9 @@ window.addEventListener('load', function() {
         window.categoryInfo = await fetchCSVData("category_info.csv");
         window.graphInfo = await fetchCSVData("graph_info.csv");
 
-        window.generalStatisticsManager = window.window.generalStatisticsManager[0];
-        window.time_manager_start = window.generalStatisticsManager.time_start;
-        window.time_manager_end = window.generalStatisticsManager.time_end;
+        window.managerInfo = window.window.managerInfo[0];
+        window.time_manager_start = window.managerInfo.time_start;
+        window.time_manager_end = window.managerInfo.time_end;
 
         window.minTime = window.time_manager_start;
         window.maxTime = window.time_manager_end;
