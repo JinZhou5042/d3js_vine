@@ -110,15 +110,6 @@ export function plotExecutionDetails() {
         .append('g')
         .each(function(d) {
             var g = d3.select(this);
-            if (false) {
-                g.append('rect')
-                .attr('class', 'waiting-to-execute-on-worker')
-                .attr('x', d => xScale(+d.when_running - window.minTime))
-                .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
-                .attr('width', xScale(+d.time_worker_start) - xScale(+d.when_running)) 
-                .attr('height', yScale.bandwidth())
-                .attr('fill', colors['waiting-to-execute-on-worker'].normal);
-            }
             g.append('rect')
                 .attr('class', 'regular-tasks')
                 .attr('x', d => xScale(+d.time_worker_start - window.minTime))
@@ -128,15 +119,6 @@ export function plotExecutionDetails() {
                 .attr('fill', function(d) {
                     return d.is_recovery_task === true ? colors['recovery-tasks'].normal : colors['regular-tasks'].normal;
                 });
-            if (false) {
-                g.append('rect')
-                .attr('class', 'waiting-retrieval-on-worker')
-                .attr('x', d => xScale(+d.time_worker_end - window.minTime))
-                .attr('y', d => yScale(d.worker_id + '-' + d.core_id))
-                .attr('width', d => xScale(+d.when_waiting_retrieval) - xScale(+d.time_worker_end))
-                .attr('height', yScale.bandwidth())
-                .attr('fill', colors['waiting-retrieval-on-worker'].normal);
-            }
         })
         .on('mouseover', function(event, d) {
             d3.select(this).selectAll('rect').each(function() {

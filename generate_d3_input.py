@@ -17,24 +17,42 @@ import numpy as np
 
 # initialize the global variables
 task_info, task_try_count, library_info, worker_info, manager_info, file_info, category_info = {}, {}, {}, {}, {}, {}, {}
+worker_address_hash_map = {}
 task_start_timestamp = 'time_worker_start'
 task_finish_timestamp = 'time_worker_end'
 
 ############################################################################################################
 # Helper functions
 def datestring_to_timestamp(datestring):
-    eastern = pytz.timezone('US/Eastern')
+    if manager_info['time_zone'] is None:
+        print("Warning: time_zone is not set")
+        exit(1)
+    eastern = pytz.timezone(manager_info['time_zone'])
     date_obj = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f")
     localized_date = eastern.localize(date_obj)
     unix_timestamp = localized_date.timestamp()
     return unix_timestamp
 
 def timestamp_to_datestring(unix_timestamp):
-    eastern = pytz.timezone('US/Eastern')
+    if manager_info['time_zone'] is None:
+        print("Warning: time_zone is not set")
+        exit(1)
+    eastern = pytz.timezone(manager_info['time_zone'])
     date_utc = datetime.fromtimestamp(unix_timestamp, tz=timezone.utc)
     date_eastern = date_utc.astimezone(eastern)
     datestring = date_eastern.strftime("%Y/%m/%d %H:%M:%S.%f")
     return datestring
+
+def set_time_zone(datestring):
+    mgr_start_datesting = datetime.strptime(datestring, "%Y/%m/%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S")
+    formatted_timestamp = int(manager_info['time_start'])
+    utc_datestring = datetime.fromtimestamp(formatted_timestamp, timezone.utc)
+
+    for tz in pytz.all_timezones:
+        tz_datestring = utc_datestring.replace(tzinfo=pytz.utc).astimezone(pytz.timezone(tz)).strftime('%Y-%m-%d %H:%M:%S')
+        if mgr_start_datesting == tz_datestring:
+            manager_info['time_zone'] = tz
+            break
 
 def get_worker_ip_port_by_hash(worker_address_hash_map, worker_hash):
     # worker_address_hash_map: {(ip, port): hash}
@@ -43,6 +61,12 @@ def get_worker_ip_port_by_hash(worker_address_hash_map, worker_hash):
         if v == worker_hash:
             workers_by_ip_port.append(k[0] + ":" + k[1])
     return workers_by_ip_port
+
+def get_worker_hash(worker_ip_port_string):
+    content = re.search(r'\((.*?)\)', worker_ip_port_string).group(1)
+    worker_ip, worker_port = content.split(':')
+    return worker_address_hash_map[(worker_ip, worker_port)]
+
 ############################################################################################################
 
 ############################################################################################################
@@ -292,6 +316,7 @@ def parse_txn():
                     manager_info['total_workers'] = 0
                     manager_info['max_concurrent_workers'] = 0
                     manager_info['failed'] = 0
+                    manager_info['time_zone'] = None
 
                 if status == 'END':
                     manager_info['time_end'] = timestamp
@@ -312,13 +337,17 @@ def parse_debug():
             total_lines += 1
 
     putting_file = False
-    worker_address_hash_map = {}
+    putting_filename = None
 
     with open(debug, 'r') as file:
         pbar = tqdm(total=total_lines, desc="parsing debug")
         for line in file:
             pbar.update(1)
             parts = line.strip().split(" ")
+
+            if "manager" in parts and "start" in parts:
+                datestring = parts[0] + " " + parts[1]
+                set_time_zone(datestring)
 
             if "info" in parts and "worker-id" in parts:
                 worker_id_id = parts.index("worker-id")
@@ -331,46 +360,57 @@ def parse_debug():
                     worker_info[worker_hash]['worker_ip'] = worker_ip
                     worker_info[worker_hash]['worker_port'] = worker_port
 
-            elif "put" in parts:
+            if "put" in parts:
                 putting_file = True
                 continue
-            elif putting_file:
-                if not ("file" in parts and parts[parts.index("file") - 1].endswith(':')):
-                    continue
-                putting_file = False
-                file_id = parts.index("file")
-                worker_ip, worker_port = parts[file_id - 1][1:-2].split(':')
-                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
-                filename = parts[file_id + 1]
-                size_in_mb = int(parts[file_id + 2]) / 2**20
-                start_time = float(parts[file_id + 4])
-                if start_time < manager_info['time_start']:
-                    if abs(start_time - manager_info['time_start']) < 1:
-                        # manager_info['time_start'] is more accurate
-                        start_time = worker_info[worker_hash]['time_connected'][0]
-                    elif start_time == 0:
-                        # we have a special file with start time 0
-                        start_time = worker_info[worker_hash]['time_connected'][0]
-                    else:
-                        print(f"Warning: put start time {start_time} of file {filename} on worker {worker_hash} is before manager start time {manager_info['time_start']}")
-                # this is the first time the file is cached on this worker
-                # assume the start time is the same as the stage in time if put by the manager
-                if filename not in worker_info[worker_hash]['disk_update']:
-                    worker_info[worker_hash]['disk_update'][filename] = {
-                        'size(MB)': size_in_mb,
-                        'when_start_stage_in': [start_time],
-                        'when_stage_in': [start_time],
-                        'when_stage_out': [],
-                    }
-                else:
-                    worker_info[worker_hash]['disk_update'][filename]['when_start_stage_in'].append(start_time)
-                    worker_info[worker_hash]['disk_update'][filename]['when_stage_in'].append(start_time)
+            if putting_file:
+                if "file" in parts and parts[parts.index("file") - 1].endswith(':'):
+                    file_id = parts.index("file")
+                    worker_hash = get_worker_hash(parts[file_id - 1])
+                    putting_filename = parts[file_id + 1]
+                    size_in_mb = int(parts[file_id + 2]) / 2**20
 
-            elif "puturl" in parts or "puturl_now" in parts:
+                    datestring = parts[0] + " " + parts[1]
+                    timestamp = datestring_to_timestamp(datestring)
+                    if (timestamp > manager_info['time_end']):
+                        print(f"Warning: put start time {timestamp} of file {putting_filename} is after manager end time {manager_info['time_end']}, probably a time zone issue")
+                    if timestamp < manager_info['time_start']:
+                        if abs(timestamp - manager_info['time_start']) < 1:
+                            # manager_info['time_start'] is more accurate
+                            timestamp = worker_info[worker_hash]['time_connected'][0]
+                        elif timestamp == 0:
+                            # we have a special file with start time 0
+                            timestamp = worker_info[worker_hash]['time_connected'][0]
+                        else:
+                            print(f"Warning: put start time {timestamp} of file {putting_filename} on worker {worker_hash} is before manager start time {manager_info['time_start']}")
+                    # this is the first time the file is cached on this worker
+                    # assume the start time is the same as the stage in time if put by the manager
+                    if putting_filename not in worker_info[worker_hash]['disk_update']:
+                        worker_info[worker_hash]['disk_update'][putting_filename] = {
+                            'size(MB)': size_in_mb,
+                            'when_start_stage_in': [timestamp],
+                            'when_stage_in': [],
+                            'when_stage_out': [],
+                        }
+                    else:
+                        worker_info[worker_hash]['disk_update'][putting_filename]['when_start_stage_in'].append(timestamp)
+                elif "received" in parts:
+                    if putting_filename is None:
+                        raise ValueError("putting_filename is None")
+                    received_id = parts.index("received")
+                    worker_hash = get_worker_hash(parts[received_id - 1])
+                    datestring = parts[0] + " " + parts[1]
+                    timestamp = datestring_to_timestamp(datestring)
+                    if putting_filename not in worker_info[worker_hash]['disk_update']:
+                        raise ValueError(f"file {putting_filename} not in worker {worker_hash}")
+                    worker_info[worker_hash]['disk_update'][putting_filename]['when_stage_in'].append(timestamp)
+                    putting_file = False
+                    putting_filename = None
+
+            if "puturl" in parts or "puturl_now" in parts:
                 puturl_id = parts.index("puturl") if "puturl" in parts else parts.index("puturl_now")
                 url_source = parts[puturl_id + 1]
-                worker_ip, worker_port = parts[puturl_id - 1][1:-2].split(':')
-                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
+                worker_hash = get_worker_hash(parts[puturl_id - 1])
                 filename = parts[puturl_id + 2]
                 cache_level = parts[puturl_id + 3]
                 size_in_mb = int(parts[puturl_id + 4]) / 2**20
@@ -390,7 +430,7 @@ def parse_debug():
                     # already cached previously, start a new cache here
                     worker_info[worker_hash]['disk_update'][filename]['when_start_stage_in'].append(timestamp)
 
-            elif "cache-update" in parts:
+            if "cache-update" in parts:
                 # cache-update cachename, &type, &cache_level, &size, &mtime, &transfer_time, &start_time, id
                 # type: VINE_FILE=1, VINE_URL=2, VINE_TEMP=3, VINE_BUFFER=4, VINE_MINI_TASK=5
                 # cache_level: 
@@ -408,8 +448,7 @@ def parse_debug():
                 wall_time = float(parts[cache_update_id + 6]) / 1e6
                 start_time = float(parts[cache_update_id + 7]) / 1e6
 
-                worker_ip, worker_port = parts[cache_update_id - 1][1:-2].split(':')
-                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
+                worker_hash = get_worker_hash(parts[cache_update_id - 1])
 
                 # start time should be after the manager start time
                 if start_time < manager_info['time_start']:
@@ -432,18 +471,16 @@ def parse_debug():
                     # the start time has been indicated in the puturl message, so we don't need to update it here
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_in'].append(start_time + wall_time)
 
-            elif ("infile" in parts or "outfile" in parts) and "needs" not in parts:
+            if ("infile" in parts or "outfile" in parts) and "needs" not in parts:
                 file_id = parts.index("infile") if "infile" in parts else parts.index("outfile")
-                worker_address = parts[file_id - 1][1:-2]
-                worker_hash = worker_address_hash_map[(worker_ip, worker_port)]
-                cached_name = parts[file_id + 1]
+                worker_hash = get_worker_hash(parts[file_id - 1])
                 manager_site_name = parts[file_id + 2]
 
                 # update disk usage
                 if manager_site_name in worker_info[worker_hash]['disk_update']:
                     del worker_info[worker_hash]['disk_update'][manager_site_name]
             
-            elif "unlink" in parts:
+            if "unlink" in parts:
                 unlink_id = parts.index("unlink")
                 filename = parts[unlink_id + 1]
                 worker_ip, worker_port = parts[unlink_id - 1][1:-2].split(':')
@@ -476,7 +513,7 @@ def parse_debug():
                             break
                         i -= 1
                 
-            elif "Submitted" in parts and "recovery" in parts and "task" in parts:
+            if "Submitted" in parts and "recovery" in parts and "task" in parts:
                 task_id = int(parts[parts.index("task") + 1])
                 try_count = task_try_count[task_id]
                 for try_id in range(1, try_count + 1):

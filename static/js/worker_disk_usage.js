@@ -80,6 +80,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
     const line = d3.line()
         .x(d => {
             if (d.time - window.minTime < 0) {
+                console.log(d);
                 console.log('d.time - window.minTime < 0, d.time = ', d.time, 'window.minTime = ', window.minTime);
             }
             if (isNaN(d.time - window.minTime)) {
