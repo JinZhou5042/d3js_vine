@@ -1,11 +1,11 @@
 import { downloadSVG } from './tools.js';
 
-const buttonDownload = document.getElementById('button-download-worker-connections');
-const buttonReset = document.getElementById('button-reset-worker-connections');
+const buttonDownload = document.getElementById('button-download-worker-concurrency');
+const buttonReset = document.getElementById('button-reset-worker-concurrency');
 const tooltip = document.getElementById('vine-tooltip');
 
-const svgElement = d3.select('#worker-connections');
-const svgContainer = document.getElementById('worker-connections-container');
+const svgElement = d3.select('#worker-concurrency');
+const svgContainer = document.getElementById('worker-concurrency-container');
 
 
 async function plotWorkerConnections() {
@@ -130,7 +130,7 @@ async function plotWorkerConnections() {
 }
 
 function handleDownloadClick() {
-    downloadSVG('worker-connections');
+    downloadSVG('worker-concurrency');
 }
 function handleResetClick() {
     plotWorkerConnections();

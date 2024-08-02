@@ -923,21 +923,28 @@ def generate_worker_disk_usage():
             len_out = len(disk_update['when_stage_out'])
 
             # Preparing row data
-            for time, disk_increment in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],
+            for event_time, disk_increment in zip(disk_update['when_stage_in'] + disk_update['when_stage_out'],
                                                  [disk_update['size(MB)']] * len_in + [-disk_update['size(MB)']] * len_out):
+                if event_time < manager_info['time_start']:
+                    if abs(event_time - manager_info['time_start']) < 1:
+                        # manager_info['time_start'] is more accurate
+                        event_time = manager_info['time_start']
+                    else:
+                        print(f"Warning: disk update start time {event_time} of file {filename} on worker {worker_hash} is before manager start time {manager_info['time_start']}")
+                        exit(1)
                 rows.append({
                     'worker_hash': worker_hash,
                     'worker_id': worker_id,
                     'filename': filename,
-                    'time': time,
+                    'when_stage_in_or_out': event_time,
                     'size(MB)': disk_increment
                 })
 
     worker_disk_usage_df = pd.DataFrame(rows)
 
     if not worker_disk_usage_df.empty:
-        worker_disk_usage_df = worker_disk_usage_df[worker_disk_usage_df['time'] > 0]
-        worker_disk_usage_df.sort_values(by=['worker_id', 'time'], ascending=[True, True], inplace=True)
+        worker_disk_usage_df = worker_disk_usage_df[worker_disk_usage_df['when_stage_in_or_out'] > 0]
+        worker_disk_usage_df.sort_values(by=['worker_id', 'when_stage_in_or_out'], ascending=[True, True], inplace=True)
         # normal worker disk usage
         worker_disk_usage_df['disk_usage(MB)'] = worker_disk_usage_df.groupby('worker_id')['size(MB)'].cumsum()
         worker_disk_usage_df['disk_usage(%)'] = worker_disk_usage_df['disk_usage(MB)'] / worker_disk_usage_df['worker_hash'].map(lambda x: worker_info[x]['disk(MB)'])

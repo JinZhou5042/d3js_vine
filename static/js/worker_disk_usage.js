@@ -79,14 +79,13 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
     // Create line generator
     const line = d3.line()
         .x(d => {
-            if (d.time - window.minTime < 0) {
-                console.log(d);
-                console.log('d.time - window.minTime < 0, d.time = ', d.time, 'window.minTime = ', window.minTime);
+            if (d.when_stage_in_or_out - window.minTime < 0) {
+                console.log('d.when_stage_in_or_out - window.minTime < 0, d.when_stage_in_or_out = ', d.when_stage_in_or_out, 'window.minTime = ', window.minTime);
             }
-            if (isNaN(d.time - window.minTime)) {
-                console.log('d.time - window.minTime is NaN', d);
+            if (isNaN(d.when_stage_in_or_out - window.minTime)) {
+                console.log('d.when_stage_in_or_out - window.minTime is NaN', d);
             }
-            return xScale(d.time - window.minTime);
+            return xScale(d.when_stage_in_or_out - window.minTime);
         })
         .y(d => {
             const diskUsage = displayDiskUsageByPercentage 
@@ -138,7 +137,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
                 const yValue = yScale.invert(yPosition);
                 tooltip.innerHTML = `
                     worker id: ${key}<br>
-                    time: ${xValue.toFixed(2)}<br>
+                    event time: ${xValue.toFixed(2)}<br>
                     disk usage: ${yValue.toFixed(2)}<br>
                 `;
                 tooltip.style.visibility = 'visible';
@@ -153,7 +152,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
                 const yValue = yScale.invert(yPosition);
                 tooltip.innerHTML = `
                     worker id: ${key}<br>
-                    time: ${xValue.toFixed(2)}s<br>
+                    event time: ${xValue.toFixed(2)}s<br>
                     disk usage: ${yValue.toFixed(2)}<br>
                 `;
 
@@ -201,7 +200,7 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
             const lineData = highlightedLine.datum();
 
             lineData.forEach(point => {
-                const pointX = point['time'] - window.minTime;
+                const pointX = point['when_stage_in_or_out'] - window.minTime;
                 const pointY = point['disk_usage(MB)'];
     
                 const distance = Math.sqrt(Math.pow(positionX - pointX, 2) + Math.pow(positionY - pointY, 2));
@@ -213,13 +212,13 @@ export function plotWorkerDiskUsage({ displayDiskUsageByPercentage = false, high
             });
     
             if (closestPoint) {
-                const pointX = xScale(closestPoint['time'] - window.minTime);
+                const pointX = xScale(closestPoint['when_stage_in_or_out'] - window.minTime);
                 const pointY = yScale(closestPoint[displayDiskUsageByPercentage ? columnNamePercentage : columnNameMB]);
                 tooltip.innerHTML = `
                     worker id: ${closestPoint.worker_id}<br>
                     filename: ${closestPoint.filename}<br>
-                    time from start: ${(+closestPoint.time - window.minTime).toFixed(2)}s<br>
-                    time in human: ${formatUnixTimestamp(+closestPoint.time)}<br>
+                    time from start: ${(+closestPoint.when_stage_in_or_out - window.minTime).toFixed(2)}s<br>
+                    time in human: ${formatUnixTimestamp(+closestPoint.when_stage_in_or_out)}<br>
                     disk contribute: ${(+closestPoint['size(MB)']).toFixed(4)}MB<br>
                     disk usage: ${(+closestPoint[displayDiskUsageByPercentage ? columnNamePercentage : columnNameMB]).toFixed(2)}${displayDiskUsageByPercentage ? '%' : 'MB'}<br>
                 `;

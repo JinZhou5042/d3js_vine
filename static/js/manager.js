@@ -4,7 +4,7 @@ const factoryDescriptionContainer = document.getElementById('factory-description
 
 function fillMgrDescription() {
     var time_zone_offset_hours;
-    if (window.managerInfo.time_zone_offset_hours > 0) {
+    if (window.managerInfo.time_zone_offset_hours >= 0) {
         time_zone_offset_hours = '+' + window.managerInfo.time_zone_offset_hours + ':00';
     } else {
         time_zone_offset_hours = window.managerInfo.time_zone_offset_hours + ':00';

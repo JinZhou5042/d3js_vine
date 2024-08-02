@@ -40,7 +40,7 @@
     <div id="vine-tooltip" class="tooltip"></div>
 
     <h2 id="manager-summary-title">Manager Summary</h2>
-    <div id="manager-preface" class="preface">
+    <div class="preface">
        <p>The time span of this report begins when the manager starts and ends when the manager ends. 
         If the manager was connected at Unix timestamp 1720370750.935014, we set this as 0, any other 
         timestamps should be subtracted by this value. For example, if a task starts at 
@@ -149,17 +149,17 @@
 
 
 
-    <h2 id="worker-connections-title">Worker Connections</h2>
-    <div id="manager-preface" class="preface">
-        <p>This plot shows the number of parallel running workers during the manager's lifetime.
+    <h2 id="worker-concurrency-title">Worker Concurrency</h2>
+    <div class="preface">
+        <p>This plot shows the number of concurrent workers during the manager's lifetime.
         </p>
      </div>
      <div class="report-toolbox">
-        <button id="button-reset-worker-connections" class="report-button">Reset</button>
-        <button id="button-download-worker-connections" class="report-button">Download SVG</button>
+        <button id="button-reset-worker-concurrency" class="report-button">Reset</button>
+        <button id="button-download-worker-concurrency" class="report-button">Download SVG</button>
     </div>
-    <div id="worker-connections-container" class="container-alpha">
-        <svg id="worker-connections" xmlns="http://www.w3.org/2000/svg">
+    <div id="worker-concurrency-container" class="container-alpha">
+        <svg id="worker-concurrency" xmlns="http://www.w3.org/2000/svg">
         </svg>
     </div>
 
