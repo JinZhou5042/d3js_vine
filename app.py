@@ -57,7 +57,10 @@ def get_tasks():
                         'time_worker_start', 'time_worker_end', 'when_waiting_retrieval',
                         'when_retrieved', 'when_done', 'when_next_ready', 'when_output_fully_lost']
         for col in time_columns:
-            task_done_df[col] = round(task_done_df[col] - time_manager_start, 2)
+            try:
+                task_done_df[col] = round(task_done_df[col] - time_manager_start, 2)
+            except:
+                pass
     task_done_df['execution_time'] = round(task_done_df['execution_time'], 4)
 
     total_records = len(task_done_df)

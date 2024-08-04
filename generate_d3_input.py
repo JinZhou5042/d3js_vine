@@ -49,7 +49,6 @@ def set_time_zone(datestring):
         if mgr_start_datesting == tz_datestring:
             manager_info['time_zone_offset_hours'] = int(pytz.timezone(tz).utcoffset(datetime.now()).total_seconds() / 3600)
             
-
 def get_worker_ip_port_by_hash(worker_address_hash_map, worker_hash):
     # worker_address_hash_map: {(ip, port): hash}
     workers_by_ip_port = []
@@ -62,6 +61,15 @@ def get_worker_hash(worker_ip_port_string):
     content = re.search(r'\((.*?)\)', worker_ip_port_string).group(1)
     worker_ip, worker_port = content.split(':')
     return worker_address_hash_map[(worker_ip, worker_port)]
+
+def update_file_size(filename, size_in_mb):
+    if filename not in file_info:
+        raise ValueError(f"file {filename} not in file_info")
+    if file_info[filename]['size(MB)'] == 0:
+        file_info[filename]['size(MB)'] = size_in_mb
+    else:
+        if file_info[filename]['size(MB)'] != size_in_mb:
+            raise ValueError(f"file {filename} size mismatch: {file_info[filename]['size(MB)']} vs {size_in_mb}")
 
 ############################################################################################################
 
@@ -149,7 +157,7 @@ def parse_txn():
                         'size_output_files(MB)': 0,
                         'critical_parent': None,                # task_id of the most recent ready parent
                         'critical_input_file': None,            # input file that took the shortest time to use
-                        'critical_input_file_wait_time': None,  # wait time from when the input file was ready to when it was used
+                        'critical_input_file_wait_time': 0,     # wait time from when the input file was ready to when it was used
                         'is_recovery_task': False,
 
                         'graph_id': -1,                       # will be set in dag part
@@ -325,6 +333,72 @@ def parse_txn():
         manager_info['lifetime(s)'] = round(manager_info['time_end'] - manager_info['time_start'], 2)
         manager_info['failed'] = True
 
+
+def parse_taskgraph():
+    total_lines = 0
+    with open(taskgraph, 'r') as file:
+        for line in file:
+            total_lines += 1
+
+    with open(taskgraph, 'r') as file:
+        pbar = tqdm(total=total_lines, desc="parsing taskgraph")
+        line_id = 0
+        for line in file:
+            line_id += 1
+            pbar.update(1)
+            if '->' not in line:
+                continue
+            try:
+                left, right = line.split(' -> ')
+                left = left.strip().strip('"')
+                right = right.strip()[:-1].strip('"')
+            except ValueError:
+                print(f"Warning: Unexpected format: {line}")
+                continue
+
+            try:
+                # task -> file
+                if left.startswith('task'):
+                    filename = right.split('-', 1)[1]
+                    task_id = int(left.split('-')[1])
+                    try_id = task_try_count[task_id]
+                    task_info[(task_id, try_id)]['output_files'].append(filename)
+                    if filename not in file_info:
+                        file_info[filename] = {
+                            'size(MB)': 0,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
+                    file_info[filename]['producers'].append(task_id)
+                # file -> task
+                elif right.startswith('task'):
+                    filename = left.split('-', 1)[1]
+                    task_id = int(right.split('-')[1])
+                    try_id = task_try_count[task_id]
+                    task_info[(task_id, try_id)]['input_files'].append(filename)
+                    if filename not in file_info:
+                        file_info[filename] = {
+                            'size(MB)': 0,
+                            'producers': [],
+                            'consumers': [],
+                            'worker_holding': [],
+                        }
+                    file_info[filename]['consumers'].append(task_id)
+            except IndexError:
+                    print(f"Warning: Unexpected format: {line}")
+                    continue
+        pbar.close()
+
+        # we only consider files produced by another task as input files
+        for task in task_info.values():
+            cleaned_input_files = []
+            for input_file in task['input_files']:
+                if file_info[input_file]['producers']:
+                    cleaned_input_files.append(input_file)
+            task['input_files'] = cleaned_input_files
+
+
 def parse_debug():
     global worker_info
     total_lines = 0
@@ -388,6 +462,7 @@ def parse_debug():
                             'when_stage_in': [],
                             'when_stage_out': [],
                         }
+                        update_file_size(putting_filename, size_in_mb)
                     else:
                         worker_info[worker_hash]['disk_update'][putting_filename]['when_start_stage_in'].append(timestamp)
                 elif "received" in parts:
@@ -422,6 +497,7 @@ def parse_debug():
                         'when_stage_in': [],
                         'when_stage_out': [],
                     }
+                    update_file_size(filename, size_in_mb)
                 else:
                     # already cached previously, start a new cache here
                     worker_info[worker_hash]['disk_update'][filename]['when_start_stage_in'].append(timestamp)
@@ -463,6 +539,7 @@ def parse_debug():
                         'when_stage_in': [start_time + wall_time],
                         'when_stage_out': [],
                     }
+                    update_file_size(filename, size_in_mb)
                 else:
                     # the start time has been indicated in the puturl message, so we don't need to update it here
                     worker_info[worker_hash]['disk_update'][filename]['when_stage_in'].append(start_time + wall_time)
@@ -571,71 +648,6 @@ def parse_debug():
         json.dump(worker_info, f, indent=4)
 
     store_file_info()
-
-
-def parse_taskgraph():
-    total_lines = 0
-    with open(taskgraph, 'r') as file:
-        for line in file:
-            total_lines += 1
-
-    with open(taskgraph, 'r') as file:
-        pbar = tqdm(total=total_lines, desc="parsing taskgraph")
-        line_id = 0
-        for line in file:
-            line_id += 1
-            pbar.update(1)
-            if '->' not in line:
-                continue
-            try:
-                left, right = line.split(' -> ')
-                left = left.strip().strip('"')
-                right = right.strip()[:-1].strip('"')
-            except ValueError:
-                print(f"Warning: Unexpected format: {line}")
-                continue
-
-            try:
-                # task -> file
-                if left.startswith('task'):
-                    filename = right.split('-', 1)[1]
-                    task_id = int(left.split('-')[1])
-                    try_id = task_try_count[task_id]
-                    task_info[(task_id, try_id)]['output_files'].append(filename)
-                    if filename not in file_info:
-                        file_info[filename] = {
-                            'size(MB)': 0,
-                            'producers': [],
-                            'consumers': [],
-                            'worker_holding': [],
-                        }
-                    file_info[filename]['producers'].append(task_id)
-                # file -> task
-                elif right.startswith('task'):
-                    filename = left.split('-', 1)[1]
-                    task_id = int(right.split('-')[1])
-                    try_id = task_try_count[task_id]
-                    task_info[(task_id, try_id)]['input_files'].append(filename)
-                    if filename not in file_info:
-                        file_info[filename] = {
-                            'size(MB)': 0,
-                            'producers': [],
-                            'consumers': [],
-                            'worker_holding': [],
-                        }
-                    file_info[filename]['consumers'].append(task_id)
-            except IndexError:
-                    print(f"Warning: Unexpected format: {line}")
-                    continue
-        pbar.close()
-
-        # we only consider files produced by another task as input files
-        for task in task_info.values():
-            cleaned_input_files = []
-            for input_file in task['input_files']:
-                if file_info[input_file]['producers']:
-                    cleaned_input_files.append(input_file)
-            task['input_files'] = cleaned_input_files
 
 
 def store_file_info():

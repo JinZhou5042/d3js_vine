@@ -8,7 +8,6 @@ from collections import deque
 from multiprocessing import Pool, cpu_count, set_start_method
 
 
-
 def safe_literal_eval(val):
     try:
         return ast.literal_eval(val)
@@ -301,7 +300,7 @@ if __name__ == '__main__':
     task_done_df = pd.read_csv(os.path.join(dirname, 'task_done.csv'))
     task_done_df['input_files'] = task_done_df['input_files'].apply(safe_literal_eval)
     task_done_df['output_files'] = task_done_df['output_files'].apply(safe_literal_eval)
-    task_info = task_done_df.set_index('task_id', inplace=False).to_dict('index') 
+    task_info = task_done_df.set_index('task_id', inplace=False).to_dict('index')
 
     file_info_df = pd.read_csv(os.path.join(dirname, 'file_info.csv'))
     file_info_df['producers'] = file_info_df['producers'].apply(safe_literal_eval)
